@@ -228,7 +228,7 @@ sub _ValidateToken {
     my $OpenIdConnectConfig = $ConfigObject->Get( $Account->{OpenIDConfig} || 'AuthModule::OpenIDConnect::Config' );
 
     if ( !IsHashRefWithData($OpenIdConnectConfig) ) {
-        print STDERR "INVALID OIDC CONFIG\n";
+
         $Param{DebuggerObject}->Debug(
             Summary => 'OpenID Connect Config is Invalid.',
             Data    => $Account->{OpenIDConfig} || 'AuthModule::OpenIDConnect::Config',

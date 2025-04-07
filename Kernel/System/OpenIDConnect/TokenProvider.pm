@@ -157,7 +157,6 @@ sub Fetch {
         TokenType  => $TokenType,
     );
 
-#print STDERR "1) Cache\n";
     return {
         Success => 1,
         Token   => $Token,
@@ -174,7 +173,6 @@ sub Fetch {
 
     $Token = $TokenData->{Token};
 
-#print STDERR "2) DB\n";
     return {
         Success => 1,
         Token   => $Token,
@@ -197,7 +195,6 @@ sub Fetch {
             RefreshToken => $RefreshToken->{Token},
         );
 
-#        print STDERR "3) Refresh\n";
         return $Result unless $Result->{Success};
 
         return {
@@ -208,8 +205,6 @@ sub Fetch {
 
     # 4) if grant_type is not 'authorization_code' try fetch fresh token
     # using configured credentials
-
-#print STDERR "4) Fetch\n";
 
     if ( $Account->{GrantType} eq 'authorization_code' ) {
 
@@ -390,9 +385,6 @@ sub FetchToken {
         AccountCtx => $AccountCtx,
         AccountID  => $AccountID,
     );
-
-#use Data::Dumper;
-#print STDERR Dumper($OpenIDConfig);
 
     # fetch openid token endpoint
 

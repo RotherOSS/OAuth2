@@ -208,7 +208,6 @@ sub Run {
             );
         }
 
-#print STDERR "###########################\n";
         if ( $GetParam{GrantType} eq 'authorization_code' ) {
 
             my $AuthURL = $TokenProvider->GetAuthURL(
@@ -239,13 +238,11 @@ sub Run {
         }
         else {
 
-#print STDERR "###########################\n";
             my $TokenResult = $TokenProvider->Fetch(
                 AccountID  => $GetParam{AccountName},
                 AccountCtx => $GetParam{AccountCtx},
             );
 
-#print STDERR "###########################\n";
             if ( !$TokenResult->{Success} ) {
                 $Output .= $LayoutObject->Notify(
                     Error    => $TokenResult->{Error},
@@ -625,8 +622,6 @@ sub Run {
     # ------------------------------------------------------------ #
     # show overview actions - assemble Account Overview data
     # ------------------------------------------------------------ #
-
-#print STDERR "########OVERVIEW###################\n";
 
     $LayoutObject->Block(
         Name => 'Overview',
