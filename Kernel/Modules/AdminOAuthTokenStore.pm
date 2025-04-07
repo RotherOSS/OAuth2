@@ -148,13 +148,6 @@ sub Run {
             my $Output = $LayoutObject->Header();
             $Output .= $LayoutObject->NavigationBar();
 
-            if ( $Errors{TokenError} ) {
-                $Output .= $LayoutObject->Notify(
-                    Error    => $Errors{TokenError},
-                    Priority => 'Error'
-                );
-            }
-
             $Self->_EditInvoker(
                 Action => $Self->{Subaction} eq 'AddInvokerAction' ? 'AddInvoker' : 'EditInvoker',
                 %GetParam,
@@ -171,6 +164,16 @@ sub Run {
         }
 
         # save config
+
+        $TokenRepository->Delete(
+            AccountID  => $GetParam{AccountName},
+            AccountCtx => $GetParam{AccountCtx},
+        );
+
+        $TokenProvider->EmptyCache(
+            AccountID  => $GetParam{AccountName},
+            AccountCtx => $GetParam{AccountCtx},
+        );
 
         $OIDCAccounts->{ $GetParam{AccountName} } = {
             OpenIDConfig      => $GetParam{ProviderName},
@@ -205,6 +208,7 @@ sub Run {
             );
         }
 
+#print STDERR "###########################\n";
         if ( $GetParam{GrantType} eq 'authorization_code' ) {
 
             my $AuthURL = $TokenProvider->GetAuthURL(
@@ -220,19 +224,33 @@ sub Run {
                     . 'index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth'
             );
 
-            return $LayoutObject->Redirect(
-                ExtURL => $AuthURL
-            );
+            if($AuthURL) {
+
+                return $LayoutObject->Redirect(
+                    ExtURL => $AuthURL
+                );
+            }
+            else {
+                $Output .= $LayoutObject->Notify(
+                    Error    => Translatable('Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD COnfiguration!'),
+                    Priority => 'Error'
+                );
+            }
         }
         else {
 
+#print STDERR "###########################\n";
             my $TokenResult = $TokenProvider->Fetch(
                 AccountID  => $GetParam{AccountName},
                 AccountCtx => $GetParam{AccountCtx},
             );
 
+#print STDERR "###########################\n";
             if ( !$TokenResult->{Success} ) {
-                $Errors{TokenError} = $TokenResult->{Error};
+                $Output .= $LayoutObject->Notify(
+                    Error    => $TokenResult->{Error},
+                    Priority => 'Error'
+                );
             }
         }
     }
@@ -608,6 +626,8 @@ sub Run {
     # show overview actions - assemble Account Overview data
     # ------------------------------------------------------------ #
 
+#print STDERR "########OVERVIEW###################\n";
+
     $LayoutObject->Block(
         Name => 'Overview',
         Data => \%Param,
@@ -654,6 +674,7 @@ sub Run {
 
         my $GrantType = $InvokerAccounts->{$AccountName}->{GrantType};
         my $HasToken  = exists $GenericInterfaceTokenLookup{Invoker}->{$AccountName};
+        my $CopyToken = $HasToken ? 'CopyToken' : '';
         if ( !$HasToken ) {
 
             # client_credentials flow usually does not have refresh_tokens,
@@ -691,6 +712,7 @@ sub Run {
             TokenID    => $Token->{TokenID},
             Token      => $Token->{Token},
             HasToken   => $HasToken,
+            CopyToken  => $CopyToken,
             NeedToken  => $GrantType eq 'authorization_code' && !$HasToken ? 'Error' : '',
             ExpiresAt  => $Time,
             IsInvoker  => 1,

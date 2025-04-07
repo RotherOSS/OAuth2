@@ -157,6 +157,7 @@ sub Fetch {
         TokenType  => $TokenType,
     );
 
+#print STDERR "1) Cache\n";
     return {
         Success => 1,
         Token   => $Token,
@@ -173,6 +174,7 @@ sub Fetch {
 
     $Token = $TokenData->{Token};
 
+#print STDERR "2) DB\n";
     return {
         Success => 1,
         Token   => $Token,
@@ -195,6 +197,7 @@ sub Fetch {
             RefreshToken => $RefreshToken->{Token},
         );
 
+#        print STDERR "3) Refresh\n";
         return $Result unless $Result->{Success};
 
         return {
@@ -205,6 +208,8 @@ sub Fetch {
 
     # 4) if grant_type is not 'authorization_code' try fetch fresh token
     # using configured credentials
+
+#print STDERR "4) Fetch\n";
 
     if ( $Account->{GrantType} eq 'authorization_code' ) {
 
@@ -385,6 +390,9 @@ sub FetchToken {
         AccountCtx => $AccountCtx,
         AccountID  => $AccountID,
     );
+
+#use Data::Dumper;
+#print STDERR Dumper($OpenIDConfig);
 
     # fetch openid token endpoint
 
@@ -572,10 +580,7 @@ sub GetAuthURL {
                 Message  => "Need $Needed!",
             );
 
-            return {
-                Success => 0,
-                Error   => "Invalid Parameters !",
-            };
+            return;
         }
     }
 
@@ -652,6 +657,10 @@ sub GetAuthURL {
         ClientSettings   => $OpenIDConfig->{ClientSettings},
         ProviderSettings => $OpenIDConfig->{ProviderSettings},
     );
+
+    if(!$RedirectURL) {
+        return;
+    }
 
     $Param{RedirectURL} = $AuthRequest->{RedirectURI};
 
@@ -758,44 +767,50 @@ sub TimeLeft {
     return $TokenData->{exp} - $CurrentTime;
 }
 
-# sub EmptyCache {
+sub EmptyCache {
 
-#     my ( $Self, %Param ) = @_;
+    my ( $Self, %Param ) = @_;
 
-#     for my $Needed (qw/AccountID AccountCtx/) {
-#         if ( !$Param{$Needed} ) {
-#             $Kernel::OM->Get('Kernel::System::Log')->Log(
-#                 Priority => 'error',
-#                 Message  => "Need $Needed!",
-#             );
+    for my $Needed (qw/AccountID AccountCtx/) {
+        if ( !$Param{$Needed} ) {
+            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                Priority => 'error',
+                Message  => "Need $Needed!",
+            );
 
-#             return;
-#         }
-#     }
+            return;
+        }
+    }
 
-#     my $AccountCtx = $Param{AccountCtx};
-#     my $AccountID  = $Param{AccountID};
+    my $AccountCtx = $Param{AccountCtx};
+    my $AccountID  = $Param{AccountID};
 
-#     my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
+    my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
 
-#     for my $TokenType (qw/access_token id_token refresh_token/) {
+    for my $TokenType (qw/access_token id_token refresh_token/) {
 
-#         my $CacheType = "TokenProvider";
-#         my $CacheKey  = join( ',', $AccountCtx, $AccountID, $TokenType );
+        my $CacheType = "TokenProvider";
+        my $CacheKey  = join( ',', $AccountCtx, $AccountID, $TokenType );
 
-#         my $Token = $CacheObject->Delete(
-#             Type => $CacheType,
-#             Key  => $CacheKey,
-#         );
-#     }
+        my $Token = $CacheObject->Delete(
+            Type => $CacheType,
+            Key  => $CacheKey,
+        );
+    }
 
-#     my $ProviderKey = 'ProviderData';
+    my $FunctionalAccounts = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
+    my $OpenIDConfig = $FunctionalAccounts->GetOpenIDConfig(
+        AccountCtx => $AccountCtx,
+        AccountID  => $AccountID,
+    );
 
-#     my $OpenIDProviderData = $Kernel::OM->Get('Kernel::System::Cache')->Delete(
-#         Type => 'OpenIDConnect',
-#         Key  => $ProviderKey,
-#     );
-# }
+    my $ProviderKey = 'ProviderData' . ( $OpenIDConfig->{ProviderSettings}->{Name} // '' );
+
+    my $OpenIDProviderData = $Kernel::OM->Get('Kernel::System::Cache')->Delete(
+        Type => 'OpenIDConnect',
+        Key  => $ProviderKey,
+    );
+}
 
 # helpers
 

@@ -56,6 +56,15 @@ Core.Agent.Admin.OAuth2Module = (function (TargetNS) {
         }
     };
 
+    var Copy2Clipboard = function(value) {
+
+        navigator.clipboard.writeText(value).then(function() {
+            alert("Token copied to clipboard!");
+        }, function(err) {
+            alert("Failed to copy Token to clipboard!");
+        });
+    };
+
     /**
      * @name Init
      * @memberof Core.Agent.Admin.OAuth2Module
@@ -70,6 +79,11 @@ Core.Agent.Admin.OAuth2Module = (function (TargetNS) {
         $('#GrantType').on( 'change', function() {
             ToggleGrantType();
         });
+
+        $('.CopyToken').on( 'click', function() {
+            Copy2Clipboard(this.getAttribute('token'));
+        });
+
     };
 
     Core.Init.RegisterNamespace(TargetNS, 'APP_MODULE');
