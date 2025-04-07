@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<otobo_config version="2.0" init="Application">
+
+    <Setting Name="Frontend::Module###AdminOAuthTokenStore" Required="0" Valid="1">
+        <Description Translatable="1">Frontend module registration for the agent interface.</Description>
+        <Navigation>Frontend::Admin::ModuleRegistration</Navigation>
+        <Value>
+            <Item ValueType="FrontendRegistration">
+                <Hash>
+                    <Item Key="GroupRo">
+                        <Array>
+                        </Array>
+                    </Item>
+                    <Item Key="Group">
+                        <Array>
+                            <Item>admin</Item>
+                        </Array>
+                    </Item>
+                    <Item Key="Description">Admin</Item>
+                    <Item Key="Title" Translatable="1">OAuth Tokens</Item>
+                    <Item Key="NavBarName">Admin</Item>
+                </Hash>
+            </Item>
+        </Value>
+    </Setting>
+    <Setting Name="Loader::Module::AdminOAuthTokenStore###001-Framework" Required="0" Valid="1">
+        <Description Translatable="1">Loader module registration for the agent interface.</Description>
+        <Navigation>Frontend::Admin::ModuleRegistration::Loader</Navigation>
+        <Value>
+            <Hash>
+                <Item Key="JavaScript">
+                    <Array>
+                        <Item>Core.Agent.Admin.OAuth2Module.js</Item>
+                    </Array>
+                </Item>
+            </Hash>
+        </Value>
+    </Setting>
+    <Setting Name="Frontend::Navigation###AdminOAuthTokenStore###001-Framework" Required="0" Valid="0">
+        <Description Translatable="1">Main menu item registration.</Description>
+        <Navigation>Frontend::Admin::ModuleRegistration::MainMenu</Navigation>
+        <Value>
+            <Array>
+                <DefaultItem ValueType="FrontendNavigation">
+                    <Hash>
+                    </Hash>
+                </DefaultItem>
+            </Array>
+        </Value>
+    </Setting>
+
+    <Setting Name="Frontend::NavigationModule###AdminOAuthTokenStore" Required="0" Valid="1">
+        <Description Translatable="1">Admin area navigation for the agent interface.</Description>
+        <Navigation>Frontend::Admin::ModuleRegistration::AdminOverview</Navigation>
+        <Value>
+            <Hash>
+                <Item Key="Group">
+                    <Array>
+                        <Item>admin</Item>
+                    </Array>
+                </Item>
+                <Item Key="GroupRo">
+                    <Array>
+                    </Array>
+                </Item>
+                <Item Key="Module">Kernel::Output::HTML::NavBar::ModuleAdmin</Item>
+                <Item Key="Name" Translatable="1">OAuth Token Management</Item>
+                <Item Key="Block">Administration</Item>
+                <Item Key="Description" Translatable="1">View and refresh OAUth Tokens.</Item>
+                <Item Key="IconBig">fa-circle-o</Item>
+                <Item Key="IconSmall"></Item>
+            </Hash>
+        </Value>
+    </Setting>
+
+     <Setting Name="Daemon::SchedulerCronTaskManager::Task###TokenStoreUpdater" Required="0" Valid="0" ConfigLevel="100">
+         <Description Translatable="1">Executes a custom command or module. Note: if module is used, function is required.</Description>
+         <Navigation>Daemon::SchedulerCronTaskManager::Task</Navigation>
+         <Value>
+             <Hash>
+                 <Item Key="TaskName">TokenStoreUpdater</Item>
+                 <Item Key="Schedule">0 * * * *</Item>
+                 <Item Key="Module">Kernel::System::OpenIDConnect::TokenStoreUpdater</Item>
+                 <Item Key="Function">Run</Item>
+                 <Item Key="MaximumParallelInstances">1</Item>
+                 <Item Key="Params">
+                     <Array>
+                        <Item>Interval</Item>
+                        <Item>3600</Item>
+                     </Array>
+                 </Item>
+             </Hash>
+         </Value>
+     </Setting>
+
+ <Setting Name="OpenIDConnect::Invoker::Accounts" Required="0" Valid="1">
+        <Description Translatable="1">OAuth2 OpenID Connect Account Config for Invokers.</Description>
+        <Navigation>Core::Auth::OpenIDConnect</Navigation>
+        <Value>
+        <Hash>
+            <DefaultItem Key="FunctionalAccountXX">
+                <Hash>
+                    <Item Key="OpenIDConfig" Translatable="0" ValueType="String">Auth::Login::OIDC</Item>
+                    <Item Key="GrantType" ValueRegex="^authorization_code|client_credentials|password" Translatable="0" ValueType="String" >client_credentials</Item>
+                    <Item Key="Scope" Translatable="0" ></Item>
+                    <Item Key="Resources" Translatable="0" ValueType="String" ></Item>
+                    <Item Key="ResourceParamName" ValueType="String" Translatable="0">resource</Item>
+                    <Item Key="Token" ValueType="String" Translatable="0">access_token</Item>
+                    <Item Key="Username" ValueType="String" Translatable="0"></Item>
+                    <Item Key="Password" ValueType="Password" Translatable="0"></Item>
+                </Hash>
+            </DefaultItem>
+            <Item Key="FunctionalAccountYY">
+                <Hash>
+                    <Item Key="OpenIDConfig" Translatable="0" ValueType="String">Auth::Login::OIDC</Item>
+                    <Item Key="GrantType" ValueRegex="^authorization_code|client_credentials|password" Translatable="0" ValueType="String" >client_credentials</Item>
+                    <Item Key="Scope" Translatable="0" ></Item>
+                    <Item Key="Resources" Translatable="0" ValueType="String" ></Item>
+                    <Item Key="ResourceParamName" ValueType="String" Translatable="0">resource</Item>
+                    <Item Key="Token" ValueType="String" Translatable="0">access_token</Item>
+                    <Item Key="Username" ValueType="String" Translatable="0"></Item>
+                    <Item Key="Password" ValueType="Password" Translatable="0"></Item>
+                </Hash>
+            </Item>
+        </Hash>
+    </Value>
+</Setting>
+
+ <Setting Name="OpenIDConnect::Provider::Accounts" Required="0" Valid="1">
+        <Description Translatable="1">OAuth2 OpenID Connect Account Config for Providers.</Description>
+        <Navigation>Core::Auth::OpenIDConnect</Navigation>
+        <Value>
+        <Hash>
+            <DefaultItem Key="FunctionalAccountXX">
+                <Hash>
+                    <Item Key="OpenIDConfig" Translatable="0" ValueType="String">Auth::Login::OIDC</Item>
+                    <Item Key="UID">sub</Item>
+                    <Item Key="UserLogin"></Item>
+                    <Item Key="Scope"></Item>
+                    <Item Key="Audience"></Item>
+                    <Item Key="AuthorizedParty"></Item>
+                </Hash>
+            </DefaultItem>
+            <Item Key="FunctionalAccountYY">
+                <Hash>
+                    <Item Key="OpenIDConfig" Translatable="0" ValueType="String">Auth::Login::OIDC</Item>
+                    <Item Key="UID">sub</Item>
+                    <Item Key="UserLogin"></Item>
+                    <Item Key="Scope"></Item>
+                    <Item Key="Audience"></Item>
+                    <Item Key="AuthorizedParty"></Item>
+                </Hash>
+            </Item>
+        </Hash>
+    </Value>
+</Setting>
+
+ <Setting Name="OpenIDConnect::ClientProfiles" Required="0" Valid="1">
+        <Description Translatable="1">OAuth2 OpenID Connect Client Profile.</Description>
+        <Navigation>Core::Auth::OpenIDConnect</Navigation>
+        <Value>
+            <Array>
+                <Item>AuthModule::OpenIDConnect::Config</Item>
+            </Array>
+        </Value>
+ </Setting>
+</otobo_config>

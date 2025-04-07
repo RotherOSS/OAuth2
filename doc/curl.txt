@@ -1,0 +1,15 @@
+
+
+# test CreateSession with curl and a bearer token
+
+# 1) get token: 
+
+curl -s -k -d 'client_id=<oauth_client_id>' -d 'client_secret=<oauth_client_secret>' -d 'username=test1@example.com' -d 'password=test' -d 'grant_type=password' -d 'scope=openid' 'https://localhost:8443/realms/master/protocol/openid-connect/token' | jq
+
+# 2) get session: 
+
+curl -v -X POST 'http://localhost/otobo/nph-genericinterface.pl/Webservice/Test/CreateSession' -H 'Content-Type: application/json' -d '{ "BearerToken" : "<access_token from 1) above>" }' | jq
+
+# 3) get ticket: 
+
+curl -v -X GET 'http://localhost/otobo/nph-genericinterface.pl/Webservice/Test/GetTicket/1?SessionID=<SessionID from 2) above>' | jq

@@ -1,0 +1,366 @@
+# --
+# OTOBO is a web-based ticketing system for service organisations.
+# --
+# Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
+# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# --
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+# --
+
+package Kernel::Config;
+
+=head1 NAME
+
+# ---------------------------------------------------- #
+
+Config.pm Examples for the OAuth2 Package.
+
+OpenID example config starts at line 172 ff with 
+' # OIDC basic config'
+
+The OAuth functional accounts for external 
+API Authorization start in line 223 ff with
+' # OAuth2 Functional Accounts for Invokers and Providers '
+
+# ---------------------------------------------------- #
+
+Kernel::Config - settings that can be adapted by the user
+
+=head1 SYNOPSIS
+
+    use Kernel::System::ObjectManager;
+
+    local $Kernel::OM = Kernel::System::ObjectManager->new();
+
+    my $Config = $Kernel::OM->Get('Kernel::Config');
+    my $Home   = $Config->Get('Home');
+
+=head1 DESCRIPTION
+
+Most OTOBO configuration should be done via the OTOBO web interface
+and the SysConfig. Only for some configuration, such as database
+credentials and customer data source changes, you should edit this
+file. For changes do customer data sources you can copy the definitions
+from F<Kernel/Config/Defaults.pm> and paste them into this file.
+The file F<Kernel/Config.pm> will not be overwritten when updating OTOBO.
+
+=head2 Specifics for running OTOBO under Docker.
+
+This Docker specific F<Kernel/Config.pm> originated from the dist file
+F<scripts/docker/Config.pm.docker.dist>.
+That dist file changes or adds some settings that are specific to running OTOBO under Docker.
+
+=over 4
+
+=item DatabaseHost
+
+The setting is I<db> instead of I<127.0.0.1>. This is because under Docker
+the MySQL database is running in a separate container.
+
+=item DatabasePw
+
+A different default password is used in the Docker case, as that potential
+mixups with a database running on the Docker host are less likely.
+
+=item LogModule and LogModule::LogFile
+
+Syslog is not easily available in a Docker container.
+Log to the file F</opt/otobo/var/log/otobo.log>.
+As this specific location as it is located on the volume that is visible from the host.
+
+=item CacheModule
+
+Use Redis for caching.
+
+=item TestHTTPHostname
+
+Set to I<web:5000> so that test scripts don't necessarily have to run in the same container
+as the web server. Especially important for the Selenium tests where HTTP requests are sent
+from the selenium-chrome container.
+
+=item S3 specific settings
+
+S3 settings can be copied from _Kernel/Config/Defaults.pm_.
+
+=back
+
+=cut
+
+use v5.24;
+use strict;
+use warnings;
+use utf8;
+
+sub Load {
+    my $Self = shift;
+
+    # ---------------------------------------------------- #
+    # database settings                                    #
+    # ---------------------------------------------------- #
+
+    # The database host
+    $Self->{DatabaseHost} = 'db';
+
+    # The database name
+    $Self->{Database} = 'otobo';
+
+    # The database user
+    $Self->{DatabaseUser} = 'otobo';
+
+    # The password of database user. You also can use bin/otobo.Console.pl Maint::Database::PasswordCrypt
+    # for crypted passwords
+    $Self->{DatabasePw} = 'otobo-docker-databasepw';
+
+    # The database DSN for MySQL ==> more: "perldoc DBD::mysql"
+    $Self->{DatabaseDSN} = "DBI:mysql:database=$Self->{Database};host=$Self->{DatabaseHost};";
+
+    # The database DSN for PostgreSQL ==> more: "perldoc DBD::Pg"
+    # if you want to use a local socket connection
+#    $Self->{DatabaseDSN} = "DBI:Pg:dbname=$Self->{Database};";
+    # if you want to use a TCP/IP connection
+#    $Self->{DatabaseDSN} = "DBI:Pg:dbname=$Self->{Database};host=$Self->{DatabaseHost};";
+
+    # The database DSN for Oracle ==> more: "perldoc DBD::oracle"
+#    $Self->{DatabaseDSN} = "DBI:Oracle://$Self->{DatabaseHost}:1521/$Self->{Database}";
+#
+#    $ENV{ORACLE_HOME}     = '/path/to/your/oracle';
+#    $ENV{NLS_DATE_FORMAT} = 'YYYY-MM-DD HH24:MI:SS';
+#    $ENV{NLS_LANG}        = 'AMERICAN_AMERICA.AL32UTF8';
+
+    # ---------------------------------------------------- #
+    # fs root directory, without trailing slash            #
+    # ---------------------------------------------------- #
+    $Self->{Home} = '/opt/otobo';
+
+    # ---------------------------------------------------- #
+    # modified settings for running OTOBO under Docker     #
+    # ---------------------------------------------------- #
+    $Self->{'LogModule'}                   = 'Kernel::System::Log::File';
+    $Self->{'LogModule::LogFile'}          = '/opt/otobo/var/log/otobo.log';
+    $Self->{'Cache::Module'}               = 'Kernel::System::Cache::Redis';
+    $Self->{'Cache::Redis'}->{'RedisFast'} = 1;
+    $Self->{'Cache::Redis'}->{'Server'}    = 'redis:6379';
+    $Self->{'Cache::Redis'}->{'Server'}    = 'redis:6379';
+    $Self->{'TestHTTPHostname'}            = 'web:5000';
+
+    # ---------------------------------------------------- #
+    # activate Selenium tests if the the host is available #
+    # ---------------------------------------------------- #
+    $Self->{'SeleniumTestsConfig'} = {
+        remote_server_addr  => 'selenium-chrome',
+        check_server_addr   => 1,                 # skip test when remote_server_addr can't be resolved via DNS
+        port                => '4444',
+        browser_name        => 'chrome',
+        platform            => 'ANY',
+    };
+
+    # ---------------------------------------------------- #
+    # insert your own config settings "here"               #
+    # config settings taken from Kernel/Config/Defaults.pm #
+    # ---------------------------------------------------- #
+
+    # $Self->{SessionUseCookie} = 0;
+    # $Self->{CheckMXRecord} = 0;
+
+    # OIDC basic config
+    $Self->{AuthModule} = 'Kernel::System::Auth::OpenIDConnect';
+    $Self->{'AuthModule::OpenIDConnect::AuthRequest'}->{ResponseType} = [ 'code' ];
+    $Self->{'AuthModule::OpenIDConnect::AuthRequest'}->{AdditionalScope} = [
+        qw/profile email roles/
+    ];
+
+    # client credentials
+    $Self->{'AuthModule::OpenIDConnect::Config'}{ClientSettings} = {
+        ClientID    => 'otobo',
+        RedirectURI => 'http://localhost/otobo/index.pl?Action=Login',
+    };
+
+    $Self->{'AuthModule::OpenIDConnect::Config'}{ClientSettings}{ClientSecret} = 'wv6CJGuBWXXXXXXXXLTNxDFCDAbXENHJ';
+
+    # Provider Settings
+    $Self->{'AuthModule::OpenIDConnect::Config'}{ProviderSettings} = {
+        OpenIDConfiguration => 'https://keycloak:8443/realms/master/.well-known/openid-configuration',
+        TTL                 => 60 * 30,      
+        Name                => 'Intern4',    
+        SSLOptions          => {             
+
+            # testing purpose only (self signed certs)
+            SSLVerifyHostname => 0,
+            SSLVerifyMode => 0,
+        },
+    };
+
+    # Role & User Mapping
+    $Self->{'AuthModule::OpenIDConnect::UID'} = 'sub';
+
+    $Self->{'AuthModule::OpenIDConnect::RoleMap'} = {
+        resource_access => {
+            otobo => {
+                roles => {
+                    agents => 'agents',
+                    admins => 'admins',
+                }
+            }
+        }
+    };
+
+    $Self->{'AuthModule::OpenIDConnect::UserMap'} = {
+        email       => 'UserEmail',
+        given_name  => 'UserFirstname',
+        family_name => 'UserLastname',
+    };
+
+    # Debug info
+    $Self->{'AuthModule::OpenIDConnect::Debug'}->{'LogIDToken'} = 1;
+ 
+
+    # OAuth2 Functional Accounts for Invokers and Providers
+    $Self->{'Auth::OpenIDConnect::OAuthCredentials'} = {
+
+        FunctionalAccount1 => {
+
+            # General Settings
+
+            # OpenIdConnectConfig to use
+            # defaults to 'AuthModule::OpenIDConnect::Config'         
+            OpenIdConnectConfig => 'AuthModule::OpenIDConnect::Config',
+
+            # Invoker related Settings / outgoing calls
+
+            Invoker => {
+
+                # Username and Password are used to create a Token for outgoing calls
+                Username    => 'test1@example.com',
+                Password    => 'test',
+                GrantType   => "password",
+
+                # Token can be id_token|access_token
+                # determines which token is passed to remote
+                # defaults to 'access_token'
+                Token       => 'id_token',   
+                # scopes that shall be included in the token
+                Scope       => [ "openid",  "profile", "roles" ],
+                # resource_ids requested for the token
+                ResourceIds => [ "restapi", "otobo" ],
+                # name of the 'resource' parameter for the auth token
+                # endpoint call
+                # defaults to 'resource' if not set
+                ResourceParamName => "resourceIds",
+
+            },
+
+            # Provider related options / incoming calls
+
+            Provider => {
+
+                # UserLogin is used to validate incoming requests, that means
+                # only tokens for *this* user are allowed to invoke the api
+                UserLogin => '9c3e1839-b468-XXXX-a39a-d969ead45a40',
+
+                # what claim is used as otobo login 
+                # the user has to exist in the otobo system!
+                id  => 'sub',
+                # what azp (authorized party) claim(s) the token was issued to
+                # effectively the remote client_id(s) allowed. 
+                # not specifying azp allows all clients
+                azp => ['restapi'],                
+                # aud defaults to the value of our client_id (eg 'otobo')
+                # optional, if you want to accept someone elses IDTokens ??
+                # not recommended, but can be used to 'just make it work'
+                aud => 'restapi' 
+            }
+
+        },
+        FunctionalAccount2 => {
+
+            Invoker => {
+                # Scope       => [ "openid",  ],
+                # ResourceIds => [ "restapi" ],
+                Username  => 'test2@example.com',
+                Password  => 'test',
+                GrantType => "password",
+            },
+
+            Provider => {
+
+                UserLogin => 'acec3946-2be0-XXXX-afc6-25049b254670',
+                id  => 'sub',
+                azp => ['restapi'],             
+                # aud => 'restapi' # optional
+            }
+        },
+
+        FunctionalAccount3 => {
+            # not specifying Username and Password switches to
+            # client_credentials flow. Provider needs to support this.
+            # this will be using the client_id and client_secrets of the otobo
+            # oauth application to generate the token
+
+            #OpenIdConnectConfig => $Self->{'AuthModule::OpenIDConnect::Config'},
+
+            Invoker => {
+                Scope       => [ "openid"],
+                ResourceIds => [ "restapi"  ],
+                GrantType   => "client_credentials",
+
+                # name of the 'resource' parameter for the auth token
+                # endpoint call
+                # defaults to 'resource' if not set
+                ResourceParamName => "resourceIds",
+            }
+        },
+
+        FunctionalAccount4 => {
+
+            Provider => {
+                UserLogin => '95cece09-26e0-XXXX-af53-ba7f2f7add01', # is testuser3
+            }
+        },
+
+        FunctionalAccount4 => {
+            # not specifying Username and Password switches to
+            # client_credentials flow. Provider needs to support this.
+            # this will be using the client_id and client_secrets of the otobo
+            # oauth application to generate the token
+
+            #OpenIdConnectConfig => $Self->{'AuthModule::OpenIDConnect::Config'},
+
+            Invoker => {
+                Scope       => [ "imap", "openid" ],  #offline_access
+                ResourceIds => [ "restapi"  ],
+                GrantType   => "authorization_code",
+
+
+                # name of the 'resource' parameter for the auth token
+                # endpoint call
+                # defaults to 'resource' if not set
+                ResourceParamName => "resourceIds",
+            }
+        },
+
+    };
+
+    # ---------------------------------------------------- #
+    # end of your own config options!!!                    #
+    # ---------------------------------------------------- #
+
+    return 1;
+}
+
+# ---------------------------------------------------- #
+# needed system stuff (don't edit this)                #
+# ---------------------------------------------------- #
+
+use Kernel::Config::Defaults; # import Translatable()
+use parent qw(Kernel::Config::Defaults);
+
+# -----------------------------------------------------#
+
+1;

@@ -1,0 +1,413 @@
+# --
+# OTOBO is a web-based ticketing system for service organisations.
+# --
+# Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
+# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# --
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+# --
+
+[% RenderBlockStart("Overview") %]
+<div class="MainBox ARIARoleMain LayoutFixedSidebar SidebarFirst">
+    <h1 class="InvisibleText">[% Translate("OAuth Management") | html %]</h1>
+
+    [% BreadcrumbPath = [
+            {
+                Name => Translate('OpenID Connect Functional OAuh2 Account Management'),
+                Link => Env("Action"),
+            },
+        ]
+    %]
+
+    [% SWITCH Data.Action %]
+        [% CASE 'Add' %]
+            [% BreadcrumbPath.push({ Name => Translate('Add Account'),}) %]
+        [% CASE 'Edit' %]
+            [% USE EditTitle = String(Translate("Edit Account ")) %]
+            [% BreadcrumbPath.push({ Name => EditTitle.append( ': ', Data.AccountName ) }) %]
+    [% END %]
+
+    [% INCLUDE "Breadcrumb.tt" Path = BreadcrumbPath %]
+
+    <div class="Clear"></div>
+    <div class="SidebarColumn">
+        <div class="WidgetSimple">
+            <div class="Header">
+                <h2><b>About OIDC Functional Accounts </b></h2>
+            </div>
+            <div class="Content FavouriteList">
+                <p>
+                    [% Translate("This page displays an overview of configured functional OAuth Accounts and their corresponding Token Status. The list includes OAuth Token status for both OAuth protected Email as well as GenericInterface (API) accounts.") | html %]
+                </p>
+                <br>
+                <br>
+                <p>
+                    [% Translate("You can test your OAuth Configuration with a click on the 'Refresh' Button, which will try to fetch or refresh a new Token for the configured OAuth Account.") | html %]
+                </p>
+                <br>
+                <br>
+                <p>
+                    [% Translate("OAuth Accounts configured to use the 'authorization_code' flow must be manually initialized once here. The initial OAuth Token will be fetched using a browser base flow, redirecting you to your configured OpenID Connect Provider login page.") | html %]
+                </p>
+                <br>
+                <br>
+
+[% RenderBlockStart("ActionAddInvoker") %]
+                    <li>
+                        <a href="[% Env("Baselink") %]Action=[% Env("Action") %];Subaction=AddInvoker" class="CallForAction Fullsize Center"><span><i class="fa fa-plus-square"></i>[% Translate("Add Invoker") | html %]</span></a>
+                    </li>
+[% RenderBlockEnd("ActionAddInvoker") %]
+[% RenderBlockStart("ActionAddProvider") %]
+                    <li>
+                    <br><br>
+                        <a href="[% Env("Baselink") %]Action=[% Env("Action") %];Subaction=AddProvider" class="CallForAction Fullsize Center"><span><i class="fa fa-plus-square"></i>[% Translate("Add Provider") | html %]</span></a>
+                    </li>
+[% RenderBlockEnd("ActionAddProvider") %]
+[% RenderBlockStart("ActionDelete") %]
+                    <li>
+                        <form action="[% Env("CGIHandle") %]" method="post" class="PreventMultipleSubmits">
+                            <input type="hidden" name="Action" value="[% Env("Action") %]"/>
+                            <input type="hidden" name="Subaction" value="Delete"/>
+                            <input type="hidden" name="AccountCtx" value="[% Data.AccountCtx | html %]"/>
+                            <input type="hidden" name="AccountName" value="[% Data.AccountName | html %]"/>
+                            <div class="Field SpacingTop">
+                                <button class="CallForAction Primary" id="Submit" type="submit" value="[% Translate("Delete Account") | html %]"><span>[% Translate("Delete Account") | html %]</span></button>
+                            </div>
+                            <div class="Clear"></div>
+                        </form>
+                    </li>
+[% RenderBlockEnd("ActionDelete") %]
+
+            </div>
+        </div>
+    </div>
+    <div class="ContentColumn">
+        <div class="WidgetSimple">
+[% RenderBlockStart("OverviewHeader") %]
+            <div class="Header">
+                <h2>[% Translate("OAuth Token backed Accounts") | html %] ([% Data.AllItemsCount | html %] [% Translate("total") | html %])</h2>
+            </div>
+[% RenderBlockEnd("OverviewHeader") %]
+[% RenderBlockStart("NoTokensDefined") %]
+            <div class="Content">
+                <p>[% Translate("There are no tokens defined.") | html %]</p>
+            </div>
+[% RenderBlockEnd("NoTokensDefined") %]
+[% RenderBlockStart("OverviewResult") %]
+            <div class="Content">
+                <table class="DataTable" id="Tokens">
+                    <thead>
+                        <tr>
+                            <th>[% Translate("Account Name") | html %]</th>
+                            <th>[% Translate("Account Context") | html %]</th>
+                            <th>[% Translate("Flow") | html %]</th>
+                            <th>[% Translate("Has Token?") | html %]</th>
+                            <th>[% Translate("Token Expires") | html %]</th>
+                            <th>[% Translate("Refresh Token") | html %]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+[% RenderBlockStart("OverviewResultRow") %]
+                        <tr>
+                            <td><a class="AsBlock" href="[% Env("Baselink") %]Action=[% Env("Action") %];Subaction=Edit;AccountName=[% Data.AccountID | uri %];AccountCtx=[% Data.AccountCtx | uri %]">[% Data.AccountID | html %]</a></td>
+                            <td title="[% Data.Token | html %]">[% Data.AccountCtx | html %]</td>
+                            <td class='[% Data.NeedToken | html %]'>[% Data.Flow | html %]</td>
+                            <td class='[% Data.NeedToken | html %]'>[% Translate( Data.HasToken ) | html %]</td>
+                            <td>[% Data.ExpiresAt | html %]</td>
+                            <td>
+                                <form action="[% Env("CGIHandle") %]?Action=AdminOAuthTokenStore" method="post" class="Validate PreventMultipleSubmits">
+                                    <fieldset class="TableLike">
+                                        <div class="Field" style="margin-left:0px;">
+                                            <input type="hidden" name="Action" value="[% Env("Action") %]"/>
+                                            <input type="hidden" name="Subaction" value="Refresh"/>
+                                            <input type="hidden" name="AccountCtx" value="[% Data.AccountCtx %]">
+                                            <input type="hidden" name="AccountID" value="[% Data.AccountID %]">
+                                            [% IF Data.IsInvoker %]
+                                            <button class="CallForAction Primary" id="Submit[% Data.AccountCtx %][% Data.AccountID %]" type="submit" value="[% Translate("Refresh") | html %]"><span>[% Translate("Refresh") | html %]</span></button>
+                                            [% END %]
+                                        </div>
+                                    </fieldset>
+                                </form>
+                            </td>
+                        </tr>
+[% RenderBlockEnd("OverviewResultRow") %]
+                        <tr class="FilterMessage Hidden">
+                            <td colspan="5">[% Translate("No matches found.") | html %]</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+[% RenderBlockEnd("OverviewResult") %]
+
+[% RenderBlockStart("OverviewUpdateInvoker") %]
+            <div class="Header">
+                [% IF Data.Action == 'AddInvoker' %]
+                    <h2>[% Translate("Add Invoker Account") | html %]</h2>
+                [% ELSE %]
+                    <h2>[% Translate("Edit Invoker Account") | html %]</h2>
+                [% END %]
+            </div>
+            <div class="Content">
+                <form action="[% Env("CGIHandle") %]" method="post" class="Validate PreventMultipleSubmits">
+                    <input type="hidden" name="Action" value="[% Env("Action") %]"/>
+                    <input type="hidden" name="Subaction" value="[% Data.Action | uri %]Action"/>
+                    <input type="hidden" name="AccountCtx" value="[% Data.AccountCtx | html %]"/>
+                    [% IF Data.Action == 'Change' %]
+                        <input type="hidden" name="ContinueAfterSave" id="ContinueAfterSave" value=""/>
+                    [% END %]
+                    <fieldset class="TableLike">
+
+                        <div class="Field">
+                            <p class="Error">[% Data.TokenError %]</p>
+                        </div>
+
+                        <label class="Mandatory" for="AccountName"><span class="Marker">*</span> [% Translate("Account Name") | html %]:</label>
+                        <div class="Field">
+                        [% IF Data.Action == 'AddInvoker' %]
+                            <input type="text" name="AccountName" value="[% Data.AccountName | html %]" class="W50pc Validate_Required" />
+                            <p class="Error">[% Data.AccountNameServerError %]</p>
+                            <p class="FieldExplanation">
+                                [% Translate("The unique name for this Account.") | html %]
+                            </p>
+
+                        [% ELSE %]
+                            <input type="text" name="AccountName" value="[% Data.AccountName | html %]" class="W50pc" readonly="readonly" />
+                            <p class="FieldExplanation">
+                                [% Translate("The unique name for this Account.") | html %]
+                            </p>
+                        [% END %]
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label class="Mandatory" for="ProviderName"><span class="Marker">*</span> [% Translate("OIDC Profile") | html %]:</label>
+                        <div class="Field">
+                            [% Data.ProviderNames %]
+                            <p class="FieldExplanation">
+                                [% Translate("The OpenID Connect Provider to use for this functional account.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label class="Mandatory" for="GrantType"><span class="Marker">*</span> [% Translate("Grant Type") | html %]:</label>
+                        <div class="Field">
+                            [% Data.GrantTypes %]
+                            <p class="FieldExplanation">
+                                [% Translate("The OAuth2 grant_type to use for acquiring tokens for this account.") | html %]
+                                <br>
+                                [% Translate("Selecting 'authorization_code' will redirect you to your OpenID Connect Provider's Login Page to validate your account once you click 'Save'.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label class="Mandatory" for="Username"><span class="Marker">*</span> [% Translate("Username") | html %]:</label>
+                        <div class="Field" id="UsernameField">
+                            <input type="text" name="Username" id="Username" value="[% Data.Username | html %]" class="W50pc Validate_Required [% Data.UsernameInvalid | html %]" maxlength="200"/>
+                            <p class="Error">[% Data.UsernameServerError %]</p>
+                            <p class="FieldExplanation">
+                                [% Translate("The username if grant type is 'password.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label class="Mandatory" for="Password"><span class="Marker">*</span> [% Translate("Password") | html %]:</label>
+                        <div class="Field" id="PasswordField">
+                            <input type="password" name="Password" id="Password" value="[% Data.Password | html %]" class="W50pc Validate_Required [% Data.PasswordInvalid | html %]" maxlength="200"/>
+                            <p class="Error">[% Data.PasswordServerError %]</p>
+                            <p class="FieldExplanation">
+                                [% Translate("The password to use if grant type is 'password'.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label for="InvokerScopes">[% Translate("OAuth2 Scopes") | html %]:</label>
+                        <div class="Field">
+                            <input type="text" name="InvokerScopes" id="InvokerScopes" value="[% Data.InvokerScopes | html %]" class="W50pc" maxlength="250"/>
+                            <p class="FieldExplanation">
+                                [% Translate("Space separate list of OAuth2 scopes to use. Usual values include openid, email, profile, and roles.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+                    </fieldset>
+
+                    <div class="Field">
+                        <h2>Advanced Invoker Settings</h2>
+                    </div>
+
+                    <fieldset class="TableLike">
+
+                        <label for="Resources">[% Translate("Resources") | html %]:</label>
+                        <div class="Field">
+                            <input type="text" name="Resources" id="Resources" value="[% Data.Resources | html %]" class="W50pc" maxlength="250"/>
+                            <p class="FieldExplanation">
+                                [% Translate("Optional (space seperated list) for the resource paramater if required. Leave empty unless instructed otherwise.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label for="ResourceParam">[% Translate("Resource Parameter Name") | html %]:</label>
+                        <div class="Field">
+                            <input type="text" name="ResourceParam" id="ResourceParam" value="[% Data.ResourceParam | html %]" class="W50pc" maxlength="250"/>
+                            <p class="FieldExplanation">
+                                [% Translate("Name of the resource parameter to use. Defaults to 'resource'. Do not change unless instructed.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label class="Mandatory" for="TokenType"><span class="Marker">*</span> [% Translate("Token Type") | html %]:</label>
+                        <div class="Field">
+                            <input type="text" name="TokenType" id="TokenType" value="[% Data.TokenType | html %]" class="W50pc" maxlength="250"/>
+                            <p class="FieldExplanation">
+                                [% Translate("The token type to use for externall API calls. Usually 'access_token'.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+
+                        <div class="Field SpacingTop">
+                            [% IF Data.Action == 'Change' %]
+                                <button class="CallForAction Primary" id="SubmitAndContinue" type="button" value="[% Translate("Save") | html %]"><span>[% Translate("Save") | html %]</span></button>
+                                [% Translate("or") | html %]
+                                <button class="CallForAction Primary" id="Submit" type="submit" value="[% Translate("Save") | html %]"><span>[% Translate("Save and finish") | html %]</span></button>
+                            [% ELSE %]
+                                <button class="CallForAction Primary" id="Submit" type="submit" value="[% Translate("Save") | html %]"><span>[% Translate("Save") | html %]</span></button>
+                            [% END %]
+                            [% Translate("or") | html %]
+                            <a href="[% Env("Baselink") %]Action=[% Env("Action") %]">[% Translate("Cancel") | html %]</a>
+                        </div>
+                        <div class="Clear"></div>
+                    </fieldset>
+                </form>
+            </div>
+[% RenderBlockEnd("OverviewUpdateInvoker") %]
+
+[% RenderBlockStart("OverviewUpdateProvider") %]
+            <div class="Header">
+                [% IF Data.Action == 'AddProvider' %]
+                    <h2>[% Translate("Add Provider Account") | html %]</h2>
+                [% ELSE %]
+                    <h2>[% Translate("Edit Provider Account") | html %]</h2>
+                [% END %]
+            </div>
+            <div class="Content">
+                <form action="[% Env("CGIHandle") %]" method="post" class="Validate PreventMultipleSubmits">
+                    <input type="hidden" name="Action" value="[% Env("Action") %]"/>
+                    <input type="hidden" name="Subaction" value="[% Data.Action | uri %]Action"/>
+                    <input type="hidden" name="AccountCtx" value="[% Data.AccountCtx | html %]"/>
+                    [% IF Data.Action == 'Change' %]
+                        <input type="hidden" name="ContinueAfterSave" id="ContinueAfterSave" value=""/>
+                    [% END %]
+                    <fieldset class="TableLike">
+
+                        <label class="Mandatory" for="AccountName"><span class="Marker">*</span> [% Translate("Account Name") | html %]:</label>
+                        <div class="Field">
+                        [% IF Data.Action == 'AddProvider' %]
+                            <input type="text" name="AccountName" value="[% Data.AccountName | html %]" class="W50pc Validate_Required" />
+                            <p class="Error">[% Data.AccountNameServerError %]</p>
+                            <p class="FieldExplanation">
+                                [% Translate("The unique name for this Account.") | html %]
+                            </p>
+
+                        [% ELSE %]
+                            <input type="text" name="AccountName" value="[% Data.AccountName | html %]" class="W50pc" readonly="readonly" />
+                            <p class="FieldExplanation">
+                                [% Translate("The unique name for this Account.") | html %]
+                            </p>
+                        [% END %]
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label class="Mandatory" for="ProviderName"><span class="Marker">*</span> [% Translate("OIDC Profile") | html %]:</label>
+                        <div class="Field">
+                            [% Data.ProviderNames %]
+                            <p class="FieldExplanation">
+                                [% Translate("The OpenID Connect Provider to use for this functional account.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label class="Mandatory" for="UID"><span class="Marker">*</span> [% Translate("UID") | html %]:</label>
+                        <div class="Field">
+                            <input type="text" name="UID" value="[% Data.UID | html %]" class="W50pc Validate_Required" />
+                            <p class="Error">[% Data.UIDServerError %]</p>
+                            <p class="FieldExplanation">
+                                [% Translate("The claim to use for mapping a token to the Otobo login. Default value is 'sub'.") | html %]
+                                <br>
+                                [% Translate("The mapped User must exist in otobo for the operation to execute sucessfulyly.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label class="" for="UserLogin">[% Translate("User Login") | html %]:</label>
+                        <div class="Field">
+                            <input type="text" name="UserLogin" id="UserLogin" value="[% Data.UserLogin | html %]" class="W50pc [% Data.UsernameInvalid | html %]" maxlength="200"/>
+                            <p class="FieldExplanation">
+                                [% Translate("UserLogin required to match incoming access tokens. This user must exists in Otobo, and the matched login must be the same as in the Otobo user table.") | html %]
+                                <br>
+                                [% Translate("If left empty, all valid tokens that map to a valid otobo Username (accoring to the 'UID' Setting above) are allowed.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+                    </fieldset>
+
+                    <div class="Field">
+                        <h2>Advanced Provider Settings</h2>
+                    </div>
+
+                    <fieldset class="TableLike">
+
+                        <label class="" for="ProviderScopes">[% Translate("Optional OAuth2 Scopes") | html %]:</label>
+                        <div class="Field">
+                            <input type="text" name="ProviderScopes" id="ProviderScopes" value="[% Data.ProviderScopes | html %]" class="W50pc" maxlength="250"/>
+                            <p class="FieldExplanation">
+                                [% Translate("Optional OAuth scope claims required to exists in incoming bearer tokens invoking this operation.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label for="Audience">[% Translate("Optional Audience") | html %]:</label>
+                        <div class="Field">
+                            <input type="text" name="Audience" id="Audience" value="[% Data.Audience | html %]" class="W50pc" maxlength="250"/>
+                            <p class="FieldExplanation">
+                                [% Translate("Optional OIDC Audience to check incoming Tokens for. Defaults to empty.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <label for="AuthorizedParty">[% Translate("Optional Authorized Party") | html %]:</label>
+                        <div class="Field">
+                            <input type="text" name="AuthorizedParty" id="AuthorizedParty" value="[% Data.AuthorizedParty | html %]" class="W50pc" maxlength="250"/>
+                            <p class="FieldExplanation">
+                                [% Translate("Optional check incoming token's Authorized Party ('azp') . Defaults to emptyy.") | html %]
+                            </p>
+                        </div>
+                        <div class="Clear"></div>
+
+                        <div class="Field SpacingTop">
+                            [% IF Data.Action == 'Change' %]
+                                <button class="CallForAction Primary" id="SubmitAndContinue" type="button" value="[% Translate("Save") | html %]"><span>[% Translate("Save") | html %]</span></button>
+                                [% Translate("or") | html %]
+                                <button class="CallForAction Primary" id="Submit" type="submit" value="[% Translate("Save") | html %]"><span>[% Translate("Save and finish") | html %]</span></button>
+                            [% ELSE %]
+                                <button class="CallForAction Primary" id="Submit" type="submit" value="[% Translate("Save") | html %]"><span>[% Translate("Save") | html %]</span></button>
+                            [% END %]
+                            [% Translate("or") | html %]
+                            <a href="[% Env("Baselink") %]Action=[% Env("Action") %]">[% Translate("Cancel") | html %]</a>
+                        </div>
+                        <div class="Clear"></div>
+                    </fieldset>
+                </form>
+            </div>
+[% RenderBlockEnd("OverviewUpdateProvider") %]
+
+        </div>
+    </div>
+    <div class="Clear"></div>
+</div>
+[% RenderBlockEnd("Overview") %]
