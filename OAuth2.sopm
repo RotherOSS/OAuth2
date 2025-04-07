@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<otobo_package version="1.0">
+    <Name>OAuth2</Name>
+    <Version>0.0.0</Version>
+    <Framework>11.0.x</Framework>
+    <Vendor>Rother OSS GmbH</Vendor>
+    <URL>https://otobo.io/</URL>
+    <License>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007</License>
+    <Description Lang="en">OAuth2/OpenIDConnect Token Management.</Description>
+    <Filelist>
+        <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.Admin.GenericInterfaceTransportHTTPRESTWebserviceTicketInvoker.js" />
+        <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.Admin.OAuth2Module.js" />
+        <File Permission="660" Location="Kernel/Modules/AdminOAuthTokenStore.pm" />
+        <File Permission="660" Location="Kernel/Config/Files/XML/OAuth2.xml" />
+        <File Permission="660" Location="Kernel/Output/HTML/Templates/Standard/AdminOAuthTokenStore.tt" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/TokenProvider.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/TokenRepository.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/TokenStoreUpdater.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/FunctionalAccounts.pm" />
+        <File Permission="660" Location="Custom/Kernel/Modules/AdminGenericInterfaceTransportHTTPREST.pm" />
+        <File Permission="660" Location="Custom/Kernel/Output/HTML/Templates/Standard/AdminGenericInterfaceTransportHTTPREST.tt" />
+        <File Permission="660" Location="Custom/Kernel/GenericInterface/Operation/Session/SessionCreate.pm" />
+        <File Permission="660" Location="Custom/Kernel/GenericInterface/Operation/Session/Common.pm" />
+        <File Permission="660" Location="Custom/Kernel/GenericInterface/Transport/HTTP/REST.pm" />
+        <File Permission="660" Location="Custom/Kernel/System/WebUserAgent.pm" />
+        <File Permission="660" Location="Custom/Kernel/System/OpenIDConnect.pm" />
+    </Filelist>
+    <DatabaseInstall Type="post">
+        <TableCreate Name="token_storage">
+            <Column Name="id" Required="true" PrimaryKey="true" AutoIncrement="true" Type="BIGINT" />
+            <Column Name="account_ctx" Required="true" Size="25" Type="VARCHAR" />
+            <Column Name="account_id" Required="true" Size="150" Type="VARCHAR" />
+            <Column Name="token_type" Required="true" Size="20" Type="VARCHAR" />
+            <Column Name="token" Required="true" Type="LONGBLOB" />
+            <Column Name="expires_at" Required="false" Type="BIGINT" />
+        </TableCreate>
+    </DatabaseInstall>
+    <DatabaseUninstall Type="pre">
+        <TableDrop Name="token_storage">
+        </TableDrop>
+    </DatabaseUninstall>
+</otobo_package>
