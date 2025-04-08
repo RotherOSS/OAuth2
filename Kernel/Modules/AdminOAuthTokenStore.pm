@@ -234,6 +234,24 @@ sub Run {
                     Error    => Translatable('Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD COnfiguration!'),
                     Priority => 'Error'
                 );
+
+                $Self->_EditInvoker(
+                    Action => 'EditInvoker',
+                    %GetParam,
+                );
+
+                $LayoutObject->Block(
+                    Name => 'ActionDelete',
+                    Data => \%GetParam
+                );
+
+                $Output .= $LayoutObject->Output(
+                    TemplateFile => 'AdminOAuthTokenStore',
+                    TokenError   => Translatable('Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD COnfiguration!'),,
+                    Data         => \%Param,
+                );
+                $Output .= $LayoutObject->Footer();
+                return $Output;
             }
         }
         else {
@@ -248,7 +266,25 @@ sub Run {
                     Error    => $TokenResult->{Error},
                     Priority => 'Error'
                 );
-            }
+
+                $Self->_EditInvoker(
+                    Action => 'EditInvoker',
+                    %GetParam,
+                );
+
+                $LayoutObject->Block(
+                    Name => 'ActionDelete',
+                    Data => \%GetParam
+                );
+
+                $Output .= $LayoutObject->Output(
+                    TemplateFile => 'AdminOAuthTokenStore',
+                    TokenError   => $TokenResult->{Error},
+                    Data         => \%Param,
+                );
+                $Output .= $LayoutObject->Footer();
+                return $Output;
+            }           
         }
     }
 

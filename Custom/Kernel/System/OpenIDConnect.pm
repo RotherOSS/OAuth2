@@ -146,6 +146,9 @@ sub BuildRedirectURL {
     elsif ( $Param{Scope} ) {
         $RedirectURL .= '&scope=' . join( '%20', ( @{ $Param{AuthRequest}{Scope} // [] } ) );
     }
+    else {
+        $RedirectURL .= '&scope=openid';
+    }
 # EO / OAuth2    
     $RedirectURL .= '&client_id=' . $Param{ClientSettings}{ClientID};
     $RedirectURL .= '&state=' . $Param{AuthRequest}{State};
@@ -176,6 +179,7 @@ sub BuildRedirectURL {
     }
 # EO / OAuth2
 
+print STDERR "$RedirectURL\n";
     return $RedirectURL;
 }
 
@@ -284,6 +288,9 @@ sub RequestIDToken {
     my $DecodedContent = $Kernel::OM->Get('Kernel::System::JSON')->Decode(
         Data => $Content,
     );
+
+use Data::Dumper;
+print STDERR Dumper($DecodedContent) ."\n";
 
     if ( $DecodedContent->{error} || !$DecodedContent->{id_token} ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(

@@ -985,12 +985,12 @@ sub _SendRequest {
     if ( $DecodedContent->{error} ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'error',
-            Message  => "Got error when requesting Token. Error: $DecodedContent->{error}; Description: $DecodedContent->{error_description};",
+            Message  => "$DecodedContent->{error}; Description: $DecodedContent->{error_description};",
         );
 
         return {
             Success => 0,
-            Error   => "Got error when requesting Token. Error: $DecodedContent->{error}; Description: $DecodedContent->{error_description};",
+            Error   => "$DecodedContent->{error}; Description: $DecodedContent->{error_description};",
         };
     }
 
