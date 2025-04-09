@@ -29,9 +29,12 @@ use Plack::Runner;
 use Plack::Request;
 use Try::Tiny qw(try catch);
 use JSON;
+use Data::Dumper;
 
 # OTOBO modules
 use Kernel::System::UnitTest::RegisterOM;    # set up $Kernel::OM
+
+my $CurrentTime = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
 
 
 #################################################################
@@ -48,7 +51,7 @@ my $KidID         = '2QqRmKFkfpBHoO4cj-yVfrHJykIBLOMbbe7qBvU5Unk';
 
 
 #################################################################
-# start test server
+# start test authorization server
 #################################################################
 
 my $ChildPID = fork();
@@ -65,9 +68,15 @@ if ( !$ChildPID ) {
             my $env = shift; # PSGI env
             my $req = Plack::Request->new($env);
 
+            # print STDERR "\n-------------------------------------------->\n";
+            # print STDERR $req->path()."\n";
+            # print STDERR $req->content()."\n";
+            # print STDERR Dumper($req->headers())."\n";
+
             if($req->path() eq '/realms/master/.well-known/openid-configuration') {
 
-                # test fixture from hell
+                # the test fixture from hell
+                # recorded from conversations with keycloak
                 my $Data = {
                     "issuer" => "http://localhost:2007/realms/master",
                     "authorization_endpoint" => "http://localhost:2007/realms/master/protocol/openid-connect/auth",
@@ -164,6 +173,37 @@ if ( !$ChildPID ) {
                     [ encode_json($Data) ] 
                 ];
             }
+            elsif( $req->path() eq '/realms/master/protocol/openid-connect/token') {
+ 
+                # this is the token endpoint, generate a fresh JWT token and return it
+
+                if($req->headers()->{authorization} ne 'Basic b3RvYm86MTIzNDU2Nzg5ODc2NTQzMjE=') {
+
+                    return [ 
+                        401, 
+                        ["Content-Type" => 'application/json'], 
+                        [ ] 
+                    ];
+                }
+
+                my $Token = encode_jwt(
+                    payload       => Payload(), 
+                    alg           =>'RS256', 
+                    key           => $PrivateKey,
+                    extra_headers => { kid => $KidID },    
+                );
+
+                my $Data = {
+                    access_token  => $Token,
+                    refresh_token => $Token,
+                };
+
+                return [ 
+                    200, 
+                    ["Content-Type" => 'application/json'], 
+                    [ encode_json($Data) ] 
+                ];
+            }
 
             return [ 
                 404, 
@@ -191,67 +231,34 @@ if ( !$ChildPID ) {
 # wait for the fake authorization server to come up
 sleep 1;
 
-# the OpenIDConfig we will use. This would normally come from SysConfig
+my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
+my $TokenProvider     = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
+my $TokenRepository   = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
+my $OIDCConfiguration = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
 
-my $OpenIDConfig = {
-    'ClientSettings' => {
-        'ClientSecret' => '12345678987654321',
-        'ClientID' => 'otobo',
-        'RedirectURI' => 'http://localhost/otobo/index.pl?Action=Login',
-    },
-    'ProviderSettings' => {
-        'TTL' => 1800,
-        'OpenIDConfiguration' => 'http://localhost:2007/realms/master/.well-known/openid-configuration',
-        'Name' => 'UnitTest',
-        'SSLOptions' => {
-            'SSLVerifyMode' => 0,
-            'SSLVerifyHostname' => 0,
-        },
-    },
-};
+# the OpenIDConfig we will use. This would normally come from SysConfig
+my $OpenIDConfig = GetTestOpenIDConfig();
 
 # make sure cache is clean for testing
-
-my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
-$OIDCConfigurationObject->GetProviderData(
+$OIDCConfiguration->GetProviderData(
     OpenIDConfig => $OpenIDConfig,
     NoCache => 1,
 );
+Cleanup();
+
+
+#################################################################
+# Test 1) - validate a simple Token using OIDC metadata
+#################################################################
 
 # create a JWT to test, sign using our private RSA key from above
 
-my $CurrentTime = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
-
-my $Payload = {
-  "exp"                => $CurrentTime+600,
-  "iat"                => $CurrentTime,
-  "jti"                => "29a2f4ba-6bfa-457b-afa1-469e6f4dc2c0",
-  "iss"                => "http://localhost:2007/realms/master",
-  "aud"                => [
-    "otobo",
-    "account"
-  ],
-  "sub"                => "9c3e1839-b468-4cda-a39a-d969ead45a40",
-  "typ"                => "Bearer",
-  "azp"                => "otobo",
-  "sid"                => "bac62d82-40f7-455c-9f3f-8e0316e61f5b",
-  "acr"                => "1",
-  "scope"              => "openid email profile roles",
-  "email_verified"     => 1,
-  "name"               => "testy 1 tester 1",
-  "preferred_username" => 'test1@example.com',
-  "given_name"         => "testy 1",
-  "family_name"        => "tester 1",
-  "email"              => 'test1@example.com'
-};
-
 my $Token = encode_jwt(
-    payload       => $Payload, 
+    payload       => Payload(), 
     alg           =>'RS256', 
     key           => $PrivateKey,
     extra_headers => { kid => $KidID },    
 );
-
 
 # now validate this token, which will talk to our fake authorization server
 # and fetch the public key to validate the signature
@@ -262,11 +269,190 @@ my $Result = $TokenObject->Validate(
     Token        => $Token,
     OpenIDConfig => $OpenIDConfig,
 );
-
-# that was a lot of work for a single assertion :)
 ok($Result->{Success});
+
+
+#################################################################
+# Test 2) - Fetch a Token from token_endpoint and validate it
+#################################################################
+
+# patch sysconfig just for this process / request
+PrepareTestSysConfig();
+
+# use TokenProvider to fetch a Token for the configured unit test account
+
+# 1) fetch a fresh token
+$Result = $TokenProvider->Fetch(
+    AccountID => '_UnitTest1',
+ );
+
+ok($Result->{Success});
+ok($Result->{Origin} eq 'fresh_token');
+
+$Token = $Result->{Token};
+
+# validate it, one last time
+$Result = $TokenObject->Validate(
+     Token        => $Token,
+     OpenIDConfig => $OpenIDConfig,
+);
+ok($Result->{Success});
+
+# 2) fetch again, now comes from cache
+$Result = $TokenProvider->Fetch(
+    AccountID => '_UnitTest1',
+ );
+
+ok($Result->{Success});
+ok($Result->{Origin} eq 'cache');
+
+# 3) clean cache, now comes from DB
+CleanupCache();
+
+$Result = $TokenProvider->Fetch(
+    AccountID => '_UnitTest1',
+ );
+
+ok($Result->{Success});
+ok($Result->{Origin} eq 'db');
+
+# 3) clean cache and DB, now using refresh_token
+CleanupCache();
+$TokenRepository->Delete(
+    AccountID   => '_UnitTest1',
+    TokenType   => 'access_token',
+);
+
+$Result = $TokenProvider->Fetch(
+    AccountID => '_UnitTest1',
+ );
+
+ok($Result->{Success});
+ok($Result->{Origin} eq 'refresh_token');
+
+# 4) clean cache,DB and refresh_token - 
+
+Cleanup();
+$Result = $TokenProvider->Fetch(
+    AccountID => '_UnitTest1',
+ );
+
+ok($Result->{Success});
+ok($Result->{Origin} eq 'fresh_token');
+
+#################################################################
+# Test 3) - Fetch a Token with invalid credentials
+#################################################################
+
+Cleanup();
+$OpenIDConfig->{ClientSettings}->{ClientSecret} = 'murks';
+PrepareTestSysConfig();
+
+$Result = $TokenProvider->Fetch(
+    AccountID => '_UnitTest1',
+ );
+
+ok(!$Result->{Success});
+
+# over and out
 done_testing;
+
+Cleanup();
 
 # tear down fake server
 kill( 'TERM', $ChildPID );
 waitpid( $ChildPID, 0 );
+
+sub GetTestOpenIDConfig {
+
+    my $OpenIDConfig = {
+        'ClientSettings' => {
+            'ClientSecret' => '12345678987654321',
+            'ClientID' => 'otobo',
+            'RedirectURI' => 'http://localhost/otobo/index.pl?Action=Login',
+        },
+        'ProviderSettings' => {
+            'TTL' => 1800,
+            'OpenIDConfiguration' => 'http://localhost:2007/realms/master/.well-known/openid-configuration',
+            'Name' => 'UnitTest',
+            'SSLOptions' => {
+                'SSLVerifyMode' => 0,
+                'SSLVerifyHostname' => 0,
+            },
+        },
+    };
+    return $OpenIDConfig;    
+}
+
+# helper for creating test JWT payloads
+sub Payload {
+
+    return {
+        "exp"                => $CurrentTime+600,
+        "iat"                => $CurrentTime,
+        #  "jti"                => "29a2f4ba-6bfa-457b-afa1-469e6f4dc2c0",
+        "iss"                => "http://localhost:2007/realms/master",
+        "aud"                => [
+            "otobo",
+            "account"
+        ],
+        "sub"                => "9c3e1839-b468-4cda-a39a-d969ead45a40",
+        "typ"                => "Bearer",
+        "azp"                => "otobo",
+        #  "sid"                => "bac62d82-40f7-455c-9f3f-8e0316e61f5b",
+        "acr"                => "1",
+        "scope"              => "openid email profile roles",
+        "email_verified"     => 1,
+        "name"               => "testy 1 tester 1",
+        "preferred_username" => 'test1@example.com',
+        "given_name"         => "testy 1",
+        "family_name"        => "tester 1",
+        "email"              => 'test1@example.com'
+    };
+}
+
+# patch sysconfig just for this process / request
+
+sub PrepareTestSysConfig {
+
+    # configure an OIDC Profile for the unit test
+    $ConfigObject->Set(
+        Key   => 'OpenIDConnect::OICDProvider::_UnitTest1',
+        Value => $OpenIDConfig,
+    );
+
+    # configure a functional account that uses above config
+    $ConfigObject->Set(
+        Key => 'OpenIDConnect::FunctionalAccounts',
+        Value => {
+            '_UnitTest1' => {
+
+                OpenIDConfig      =>'OpenIDConnect::OICDProvider::_UnitTest1',
+                GrantType         => 'client_credentials',
+                Scope             => 'openid',
+                Resources         => '',
+                ResourceParamName => '',
+                Token             => 'access_token',
+                # Username        => $Param{Username},
+                # Password        => $Param{Password},
+            }
+        },
+    );
+}
+
+sub Cleanup {
+
+    # cleanup cache and db
+    $TokenRepository->Delete(
+        AccountID => '_UnitTest1',
+    );
+
+    CleanupCache();
+}
+
+sub CleanupCache {
+
+    $TokenProvider->EmptyCache(
+        AccountID => '_UnitTest1',
+    );
+}

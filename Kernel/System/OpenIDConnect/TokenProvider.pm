@@ -153,10 +153,14 @@ sub Fetch {
         TokenType  => $TokenType,
     );
 
-    return {
-        Success => 1,
-        Token   => $Token,
-    } if $Token && $TokenObject->IsTokenStillValid( Token => $Token );
+    if( $Token && $TokenObject->IsTokenStillValid( Token => $Token ) ) {
+
+        return {
+            Success => 1,
+            Token   => $Token,
+            Origin  => 'cache',
+        };
+    }
 
     # 2) try fetch from DB
     my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
@@ -168,10 +172,14 @@ sub Fetch {
 
     $Token = $TokenData->{Token};
 
-    return {
-        Success => 1,
-        Token   => $Token,
-    } if $Token && $TokenObject->IsTokenStillValid( Token => $Token );
+    if( $Token && $TokenObject->IsTokenStillValid( Token => $Token ) ) {
+
+        return {
+            Success => 1,
+            Token   => $Token,
+            Origin  => 'db',
+        };
+    }
 
     # 3) try refresh_token, if any
 
@@ -188,12 +196,14 @@ sub Fetch {
             RefreshToken => $RefreshToken->{Token},
         );
 
-        return $Result unless $Result->{Success};
+        if( $Result->{Token} && $TokenObject->IsTokenStillValid( Token => $Result->{Token} ) ) {
 
-        return {
-            Success => 1,
-            Token   => $Result->{Token},
-        } if $Result->{Token} && $TokenObject->IsTokenStillValid( Token => $Result->{Token} );
+            return {
+                Success => 1,
+                Token   => $Result->{Token},
+                Origin  => 'refresh_token'
+            };
+        }
     }
 
     # 4) if grant_type is not 'authorization_code' try fetch fresh token
@@ -509,6 +519,7 @@ sub FetchToken {
     return {
         Success => 1,
         Token   => $Token,
+        Origin  => 'fresh_token',
     };
 }
 
@@ -867,10 +878,6 @@ sub _SendRequest {
     my $Content  = $Response->content();
 
     if ( !$Content ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "Got no content when requesting Token. Response Code: $Response->code();",
-        );
 
         return {
             Success => 0,
@@ -884,10 +891,6 @@ sub _SendRequest {
     );
 
     if ( !IsHashRefWithData($DecodedContent) ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "Got error when requesting IDToken. Returned data (raw): '$Content'",
-        );
 
         return {
             Success => 0,
@@ -897,11 +900,6 @@ sub _SendRequest {
 
     # fetch the desired token (access_token (default) or id_token)
     if ( $DecodedContent->{error} ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "$DecodedContent->{error}; Description: $DecodedContent->{error_description};",
-        );
-
         return {
             Success => 0,
             Error   => $LanguageObject->Translate("Error: %s. Description: %s", $DecodedContent->{erro}, $DecodedContent->{error_description}),
