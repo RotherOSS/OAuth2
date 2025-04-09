@@ -33,6 +33,7 @@ use Plack::Response ();
 # OTOBO modules
 use Kernel::System::VariableCheck  qw(:all);
 use Kernel::System::Web::Exception ();
+use Kernel::Language               qw(Translatable);
 
 our $ObjectManagerDisabled = 1;
 
@@ -710,13 +711,12 @@ sub RequesterPerformRequest {
 
             my $TokenResult = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider')->Fetch(
                 AccountID  => $AccountName,
-                AccountCtx => 'Invoker',
             );
 
             if ( !$TokenResult->{Success} ) {
 
                 $Self->{DebuggerObject}->Debug(
-                    Summary => "Error fetching Token",
+                    Summary => Translatable("Error fetching the OAuth2 Token"),
                     Data    => $TokenResult->{Error},
                 );
 
@@ -729,7 +729,7 @@ sub RequesterPerformRequest {
             my $Token = $TokenResult->{Token};
 
             $Self->{DebuggerObject}->Debug(
-                Summary => "Attached Bearer Token",
+                Summary => Translatable("Attached OAuth2 Bearer Token"),
                 Data    => $Token,
             );
 

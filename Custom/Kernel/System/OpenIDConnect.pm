@@ -140,8 +140,8 @@ sub BuildRedirectURL {
     $RedirectURL .= '?response_type=' . join( '%20', @{ $Param{AuthRequest}{ResponseType} } );
 # Rother OSS / OAuth2    
 #   $RedirectURL .= '&scope=' . join( '%20', ( 'openid', @{ $Param{AuthRequest}{AdditionalScope} // [] } ) );    
-    if ( $Param{AdditionalScope} ) {
-        $RedirectURL .= '&scope=' . join( '%20', ( 'openid', @{ $Param{AuthRequest}{AdditionalScope} // [] } ) );
+    if ( $Param{AuthRequest}->{AdditionalScope} ) {
+        $RedirectURL .= '&scope=' . join( '%20', ( 'openid', @{ $Param{AuthRequest}->{AdditionalScope} // [] } ) );
     }
     elsif ( $Param{Scope} ) {
         $RedirectURL .= '&scope=' . join( '%20', ( @{ $Param{AuthRequest}{Scope} // [] } ) );
@@ -179,7 +179,6 @@ sub BuildRedirectURL {
     }
 # EO / OAuth2
 
-print STDERR "$RedirectURL\n";
     return $RedirectURL;
 }
 
@@ -288,9 +287,6 @@ sub RequestIDToken {
     my $DecodedContent = $Kernel::OM->Get('Kernel::System::JSON')->Decode(
         Data => $Content,
     );
-
-use Data::Dumper;
-print STDERR Dumper($DecodedContent) ."\n";
 
     if ( $DecodedContent->{error} || !$DecodedContent->{id_token} ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(

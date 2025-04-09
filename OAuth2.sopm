@@ -10,6 +10,8 @@
     <Filelist>
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.Admin.GenericInterfaceTransportHTTPRESTWebserviceTicketInvoker.js" />
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.Admin.OAuth2Module.js" />
+        <File Permission="660" Location="Kernel/Language/de_OAuth2.pm" />
+        <File Permission="660" Location="Kernel/Language/en_OAuth2.pm" />
         <File Permission="660" Location="Kernel/Modules/AdminOAuthTokenStore.pm" />
         <File Permission="660" Location="Kernel/Config/Files/XML/OAuth2.xml" />
         <File Permission="660" Location="Kernel/Output/HTML/Templates/Standard/AdminOAuthTokenStore.tt" />
@@ -17,18 +19,23 @@
         <File Permission="660" Location="Kernel/System/OpenIDConnect/TokenRepository.pm" />
         <File Permission="660" Location="Kernel/System/OpenIDConnect/TokenStoreUpdater.pm" />
         <File Permission="660" Location="Kernel/System/OpenIDConnect/FunctionalAccounts.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/UserMappings.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/Configuration.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/Token.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/Authenticator.pm" />
         <File Permission="660" Location="Custom/Kernel/Modules/AdminGenericInterfaceTransportHTTPREST.pm" />
         <File Permission="660" Location="Custom/Kernel/Output/HTML/Templates/Standard/AdminGenericInterfaceTransportHTTPREST.tt" />
         <File Permission="660" Location="Custom/Kernel/GenericInterface/Operation/Session/SessionCreate.pm" />
         <File Permission="660" Location="Custom/Kernel/GenericInterface/Operation/Session/Common.pm" />
         <File Permission="660" Location="Custom/Kernel/GenericInterface/Transport/HTTP/REST.pm" />
         <File Permission="660" Location="Custom/Kernel/System/WebUserAgent.pm" />
+        <!--
         <File Permission="660" Location="Custom/Kernel/System/OpenIDConnect.pm" />
+        -->
     </Filelist>
     <DatabaseInstall Type="post">
         <TableCreate Name="token_storage">
             <Column Name="id" Required="true" PrimaryKey="true" AutoIncrement="true" Type="BIGINT" />
-            <Column Name="account_ctx" Required="true" Size="25" Type="VARCHAR" />
             <Column Name="account_id" Required="true" Size="150" Type="VARCHAR" />
             <Column Name="token_type" Required="true" Size="20" Type="VARCHAR" />
             <Column Name="token" Required="true" Type="LONGBLOB" />

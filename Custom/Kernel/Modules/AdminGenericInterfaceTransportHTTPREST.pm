@@ -198,10 +198,7 @@ sub Run {
                 $TransportConfig->{Authentication}->{$ParamName} = $GetParam->{$ParamName};
             }
 
-            my $Token = $TokenProvider->Fetch(
-                AccountID  => $GetParam->{OAuthAccountName},
-                AccountCtx => 'Invoker',
-            );
+            my $Token = $TokenProvider->Fetch( AccountID  => $GetParam->{OAuthAccountName} );
 
             if ( !$Token->{Success} ) {
                 $Output .= $LayoutObject->Notify(
@@ -567,23 +564,19 @@ sub _ShowEdit {
         my $FunctionalAccounts = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
 
         my @OAuthAccountNames;
-        my $OAuthAccounts = $FunctionalAccounts->GetOAuthAccounts( AccountCtx => 'Invoker' );
+        my $OAuthAccounts = $FunctionalAccounts->GetAccounts();
         if ( IsHashRefWithData($OAuthAccounts) ) {
 
             @OAuthAccountNames = keys %$OAuthAccounts;
         }
 
-        my $AuthTypes = [ 'BasicAuth', 'Kerberos' ];
-        if ( scalar @OAuthAccountNames ) {
-            push @$AuthTypes, 'OAuth';
-        }
 # EO / OAuth2
 
         # Create Authentication types select.
         $Param{AuthenticationStrg} = $LayoutObject->BuildSelection(
 # Rother OSS / OAuth2   
 #            Data          => [ 'BasicAuth', 'Kerberos' ],
-            Data          => $AuthTypes,
+            Data          => [ 'BasicAuth', 'Kerberos', 'OAuth' ],
 # EO / OAuth2            
             Name          => 'AuthType',
             SelectedValue => $Param{AuthType} || '-',

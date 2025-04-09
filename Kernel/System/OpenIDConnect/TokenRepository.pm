@@ -72,7 +72,6 @@ sub new {
 =head2 Save()
 
     my $Success = $TokenRepositoryObject->Save(
-        AccountCtx => 'Provider'                 # Provider|Invoker|MailAccount|User
         AccountID  => 'FunctionalAccount1',     # FunctionalAccountName|mail_account.id|users.id
         TokenType  => 'refresh',                # access_token|id_token|refresh_token
         Token => '<Token>',                     # as received from token endpoint
@@ -86,7 +85,7 @@ sub Save {
 
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
 
-    for my $Needed (qw/AccountCtx AccountID TokenType Token ExpiresAt/) {
+    for my $Needed (qw/AccountID TokenType Token ExpiresAt/) {
         if ( !$Param{$Needed} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
@@ -97,25 +96,20 @@ sub Save {
         }
     }
 
-    if ( !$Self->ValidateAccountCtx(%Param) ) {
-        return;
-    }
-
     if ( !$Self->ValidateTokenType(%Param) ) {
         return;
     }
 
     $Self->Delete(%Param);
 
-    my $AccountCtx = $Param{AccountCtx};
     my $AccountID  = $Param{AccountID};
     my $TokenType  = $Param{TokenType};
     my $Token      = $Param{Token};
     my $ExpiresAt  = $Param{ExpiresAt};
 
     my $InsertSuccess = $DBObject->Do(
-        SQL  => "INSERT INTO token_storage (account_ctx, account_id, token_type, token, expires_at) VALUES (?, ?, ?, ?, ?)",
-        Bind => [ \$AccountCtx, \$AccountID, \$TokenType, \$Token, \$ExpiresAt ],
+        SQL  => "INSERT INTO token_storage (account_id, token_type, token, expires_at) VALUES (?, ?, ?, ?)",
+        Bind => [ \$AccountID, \$TokenType, \$Token, \$ExpiresAt ],
     );
 
     return $InsertSuccess;
@@ -124,7 +118,6 @@ sub Save {
 =head2 Delete()
 
     my $Success = $TokenRepositoryObject->Delete(
-        AccountCtx => 'Invoker'       # see Save method above
         AccountID   => 'FunctionalAccount1',
         TokenType   => 'refresh',              # optional
     );
@@ -154,7 +147,7 @@ sub Delete {
         return $DeleteSuccess;
     }
 
-    for my $Needed (qw/AccountCtx AccountID/) {
+    for my $Needed (qw/AccountID/) {
         if ( !$Param{$Needed} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
@@ -165,21 +158,16 @@ sub Delete {
         }
     }
 
-    if ( !$Self->ValidateAccountCtx(%Param) ) {
-        return;
-    }
-
     my $TokenType = $Param{TokenType};
 
     if ( $TokenType && !$Self->ValidateTokenType(%Param) ) {
         return;
     }
 
-    my $AccountCtx = $Param{AccountCtx};
     my $AccountID  = $Param{AccountID};
 
-    my $SQL  = "DELETE FROM token_storage WHERE account_ctx = ? AND account_id = ? ";
-    my $Bind = [ \$AccountCtx, \$AccountID, ];
+    my $SQL  = "DELETE FROM token_storage WHERE account_id = ? ";
+    my $Bind = [ \$AccountID, ];
 
     if ($TokenType) {
         $SQL .= "AND token_type = ? ";
@@ -230,7 +218,6 @@ sub Cleanup {
 =head2 Get()
 
     my $TokenData = $TokenRepositoryObject->Get(
-        AccountCtx => 'Provider',
         AccountID  => 'FunctionalAccount1',
         TokenType  => 'refresh',
     );
@@ -245,7 +232,6 @@ sub Cleanup {
 
     $TokenData = {
         TokenID => <id>,
-        AccountCtx => 'Invoker',
         AccountID => '<AccountID>',
         TokenType => 'refresh_token',
         Token => '<Token>',
@@ -266,7 +252,7 @@ sub Get {
         my $TokenID = $Param{TokenID};
 
         $DBObject->Prepare(
-            SQL => "SELECT id, account_ctx, account_id, token_type, token, expires_at
+            SQL => "SELECT id, account_id, token_type, token, expires_at
                       FROM token_storage WHERE id = ?  ",
             Bind  => [ \$TokenID ],
             Limit => 1
@@ -274,7 +260,7 @@ sub Get {
     }
     else {
 
-        for my $Needed (qw/AccountCtx AccountID TokenType/) {
+        for my $Needed (qw/AccountID TokenType/) {
             if ( !$Param{$Needed} ) {
                 $Kernel::OM->Get('Kernel::System::Log')->Log(
                     Priority => 'error',
@@ -285,32 +271,26 @@ sub Get {
             }
         }
 
-        if ( !$Self->ValidateAccountCtx(%Param) ) {
-            return;
-        }
-
         if ( !$Self->ValidateTokenType(%Param) ) {
             return;
         }
 
-        my $AccountCtx = $Param{AccountCtx};
         my $AccountID  = $Param{AccountID};
         my $TokenType  = $Param{TokenType};
 
         $DBObject->Prepare(
-            SQL => "SELECT id, account_ctx, account_id, token_type, token, expires_at
+            SQL => "SELECT id, account_id, token_type, token, expires_at
                       FROM token_storage
-                      WHERE account_ctx = ? AND account_id = ? AND token_type = ? ",
-            Bind  => [ \$AccountCtx, \$AccountID, \$TokenType ],
+                      WHERE account_id = ? AND token_type = ? ",
+            Bind  => [ \$AccountID, \$TokenType ],
             Limit => 1
         );
     }
 
-    if ( my ( $TokenID, $AccountCtx, $AccountID, $TokenType, $Token, $ExpiresAt ) = $DBObject->FetchrowArray ) {
+    if ( my ( $TokenID, $AccountID, $TokenType, $Token, $ExpiresAt ) = $DBObject->FetchrowArray ) {
 
         return {
             TokenID    => $TokenID,
-            AccountCtx => $AccountCtx,
             AccountID  => $AccountID,
             TokenType  => $TokenType,
             Token      => $Token,
@@ -326,7 +306,6 @@ sub Get {
     Get a list of Tokens for Display.
 
     my $Tokens = $TokenRepositoryObject->List(
-        AccountCTx   => 'Invoker',
         ExpiresAfter => Unix epoch timestamp, # optional
         TokenType    => 'refresh_token',      # optional, defaults to 'refresh_token'
     );
@@ -336,7 +315,6 @@ sub Get {
     my $Tokens = [
         {
             TokenID    => 1,
-            AccountCtx => 'Invoker',
             AccountID  => 'FunctionalAccoungt1',
             TokenType  => 'refresh_token',
             Token      => <TokenData>,
@@ -355,22 +333,13 @@ sub List {
 
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
 
-    my $AccountCtx   = $Param{AccountCtx};
     my $ExpiresAfter = $Param{ExpiresAfter};
     my $TokenType    = $Param{TokenType} || 'refresh_token';
 
-    my $SQL  = "SELECT id, account_ctx, account_id, token_type, token, expires_at FROM token_storage ";
-    my $Bind = [];
+    my $SQL  = "SELECT id, account_id, token_type, token, expires_at FROM token_storage ";
+    my $Bind = [ \$TokenType ];
 
-    if ($AccountCtx) {
-
-        $SQL .= "WHERE account_ctx = ? AND token_type = 'refresh_token' ";
-        $Bind = [ \$AccountCtx ];
-    }
-    else {
-
-        $SQL .= "WHERE token_type = 'refresh_token' ";
-    }
+    $SQL .= "WHERE token_type = ? ";
 
     if ($ExpiresAfter) {
 
@@ -378,7 +347,7 @@ sub List {
         push @$Bind, \$ExpiresAfter;
     }
 
-    $SQL .= "ORDER BY account_ctx, account_id, expires_at ";
+    $SQL .= "ORDER BY account_id, expires_at ";
 
     $DBObject->Prepare(
         SQL  => $SQL,
@@ -386,11 +355,10 @@ sub List {
     );
 
     my @Result;
-    while ( my ( $TokenID, $AccountCtx, $AccountID, $TokenType, $Token, $ExpiresAt ) = $DBObject->FetchrowArray ) {
+    while ( my ( $TokenID, $AccountID, $TokenType, $Token, $ExpiresAt ) = $DBObject->FetchrowArray ) {
 
         push @Result, {
             TokenID    => $TokenID,
-            AccountCtx => $AccountCtx,
             AccountID  => $AccountID,
             TokenType  => $TokenType,
             Token      => $Token,
@@ -406,7 +374,6 @@ sub List {
     Get a hashref of Tokens for Display.
 
     my $Tokens = $TokenRepositoryObject->Lookup(
-        AccountCTx   => 'Invoker',
         ExpiresAfter => Unix epoch timestamp, # optional
         TokenType    => 'refresh_token',      # optional, defaults to 'refresh_token'
     );
@@ -416,7 +383,6 @@ sub List {
     my $Tokens = {
         'FunctionalAccount1' = {
             TokenID    => 1,
-            AccountCtx => 'Invoker',
             AccountID  => 'FunctionalAccoungt1',
             TokenType  => 'refresh_token',
             Token      => <TokenData>,
@@ -435,47 +401,14 @@ sub Lookup {
     my $GenericInterfaceTokens = $Self->List(%Param);
 
     # Build a lookup index
-    my %GenericInterfaceTokenLookup = (
-        Provider => {},
-        Invoker  => {},
-    );
+    my %GenericInterfaceTokenLookup = ();
     for my $GenericInterfaceToken (@$GenericInterfaceTokens) {
-        $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountCtx} }->{ $GenericInterfaceToken->{AccountID} } = $GenericInterfaceToken;
+        $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID} } = $GenericInterfaceToken;
     }
 
     return \%GenericInterfaceTokenLookup;
 }
 
-=head2 ValidateAccountCtx()
-
-    Validate AccountCtx value.
-
-    my $Boolean = $TokenRepositoryObject->ValidateAccountCtx( AccountCtx => 'GenericInterface' );
-
-    returns true if AccountCtx is one of GenericInterface|MailAccount|User, false otherwise.
-
-=cut
-
-sub ValidateAccountCtx {
-    my ( $Self, %Param ) = @_;
-
-    if (
-        $Param{AccountCtx} ne 'MailAccount' &&
-        $Param{AccountCtx} ne 'Provider'    &&
-        $Param{AccountCtx} ne 'Invoker'     &&
-        $Param{AccountCtx} ne 'User'
-        )
-    {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "AccountCtx must be one of 'MailAccount,Provider,Invoker,User', but was '$Param{AccountCtx}'.\n",
-        );
-
-        return 0;
-    }
-
-    return 1;
-}
 
 =head2 ValidateTokenType()
 
@@ -491,8 +424,7 @@ sub ValidateTokenType {
     my ( $Self, %Param ) = @_;
 
     if (
-        $Param{TokenType} ne 'access_token'
-        &&
+        $Param{TokenType} ne 'access_token' &&
         $Param{TokenType} ne 'id_token' &&
         $Param{TokenType} ne 'refresh_token'
         )

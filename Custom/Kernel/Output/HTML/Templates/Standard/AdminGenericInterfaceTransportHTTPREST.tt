@@ -256,11 +256,13 @@
                             <div class="OAuthAuthField [% Data.OAuthHidden | html %]">
                                 <fieldset class="TableLike">
 
-                                    <label class="Mandatory" for="OAuthAccountName"><span class="Marker">*</span> [% Translate("OAuth Functional Account") | html %]:</label>
+                                    <label class="Mandatory" for="OAuthAccountName"><span class="Marker">*</span> [% Translate("OAuth2 Functional Account") | html %]:</label>
                                     <div class="Field">
                                         [% Data.OAuthAccountNamesStrg %]
                                         <p class="FieldExplanation">
-                                        [% Translate("Select the OAuth Account to use for OIDC.") | html %]
+                                        [% Translate("Select the") | html %]
+                                        <a target="_blank" href="?Action=AdminOAuthTokenStore">OIDC</a>
+                                        [% Translate("Account to use for OAuth2 authentication.") | html %]
                                         </p>
                                     </div>
                                     <div class="Clear"></div>
