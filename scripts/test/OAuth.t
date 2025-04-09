@@ -177,12 +177,14 @@ if ( !$ChildPID ) {
  
                 # this is the token endpoint, generate a fresh JWT token and return it
 
+                # validate credentials - this expects client_credentials flow so basic auth
+                # has client_id and client_secret from GetTestOpenIDConfig() in the Base64
                 if($req->headers()->{authorization} ne 'Basic b3RvYm86MTIzNDU2Nzg5ODc2NTQzMjE=') {
 
                     return [ 
                         401, 
-                        ["Content-Type" => 'application/json'], 
-                        [ ] 
+                        [], 
+                        [] 
                     ];
                 }
 
