@@ -120,9 +120,6 @@ sub CreateSessionID {
 sub _CreateSessionIDFromBearerToken {
     my ( $Self, %Param ) = @_;
 
-use Data::Dumper;
-print STDERR Dumper(\%Param);
-
     my $Authenticator = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Authenticator');
 	my $Result = $Authenticator->Authenticate(
 		Token => $Param{Data}->{BearerToken},

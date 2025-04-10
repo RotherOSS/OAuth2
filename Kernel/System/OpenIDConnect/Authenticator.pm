@@ -22,12 +22,6 @@ use warnings;
 
 # CPAN modules
 
-use LWP::Simple;
-use LWP::UserAgent;
-use HTTP::Request::Common;
-use URI::Escape qw(uri_escape_utf8);
-use Crypt::JWT  qw(decode_jwt);
-
 # OTOBO modules
 use Kernel::System::VariableCheck qw(:all);
 
@@ -187,12 +181,13 @@ sub _ValidateToken {
     my $ExpectedAudience = $Account->{Audience} || $ClientSettings->{ClientID};
 
     my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
+
     return $TokenObject->Validate(
 		Token                => $Param{Token},
 		OpenIDConfig         => $OpenIDConfig,
 		ExpectedAudience     => $ExpectedAudience,
 		AuthorizedParty      => $Account->{AuthorizedParty},
-        ExpectedAudience     => $Account->{Audience},
+        ExpectedScopes       => $Account->{Scope},
 	);
 }
 

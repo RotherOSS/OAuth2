@@ -194,13 +194,16 @@ sub TimeLeft {
 	Validates a Token
 
     my $Result = $TokenObject->Validate(
-        Token          => $Token,
-		OpenIDConfig   => $OpenIDConfig,
+        Token             => $Token,
+		OpenIDConfig      => $OpenIDConfig,
+        ExpectedScopes    => <space separated list>, # optional
+        ExpectedAudiences => <space separated list>, # optional
+        AuthroziedParty   => '<identifier>',         # optional
     );
 
 	returns
 
-	{ Success => 0 }
+	{ Success => 0, Error => 'msg' }
 
 	or
 
@@ -214,12 +217,8 @@ sub Validate {
     my $Return    = { Success => 0 };
     for my $Needed (qw/Token OpenIDConfig/) {
         if ( !$Param{$Needed} ) {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'error',
-                Message  => "Need $Needed!",
-            );
 
-            return $Return;
+            return { Success => 0, Error => "Need $Needed!" };
         }
     }
 
@@ -228,19 +227,20 @@ sub Validate {
 	my $ClientSettings       = $OpenIDConfig->{ClientSettings};
 	my $ExpectedAudience     = $Param{ExpectedAudience};
 	my $AuthorizedParty      = $Param{AuthorizedParty};    
+	my $ExpectedScopes       = $Param{ExpectedScopes};    
 
     my $TokenData = $Self->DecodeToken(%Param);
 
-    return $Return if !$TokenData;
+    if( !$TokenData ) {
+
+        return { Success => 0, Error => "Decode Token failed!." };
+    }
 
     for my $Needed (qw/iss sub aud exp iat/) {
-        if ( !$TokenData->{$Needed} ) {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'error',
-                Message  => "Token invalid: <$Needed> not included.",
-            );
 
-            return $Return;
+        if ( !$TokenData->{$Needed} ) {
+
+            return { Success => 0, Error => "Token invalid: <$Needed> not included." };
         }
     }
 
@@ -253,12 +253,8 @@ sub Validate {
 
     # do the validation
     if ( $TokenData->{iss} ne $Issuer ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "<iss> wrong. IDToken is issued by '$TokenData->{iss}', but '$Issuer' is required.",
-        );
 
-        return $Return;
+        return { Success => 0, Error => "<iss> wrong. IDToken is issued by '$TokenData->{iss}', but '$Issuer' is required." };
     }
 
     my @Audience = ref $TokenData->{aud} ? @{ $TokenData->{aud} } : ( $TokenData->{aud} );
@@ -266,63 +262,50 @@ sub Validate {
     if ( $ExpectedAudience ) {
 
         if ( !grep { $_ eq $ExpectedAudience } @Audience ) {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'error',
-                Message  => "<aud> wrong. IDToken is addressed to '@Audience' which does not contain '$ClientSettings->{ClientID}'.",
-            );
 
-            return $Return;
+            return { Success => 0, Error => "<aud> wrong. IDToken is addressed to '@Audience' which does not contain '$ExpectedAudience'." };
         }
     }
 
     if ( ref $TokenData->{aud} && !$TokenData->{azp} ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "<aud> is an array but <azp> not present.",
-        );
 
-        return $Return;
+        return { Success => 0, Error => "<aud> is an array but <azp> not present." };
     }
 
     if ( $AuthorizedParty && $TokenData->{azp} && $AuthorizedParty !~ $TokenData->{azp} ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "<azp> present and wrong. Authorized party is specified as '$TokenData->{azp}', we are '$ClientSettings->{ClientID}'.",
-        );
 
-        return $Return;
+        return { Success => 0, Error => "<azp> present and wrong. Authorized party is specified as '$TokenData->{azp}', we are '$ClientSettings->{ClientID}'." };
+    }
+
+    if( $ExpectedScopes && $TokenData->{scope} ) {
+
+        my @Scopes = split / +/, $ExpectedScopes;
+        foreach my $Scope( @Scopes ) {
+            my $Regex = qr/\b$Scope\b/;
+            if( $TokenData->{scope} !~ /$Regex/ ) {
+
+                return { Success => 0, Error => "<scope> invalid. '".$TokenData->{scope}."' does not include $Scope" };
+            }
+        }
     }
 
     my $CurrentTime = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
     my $Leeway      = int( $Param{Leeway} // 2 );
 
     if ( $TokenData->{iat} - $Leeway > $CurrentTime ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "<iat> invalid. IDToken creation time is in the future. Token: $TokenData->{iat}; Current: $CurrentTime;",
-        );
 
-        return $Return;
+        return { Success => 0, Error => "<iat> invalid. IDToken creation time is in the future. Token: $TokenData->{iat}; Current: $CurrentTime;" };
     }
 
     if ( $TokenData->{exp} + $Leeway <= $CurrentTime ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "<exp> invalid. IDToken expired. Expiration Time: $TokenData->{exp}; Current: $CurrentTime;",
-        );
-        $Return->{Error} = 'exp';
 
-        return $Return;
+        return { Success => 0, Error => "<exp> invalid. IDToken expired. Expiration Time: $TokenData->{exp}; Current: $CurrentTime;" };
     }
 
     if ( $Param{UseNonce} ) {
         if ( !$TokenData->{nonce} ) {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'error',
-                Message  => "No nonce in Token.",
-            );
 
-            return $Return;
+            return { Success => 0, Error => "No nonce in Token." };
         }
 
         my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
@@ -335,13 +318,8 @@ sub Validate {
             $CacheObject->Delete(%Nonce);
         }
         else {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'notice',
-                Message  => "<nonce> invalid.",
-            );
-            $Return->{Error} = 'nonce';
 
-            return $Return;
+            return { Success => 0, Error => "<nonce> invalid." };
         }
     }
 
@@ -398,10 +376,6 @@ sub DecodeToken {
             $Try = 100;
         }
         elsif ( $Try < 2 ) {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'notice',
-                Message  => "Cached IDToken wrong; retrying once.",
-            );
 
 			$OpenIDProviderData = $OIDCConfigurationObject->GetProviderData(
 				OpenIDConfig => $Param{OpenIDConfig},
@@ -410,14 +384,7 @@ sub DecodeToken {
         }
     }
 
-    return $TokenData if $TokenData;
-
-    $Kernel::OM->Get('Kernel::System::Log')->Log(
-        Priority => 'error',
-        Message  => 'Failed to decode id_token!',
-    );
-
-    return;
+    return $TokenData;
 }
 
 1;

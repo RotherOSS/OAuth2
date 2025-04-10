@@ -81,14 +81,21 @@ sub GetUserMappings {
 
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
+    my $Mappings = $ConfigObject->Get('OpenIDConnect::UserMapping');
+
     my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
-    my @SearchResult = $SysConfigObject->ConfigurationSearch(Category => 'All', Search => 'OpenIDConnect::UserMapping' );
+#    my @SearchResult = $SysConfigObject->ConfigurationSearch(Category => 'All', Search => 'OpenIDConnect::UserMapping' );
     
     my %ValidProviderMappings;
-    foreach my $SettingName( @SearchResult) {
-        my %Setting = $SysConfigObject->SettingGet(Name => $SettingName);
-        if( $Setting{IsValid}) {
-            $ValidProviderMappings{$SettingName} = $Setting{EffectiveValue};
+    foreach my $SettingName( keys %$Mappings) {
+        my %Setting = $SysConfigObject->SettingGet(Name => 'OpenIDConnect::UserMapping###'.$SettingName);
+        if(scalar keys %Setting) {
+            if( $Setting{IsValid}) {
+                $ValidProviderMappings{'OpenIDConnect::UserMapping###'.$SettingName} = $Setting{EffectiveValue};
+            }
+        }
+        else {
+            $ValidProviderMappings{'OpenIDConnect::UserMapping###'.$SettingName} = $Mappings->{$SettingName};
         }
     }
 

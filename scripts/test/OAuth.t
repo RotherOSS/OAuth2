@@ -63,7 +63,8 @@ if ( !$ChildPID ) {
 
     try {
 
-         my $App = sub {
+        my @Log;
+        my $App = sub {
 
             my $env = shift; # PSGI env
             my $req = Plack::Request->new($env);
@@ -74,6 +75,11 @@ if ( !$ChildPID ) {
             # print STDERR Dumper($req->headers())."\n";
 
             if($req->path() eq '/realms/master/.well-known/openid-configuration') {
+
+                push @Log, {
+                    'endpoint' => 'openid',
+                    'content'  => '',
+                };
 
                 # the test fixture from hell
                 # recorded from conversations with keycloak
@@ -152,6 +158,11 @@ if ( !$ChildPID ) {
             }
             elsif( $req->path() eq '/realms/master/protocol/openid-connect/certs') {
 
+                push @Log, {
+                    'endpoint' => 'jwks',
+                    'content'  => '',
+                };
+
                 # this is the jwks url endpoint, here we return the magic key data
                 my $Data = {
 
@@ -176,6 +187,11 @@ if ( !$ChildPID ) {
             elsif( $req->path() eq '/realms/master/protocol/openid-connect/token') {
  
                 # this is the token endpoint, generate a fresh JWT token and return it
+
+                push @Log, {
+                    'endpoint' => 'token',
+                    'content'  => $req->content(),
+                };
 
                 # validate credentials - this expects client_credentials flow so basic auth
                 # has client_id and client_secret from GetTestOpenIDConfig() in the Base64
@@ -206,17 +222,26 @@ if ( !$ChildPID ) {
                     [ encode_json($Data) ] 
                 ];
             }
+            elsif( $req->path() eq '/realms/master/protocol/openid-connect/log') {
+
+                return [ 
+                    200, 
+                    ["Content-Type" => 'application/json'], 
+                    [ encode_json(\@Log) ] 
+                ];
+            }
 
             return [ 
                 404, 
                 [], 
                 [ "Not Found!" ] 
             ];
-
         };
 
+
+
         my $Runner = Plack::Runner->new;
-        $Runner->parse_options(qw'--no-default-middleware --host 127.0.0.1 --port 2007 -L Shotgun');
+        $Runner->parse_options(qw'--no-default-middleware --host 127.0.0.1 --port 2007');
         $Runner->run($App);
     }
     catch {
@@ -356,6 +381,45 @@ $Result = $TokenProvider->Fetch(
 
 ok(!$Result->{Success});
 
+#################################################################
+# Test 4) - Assert on the spied Log of our fake server
+# here we can assert that parameters have been passed as
+# expected to the token_endpoint
+#################################################################
+
+my $ua = LWP::UserAgent->new(timeout => 10);
+my $response = $ua->get('http://localhost:2007/realms/master/protocol/openid-connect/log');
+if ($response->is_success) {
+
+    my $Log = decode_json($response->decoded_content);
+
+    my $Expected = [
+        { "endpoint" => "openid","content" => ""},
+        { "endpoint" => "jwks","content" => ""},
+        { "endpoint" => "token", "content" => "grant_type=client_credentials&resource=some_api&scope=openid"},
+        { "endpoint" => "openid","content" => ""},
+        { "endpoint" => "jwks","content" => ""},
+        { "content"  => "grant_type=refresh_token&refresh_token=","endpoint" => "token"},
+        { "endpoint" => "openid","content" => ""},
+        { "endpoint" => "jwks","content" => ""},
+        { "endpoint" => "token", "content" => "grant_type=client_credentials&resource=some_api&scope=openid"},
+        { "endpoint" => "openid","content" => ""},
+        { "endpoint" => "jwks","content" => ""},
+        { "content"  => "grant_type=client_credentials&resource=some_api&scope=openid","endpoint" => "token"},
+    ];
+
+    my $Index = 0;
+    foreach my $Expectation ( @$Expected ) {
+
+        my $Actual = $Log->[$Index];
+        my $ExpectedContent = $Expectation->{content};
+        my $Regex  = qr/$ExpectedContent/;
+
+        ok( $Actual->{endpoint} eq $Expectation->{endpoint});
+        ok( $Actual->{content} =~ $Regex);
+        $Index++;
+    }
+}
 # over and out
 done_testing;
 
@@ -432,8 +496,8 @@ sub PrepareTestSysConfig {
                 OpenIDConfig      =>'OpenIDConnect::OICDProvider::_UnitTest1',
                 GrantType         => 'client_credentials',
                 Scope             => 'openid',
-                Resources         => '',
-                ResourceParamName => '',
+                Resources         => 'some_api',
+                ResourceParamName => 'resource',
                 Token             => 'access_token',
                 # Username        => $Param{Username},
                 # Password        => $Param{Password},

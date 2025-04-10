@@ -357,7 +357,7 @@ sub FetchToken {
     # determine which token are we expected to pass to remote system
     my $TokenType         = $Account->{Token}             || 'access_token';
     my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
-    my $ResourceIds       = $Account->{ResourceIds};
+    my $ResourceIds       = $Account->{Resources};
     my $Scope             = $Account->{Scope};
 
     my $OpenIDConfig = $FunctionalAccountsObject->GetOpenIDConfig(
@@ -491,6 +491,7 @@ sub FetchToken {
         $Self->_ProcessNewToken(
             OpenIDConfig => $OpenIDConfig,
             AccountID    => $AccountID,
+            Account      => $Account,
             TokenType    => 'id_token',
             Token        => $DecodedContent->{id_token},
         );
@@ -501,6 +502,7 @@ sub FetchToken {
         $Self->_ProcessNewToken(
             OpenIDConfig => $OpenIDConfig,
             AccountID    => $AccountID,
+            Account      => $Account,
             TokenType    => 'access_token',
             Token        => $DecodedContent->{access_token},
         );
@@ -511,6 +513,7 @@ sub FetchToken {
         $Self->_ProcessNewToken(
             OpenIDConfig => $OpenIDConfig,
             AccountID    => $AccountID,
+            Account      => $Account,
             TokenType    => 'refresh_token',
             Token        => $DecodedContent->{refresh_token},
         );
@@ -579,26 +582,14 @@ sub GetAuthURL {
 
     my $AuthRequest = {
         ResponseType => ['code'],
-        State        => $RandomString,
+        State        => $Param{State} || $RandomString,
         RedirectURI  => $Param{RedirectURI},
     };
 
-    my $ResourceIds = $Account->{ResourceIds};
-    if ( $ResourceIds && $ResourceIds ne '' ) {
-
-        my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
-
-        my @Resources = split( / +/, $ResourceIds );
-        $AuthRequest->{"$ResourceParamName"} = \@Resources;
-        $AuthRequest->{ResourceParamName}    = "$ResourceParamName";
-    }
+    my $Resources = $Account->{Resources};
+    my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
 
     my $Scope = $Account->{Scope};
-    if ( $Scope && $Scope ne '' ) {
-
-        my @Scopes = split( / +/, $Scope );
-        $AuthRequest->{Scope} = \@Scopes;
-    }
 
     if ( $TokenType eq 'id_token' ) {
 
@@ -638,23 +629,19 @@ sub GetAuthURL {
     $RedirectURL .= '?response_type=' . join( '%20', @{ $AuthRequest->{ResponseType} } );
 
     if ( $Param{AdditionalScope} ) {
-        $RedirectURL .= '&scope=' . join( '%20', ( 'openid', @{ $AuthRequest->{AdditionalScope} // [] } ) );
+        $RedirectURL .= '&scope=openid%20' . uri_escape_utf8($Param{AdditionalScope});
     }
-    elsif ( $Param{Scope} ) {
-        $RedirectURL .= '&scope=' . join( '%20', ( @{ $AuthRequest->{Scope} // [] } ) );
+    elsif ( $Scope ) {
+        $RedirectURL .= '&scope='. uri_escape_utf8($Scope);
     }
     else {
         $RedirectURL .= '&scope=openid';
     }
 
     $RedirectURL .= '&client_id=' . $ClientSettings->{ClientID};
-    $RedirectURL .= '&state=' . $AuthRequest->{State};
-    $RedirectURL .= '&redirect_uri=' . uri_escape_utf8( $AuthRequest->{RedirectURI} || $ClientSettings->{RedirectURI} );
 
-    if ( exists $AuthRequest->{ResourceParamName} ) {
-        my $Resources = $AuthRequest->{ $AuthRequest->{ResourceParamName} };
-        $RedirectURL .= "&".$AuthRequest->{ResourceParamName}."=" .
-            join( '%20', ( @{ $Resources // [] } ) );
+    if ( $Resources ) {
+        $RedirectURL .= "&".$ResourceParamName."=" . uri_escape_utf8($Resources);
     }
 
     if ( $AuthRequest->{Nonce} ) {
@@ -672,6 +659,9 @@ sub GetAuthURL {
     if ( $Param{Prompt} ) {
         $RedirectURL .= '&prompt=login';
     }
+
+    $RedirectURL .= '&state=' . $AuthRequest->{State};
+    $RedirectURL .= '&redirect_uri=' . uri_escape_utf8( $AuthRequest->{RedirectURI} || $ClientSettings->{RedirectURI} );
 
     $Param{RedirectURL} = $AuthRequest->{RedirectURI};
 
@@ -916,6 +906,7 @@ sub _ProcessNewToken {
 
     my ( $Self, %Param ) = @_;
 
+    my $Account      = $Param{Account};
     my $AccountID    = $Param{AccountID};
     my $OpenIDConfig = $Param{OpenIDConfig};
     my $TokenType    = $Param{TokenType};
@@ -940,7 +931,9 @@ sub _ProcessNewToken {
         my $Result = $TokenObject->Validate(
             Token                => $Token,
 			OpenIDConfig         => $OpenIDConfig,
-            SkipValidateAudience => $TokenType eq 'id_token' ? 0 : 1,
+            ExpectedAudience     => $TokenType eq 'id_token' ? $OpenIDConfig->{ClientSettings}->{ClientID} : undef,
+            AuthorizedParty      => $OpenIDConfig->{ClientSettings}->{ClientID},
+            ExpectedScopes       => $Account->{Scope},
         );
 
         return unless $Result->{Success};
