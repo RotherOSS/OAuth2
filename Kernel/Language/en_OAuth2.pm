@@ -41,8 +41,8 @@ sub Data {
     $Self->{Translation}->{'AccountID %s not found!'} = 'AccountID %s not found!';
     $Self->{Translation}->{'No valid refresh_token for Account %s using grant_tpye \'authorization code\' !'} = 'No valid refresh_token for Account %s using grant_tpye \'authorization code\' !';
     $Self->{Translation}->{'Need functional account Invoker settings in SysConfig for %s.'} = 'Need functional account Invoker settings in SysConfig for %s.';
-    $Self->{Translation}->{'Could not get the OAuth2 token_endpoint for Invoker %s.'} = 'Could not get the OAuth2 token_endpoint for Invoker %s.';
-    $Self->{Translation}->{'Error fetching Token for Invoker %s: %s'} = 'Error fetching Token for Invoker %s: %s';
+    $Self->{Translation}->{'Could not get the OAuth2 token_endpoint for Invoker.'} = 'Could not get the OAuth2 token_endpoint for Invoker.';
+    $Self->{Translation}->{'Error fetching Token for Invoker: %s'} = 'Error fetching Token for Invoker: %s';
     $Self->{Translation}->{'Did not receive the desired TokenType \'%s\' in OIDC provider response for Invoker %s!'} = 'Did not receive the desired TokenType \'%s\' in OIDC provider response for Invoker %s!';
     $Self->{Translation}->{'Time left on fresh token is: %s s for Invoker %s!'} = 'Time left on fresh token is: %s s for Invoker %s!';
     $Self->{Translation}->{'Need ClientID and ClientSecret!'} = 'Need ClientID and ClientSecret!';

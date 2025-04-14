@@ -24,25 +24,25 @@ sub Data {
     my $Self = shift;
 
     # AdminOAuthTokenStore.pm
-    $Self->{Translation}->{'Account Name is missing!'} = 'Account Name ist erforderlich!';
+    $Self->{Translation}->{'Account Name is missing!'} = 'Konto Name ist erforderlich!';
     $Self->{Translation}->{'Username is required!'} = 'Username ist erforderlich!';
     $Self->{Translation}->{'Password is required!'} = 'Password ist erforderlich!';
-    $Self->{Translation}->{'Account Name is taken!'} = 'Account Name ist bereits vergeben!';
+    $Self->{Translation}->{'Account Name is taken!'} = 'Konto Name ist bereits vergeben!';
     $Self->{Translation}->{'Error creating/updating %s!'} = 'Fehler beim Erstellen/Aktualisieren von  %s!';
     $Self->{Translation}->{'Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD Configuration!'} = 'Der OIDC Provider Authentication URL zum Login konnte nicht generiert werden. Invalide OICD Konfiguration!';
-    $Self->{Translation}->{'Account %s deleted!'} = 'Account %s gelöscht!';
+    $Self->{Translation}->{'Account %s deleted!'} = 'Konto %s gelöscht!';
     $Self->{Translation}->{'Token %s updated!'} = 'Token %s aktualisiert!';
     $Self->{Translation}->{'Invalid OAuth State!'} = 'Invalider OAuth State!';
-    $Self->{Translation}->{'Invalid Account %s for Token!"'} = 'Invalider Account %s für Token!"';
+    $Self->{Translation}->{'Invalid Account %s for Token!"'} = 'Invalides Konto %s für Token!"';
     $Self->{Translation}->{'Invalid Issuer %s for Token %s!'} = 'Invalider Issuer %s für Token %s!';
     $Self->{Translation}->{'Error fetching initial Token for %s!'} = 'Fehler beim bereitstellen des initialen Tokens für %s!';
 
     # TokenProvider.pm
-    $Self->{Translation}->{'AccountID %s not found!'} = 'AccountID %s nicht gefunden!';
-    $Self->{Translation}->{'No valid refresh_token for Account %s using grant_tpye \'authorization code\' !'} = 'Es exisitier kein valides refresh_token für den Account %s und grant_tpye \'authorization code\' !';
-    $Self->{Translation}->{'Need functional account Invoker settings in SysConfig for %s.'} = 'Fehlende Einstellungen für den funktionalen Account %s in der System Konfiguration.';            
-    $Self->{Translation}->{'Could not get the OAuth2 token_endpoint for Invoker %s.'} = 'Der OAuth2 token_endpoint for Invoker %s konnte nicht bereit gestellt werden.';    
-    $Self->{Translation}->{'Error fetching Token for Invoker %s: %s'} = 'Fehler beim Abholen des OAuth2 Token for Invoker %s: %s';    
+    $Self->{Translation}->{'AccountID %s not found!'} = 'Konto mit ID %s nicht gefunden!';
+    $Self->{Translation}->{'No valid refresh_token for Account %s using grant_tpye \'authorization code\' !'} = 'Es exisitier kein valides refresh_token für das Konto %s und grant_tpye \'authorization code\' !';
+    $Self->{Translation}->{'Need functional account Invoker settings in SysConfig for %s.'} = 'Fehlende Einstellungen für das funktionale Konto %s in der System Konfiguration.';            
+    $Self->{Translation}->{'Could not get the OAuth2 token_endpoint for Invoker.'} = 'Der OAuth2 token_endpoint konnte nicht bereit gestellt werden.';    
+    $Self->{Translation}->{'Error fetching Token for Invoker: %s'} = 'Fehler beim Abholen des OAuth2 Token for Invoker: %s';    
     $Self->{Translation}->{'Did not receive the desired TokenType \'%s\' in OIDC provider response for Invoker %s!'} = 'Der erwartete Token Typ \'%s\' für %s war in der OIDC Provider Antwort nicht enthalten!';    
     $Self->{Translation}->{'Time left on fresh token is: %s s for Invoker %s!'} = 'Verbleibende Zeit für aktuelles Token ist: %s s für Invoker %s!';    
     $Self->{Translation}->{'Need ClientID and ClientSecret!'} = 'ClientID and ClientSecret fehlen in der OIDC Profil Konfiguration!';    
@@ -65,31 +65,32 @@ sub Data {
     # AdminOAuthTokenStore.tt
 
     $Self->{Translation}->{'OAuth2 Token Management (OIDC)'} = 'OAuth2 Token Management (OIDC)';
-    $Self->{Translation}->{'OpenID Connect Functional OAuth2 Account Management'} = 'OpenID Connect Management für Funktionale Accounts';
-    $Self->{Translation}->{'Add Account'} = 'Account hinzufühgen';
-    $Self->{Translation}->{'Edit Account '} = 'Account bearbeiten: ';
-    $Self->{Translation}->{'About OIDC Functional Accounts'} = 'Über OIDC Funktionale Accounts';
-    $Self->{Translation}->{'This page displays an overview of configured functional OAuth Accounts and their corresponding Token Status.'} = 'Überblick über die konfigurierten funktioinalen OAuth2 Accounts und deren aktuellem Token Status.';
+    $Self->{Translation}->{'OpenID Connect Functional OAuth2 Account Management'} = 'OpenID Connect Management für Funktionale Konten';
+    $Self->{Translation}->{'Add Account'} = 'Konto hinzufühgen';
+    $Self->{Translation}->{'Edit Account '} = 'Konto bearbeiten: ';
+    $Self->{Translation}->{'About OIDC Functional Accounts'} = 'OIDC Funktionale Konten';
+    $Self->{Translation}->{'This page displays an overview of configured functional OAuth Accounts and their corresponding Token Status.'} = 'Überblick über die konfigurierten funktioinalen OAuth2 Konten und deren aktuellem Token Status.';
     $Self->{Translation}->{'You can test your Configuration with a click on the \'Refresh\' Button, which will try to fetch or refresh a new Token.'} = 'Mit einem Klick auf den \'Aktualisieren\' Button kann die jeweilige Konfiguratiuon überprüft werden.';
 #    $Self->{Translation}->{'Add'} = 'Add';
-    $Self->{Translation}->{'Delete Account'} = 'Account Löschen';
-    $Self->{Translation}->{'OAuth2 Token backed Accounts'} = 'OAuth2 Token basierende funktionale Accounts';
+    $Self->{Translation}->{'Delete Account'} = 'Konto Löschen';
+    $Self->{Translation}->{'OAuth2 Token backed Accounts'} = 'OAuth2 Token basierende funktionale Konten';
 #    $Self->{Translation}->{'total'} = 'total';
-    $Self->{Translation}->{'There are no OAuth2 accounts defined.'} = 'Es sind noch keine funktionalen OAuth2 Accounts definiert.';
-#    $Self->{Translation}->{'Account Name'} = 'Account Name';
+    $Self->{Translation}->{'There are no OAuth2 accounts defined.'} = 'Es sind noch keine funktionalen OAuth2 Konten definiert.';
+    $Self->{Translation}->{'Account Name'} = 'Konto Name';
 #    $Self->{Translation}->{'Flow'} = 'Flow';
     $Self->{Translation}->{'Has Token?'} = 'Token vorhanden?';
     $Self->{Translation}->{'Refresh Token Expires'} = 'Refresh Token Gültig bis';
     $Self->{Translation}->{'Renew Token'} = 'Aktualisiere Token';
 #    $Self->{Translation}->{'Refresh'} = 'Refresh';
 #    $Self->{Translation}->{'No matches found.'} = 'No matches found.';
-    $Self->{Translation}->{'Add Invoker Account'} = 'Invoker Account hinzufügen';
-    $Self->{Translation}->{'Edit Invoker Account'} = 'Invoker Account bearbeiten';
-    $Self->{Translation}->{'The unique name for this Account.'} = 'Der eindeutige Name für diesen Account.';
-    $Self->{Translation}->{'The OpenID Connect Provider to use for this functional account.'} = 'Der OpenID Connect Provider der für diesen funktionalen Account benutzt werden soll.';
-    $Self->{Translation}->{'The OAuth2 grant_type to use for acquiring tokens for this account.'} = 'Der OAuth2 grant_type für diesen Account.';
+    $Self->{Translation}->{'Add Invoker Account'} = 'Invoker Konto hinzufügen';
+    $Self->{Translation}->{'Edit Invoker Account'} = 'Invoker Konto bearbeiten';
+    $Self->{Translation}->{'The unique name for this Account.'} = 'Der eindeutige Name für dieses Konto.';
+    $Self->{Translation}->{'The OpenID Connect'} = 'Der OpenID Connect'; 
+    $Self->{Translation}->{'to use for this functional account.'} = 'der für dieses funktionale Konto benutzt werden soll.';
+    $Self->{Translation}->{'The OAuth2 grant_type to use for acquiring tokens for this account.'} = 'Der OAuth2 grant_type für dieses Konto.';
     $Self->{Translation}->{"Selecting 'authorization_code' will redirect you to your OpenID Connect Provider's Login Page to validate your account once you click 'Save'."} = "Die Auswahl von 'authorization_code' löst einen Brwoser Redirect zur Login Seite Ihres OIDC Providers.";
-    $Self->{Translation}->{'OIDC Profile'} = 'OIDC Profile';
+    $Self->{Translation}->{'OIDC Profile'} = 'OIDC Profil';
     $Self->{Translation}->{'Grant Type'} = 'Grant Type';
 #    $Self->{Translation}->{'Username'} = 'Username';
     $Self->{Translation}->{'The username if grant type is \'password.\'.'} = 'Der Username bei grant type gleich \'password\'.';
@@ -107,9 +108,9 @@ sub Data {
     $Self->{Translation}->{'The token type to use for externall API calls. Usually \'access_token\'.'} = 'Der Token Typ der für ausgehende WSebService Aufrufe verwendet werden soll. Üblicherweise \'access_token\'.';
 
     # AdminGenericInterfaceTransportHTTPREST.tt
-    $Self->{Translation}->{'OAuth2 Functional Account'} = 'OAuth2 Account';
+    $Self->{Translation}->{'OAuth2 Functional Account'} = 'OAuth2 Konto';
     $Self->{Translation}->{'Select the'} = 'Auswahl des';
-    $Self->{Translation}->{'Account to use for OAuth2 authentication.'} = 'Accounts für die OAuth2 Authentifizierung.';
+    $Self->{Translation}->{'Account to use for OAuth2 authentication.'} = 'Kontos für die OAuth2 Authentifizierung.';
 }
 
 1;

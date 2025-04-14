@@ -366,10 +366,15 @@ sub DecodeToken {
     while ( $Try++ < 2 ) {
 
         # decode id_token, check key
-        $TokenData = decode_jwt(
-            token    => $Param{Token},
-            kid_keys => $OpenIDProviderData->{KeyData},
-        ) // {};
+        eval {
+            $TokenData = decode_jwt(
+                token    => $Param{Token},
+                kid_keys => $OpenIDProviderData->{KeyData},
+            ) // {};
+        };
+        if( $@ ) {
+            $TokenData = undef;
+        }
 
         # check whether the issuer is correct - if not the cached data might just be outdated
         if ( $TokenData->{iss} && $TokenData->{iss} eq $OpenIDProviderData->{OpenIDConfiguration}{issuer} ) {

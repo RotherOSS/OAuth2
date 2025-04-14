@@ -20,7 +20,7 @@
 
     [% BreadcrumbPath = [
             {
-                Name => Translate('OpenID Connect Functional OAuh2 Account Management'),
+                Name => Translate('OpenID Connect Functional OAuth2 Account Management'),
                 Link => Env("Action"),
             },
         ]
@@ -174,7 +174,9 @@
                         <div class="Field">
                             [% Data.ProviderNames %]
                             <p class="FieldExplanation">
-                                [% Translate("The OpenID Connect Provider to use for this functional account.") | html %]
+                                [% Translate("The OpenID Connect") | html %]
+                                <a target='_blank' href="?Action=AdminSystemConfigurationGroup;RootNavigation=Core::Auth::OpenIDConnect">Provider</a>
+                                [% Translate("to use for this functional account.") | html %]
                             </p>
                         </div>
                         <div class="Clear"></div>

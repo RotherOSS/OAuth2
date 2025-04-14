@@ -335,12 +335,13 @@ sub FetchToken {
         }
     }
 
-    my $AccountID  = $Param{AccountID};
-
     my $LanguageObject           = $Kernel::OM->Get('Kernel::Language');
 	my $TokenObject              = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
     my $FunctionalAccountsObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
-    my $Account                  = $FunctionalAccountsObject->GetAccount( AccountID  => $AccountID );
+
+    # Fetch config data from account
+    my $AccountID = $Param{AccountID};
+    my $Account   = $FunctionalAccountsObject->GetAccount( AccountID  => $AccountID );
     
     if ( !IsHashRefWithData($Account) ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
@@ -354,7 +355,6 @@ sub FetchToken {
         };
     }
 
-    # determine which token are we expected to pass to remote system
     my $TokenType         = $Account->{Token}             || 'access_token';
     my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
     my $ResourceIds       = $Account->{Resources};
@@ -364,94 +364,26 @@ sub FetchToken {
         AccountID  => $AccountID,
     );
 
-	my $TokenEndpoint = $FunctionalAccountsObject->GetTokenEndpoint(
-        AccountID  => $AccountID,
-	);
-    if ( !$TokenEndpoint ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "Could not get the token_endpoint for Invoker $AccountID.",
-        );
-
-        return {
-            Success => 0,
-            Error   => $LanguageObject->Translate("Could not get the OAuth2 token_endpoint for Invoker %s.", $AccountID),
-        };
-    }
-
-    # prepare the fetch token request
-    my $UserAgent = $Self->_GetUserAgent( OpenIDConfig => $OpenIDConfig );
-
-    # prepare post data
-    my $PostData;
-
-    if ( $Param{RefreshToken} ) {
-
-        # refresh_token flow
-        $PostData = [
-            grant_type    => 'refresh_token',
-            refresh_token => $Param{RefreshToken},
-        ];
-    }
-    elsif (
-        $Account->{GrantType} eq 'password'
-        &&
-        IsStringWithData( $Account->{Username} ) &&
-        IsStringWithData( $Account->{Password} )
-        )
-    {
-
-        # password flow
-        $PostData = [
-            grant_type => 'password',
-            username   => $Account->{Username},
-            password   => $Account->{Password},
-        ];
-    }
-    elsif ( $Account->{GrantType} eq 'client_credentials' ) {
-
-        # client_credentials flow
-        $PostData = [
-            grant_type => 'client_credentials',
-        ];
-    }
-    elsif ( $Param{Code} && $Account->{GrantType} eq 'authorization_code' ) {
-
-        # authorization code
-        $PostData = [
-            grant_type   => 'authorization_code',
-            code         => $Param{Code},
-            redirect_uri => $Param{RedirectURL},
-        ];
-    }
-
-    if ( !$Param{RefreshToken} && $ResourceIds && $ResourceIds ne '' ) {
-
-        push @$PostData, "$ResourceParamName" => $ResourceIds;
-    }
-
-    if ( !$Param{RefreshToken} && $Scope && $Scope ne '' ) {
-
-        push @$PostData, scope => $Scope;
-    }
-
-    # actually send the request
-    my $Response = $Self->_SendRequest(
-        OpenIDConfig => $OpenIDConfig,
-        UserAgent    => $UserAgent,
-        EndPoint     => $TokenEndpoint,
-        PostData     => $PostData,
+    # fetch the token
+    my $Result = $Self->FetchTokenFromConfig(
+        TokenType         => $TokenType,
+        ResourceParamName => $ResourceParamName,
+        Resources         => $ResourceIds,
+        Scope             => $Scope,
+        OpenIDConfig      => $OpenIDConfig,
+        GrantType         => $Account->{GrantType},
+        Username          => $Account->{Username},
+        Password          => $Account->{Password},
+        RefreshToken      => $Param{RefreshToken},
+        Code              => $Param{Code},
+        RedirectURL       => $Param{RedirectURL},  
     );
 
-    if ( !$Response->{Success} ) {
-
-        return {
-            Success => 0,
-            Error   => $LanguageObject->Translate("Error fetching Token for Invoker %s: %s". $AccountID, $Response->{Error} ),
-        };
+    if(!$Result->{Success}) {
+        return $Result;
     }
 
-    my $DecodedContent = $Response->{Content};
+    my $DecodedContent = $Result->{DecodedContent};
 
     my $Token = $DecodedContent->{$TokenType};
     if ( !$Token ) {
@@ -523,6 +455,128 @@ sub FetchToken {
         Success => 1,
         Token   => $Token,
         Origin  => 'fresh_token',
+    };
+}
+
+
+sub FetchTokenFromConfig {
+
+    my ( $Self, %Param ) = @_;
+
+    for my $Needed (qw/OpenIDConfig GrantType/) {
+        if ( !$Param{$Needed} ) {
+            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                Priority => 'error',
+                Message  => "Need $Needed!",
+            );
+
+            return {
+                Success => 0,
+                Error   => "Invalid Parameters !",
+            };
+        }
+    }
+
+    my $LanguageObject    = $Kernel::OM->Get('Kernel::Language');
+	my $TokenObject       = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
+    my $OIDCConfiguration = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+
+    # determine which token are we expected to pass to remote system
+    my $TokenType         = $Param{Token}             || 'access_token';
+    my $ResourceParamName = $Param{ResourceParamName} || 'resource';
+    my $ResourceIds       = $Param{Resources};
+    my $Scope             = $Param{Scope};
+    my $OpenIDConfig      = $Param{OpenIDConfig};
+    my $GrantType         = $Param{GrantType};
+    my $Username          = $Param{Username};
+    my $Password          = $Param{Password};
+
+	my $TokenEndpoint = $OIDCConfiguration->GetTokenEndpoint(
+        OpenIDConfig  => $OpenIDConfig,
+	);
+    if ( !$TokenEndpoint ) {
+
+        return {
+            Success => 0,
+            Error   => $LanguageObject->Translate("Could not get the OAuth2 token_endpoint for Invoker "),
+        };
+    }
+
+    # prepare the fetch token request
+    my $UserAgent = $Self->_GetUserAgent( OpenIDConfig => $OpenIDConfig );
+
+    # prepare post data
+    my $PostData;
+
+    if ( $Param{RefreshToken} ) {
+
+        # refresh_token flow
+        $PostData = [
+            grant_type    => 'refresh_token',
+            refresh_token => $Param{RefreshToken},
+        ];
+    }
+    elsif (
+        $Param{GrantType} eq 'password'
+        &&
+        IsStringWithData( $Username ) &&
+        IsStringWithData( $Password )
+        )
+    {
+
+        # password flow
+        $PostData = [
+            grant_type => 'password',
+            username   => $Username,
+            password   => $Password,
+        ];
+    }
+    elsif ( $Param{GrantType} eq 'client_credentials' ) {
+
+        # client_credentials flow
+        $PostData = [
+            grant_type => 'client_credentials',
+        ];
+    }
+    elsif ( $Param{Code} && $Param{GrantType} eq 'authorization_code' ) {
+
+        # authorization code
+        $PostData = [
+            grant_type   => 'authorization_code',
+            code         => $Param{Code},
+            redirect_uri => $Param{RedirectURL},
+        ];
+    }
+
+    if ( !$Param{RefreshToken} && $ResourceIds && $ResourceIds ne '' ) {
+
+        push @$PostData, "$ResourceParamName" => $ResourceIds;
+    }
+
+    if ( !$Param{RefreshToken} && $Scope && $Scope ne '' ) {
+
+        push @$PostData, scope => $Scope;
+    }
+
+    # actually send the request
+    my $Response = $Self->_SendRequest(
+        OpenIDConfig => $OpenIDConfig,
+        UserAgent    => $UserAgent,
+        EndPoint     => $TokenEndpoint,
+        PostData     => $PostData,
+    );
+
+    if ( !$Response->{Success} ) {
+
+        return {
+            Success => 0,
+            Error   => $LanguageObject->Translate("Error fetching Token for Invoker: %s", $Response->{Error} ),
+        };
+    }
+
+    return {
+        Success => 1,
+        DecodedContent => $Response->{Content}
     };
 }
 
@@ -850,10 +904,6 @@ sub _SendRequest {
 
     # add client_id and client_secret to authenticate the client
     if ( !$OpenIDConfig->{ClientSettings}{ClientID} || !$OpenIDConfig->{ClientSettings}{ClientSecret} ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => 'Need ClientID and ClientSecret!',
-        );
 
         return {
             Success => 0,
@@ -892,7 +942,7 @@ sub _SendRequest {
     if ( $DecodedContent->{error} ) {
         return {
             Success => 0,
-            Error   => $LanguageObject->Translate("Error: %s. Description: %s", $DecodedContent->{erro}, $DecodedContent->{error_description}),
+            Error   => "Error: ". $DecodedContent->{erro}. ". Description: ".$DecodedContent->{error_description},
         };
     }
 
