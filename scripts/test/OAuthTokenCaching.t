@@ -78,8 +78,8 @@ my $Result = $TokenProvider->Fetch(
     AccountID => '_UnitTest1',
  );
 
-ok($Result->{Success});
-ok($Result->{Origin} eq 'fresh_token');
+ok($Result->{Success}, "Result is Success");
+ok($Result->{Origin} eq 'fresh_token', 'Origin is fresh_token.');
 
 my $Token = $Result->{Token};
 
@@ -88,15 +88,15 @@ $Result = $TokenObject->Validate(
      Token        => $Token,
      OpenIDConfig => $OpenIDConfig,
 );
-ok($Result->{Success});
+ok($Result->{Success}, "Result is Success");
 
 # 2) fetch again, now comes from cache
 $Result = $TokenProvider->Fetch(
     AccountID => '_UnitTest1',
  );
 
-ok($Result->{Success});
-ok($Result->{Origin} eq 'cache');
+ok($Result->{Success}, "Result is Success");
+ok($Result->{Origin} eq 'cache', 'Origin is cache');
 
 # 3) clean cache, now comes from DB
 CleanupCache();
@@ -105,8 +105,8 @@ $Result = $TokenProvider->Fetch(
     AccountID => '_UnitTest1',
  );
 
-ok($Result->{Success});
-ok($Result->{Origin} eq 'db');
+ok($Result->{Success}, "Result is Success");
+ok($Result->{Origin} eq 'db', 'Origin is db.');
 
 # 3) clean cache and DB, now using refresh_token
 CleanupCache();
@@ -119,8 +119,8 @@ $Result = $TokenProvider->Fetch(
     AccountID => '_UnitTest1',
  );
 
-ok($Result->{Success});
-ok($Result->{Origin} eq 'refresh_token', 'refresh_token');
+ok($Result->{Success}, "Result is Success");
+ok($Result->{Origin} eq 'refresh_token', 'Origin is refresh_token');
 
 # 4) clean cache,DB and refresh_token - 
 
@@ -129,8 +129,8 @@ $Result = $TokenProvider->Fetch(
     AccountID => '_UnitTest1',
  );
 
-ok($Result->{Success});
-ok($Result->{Origin} eq 'fresh_token');
+ok($Result->{Success}, "Result is Success");
+ok($Result->{Origin} eq 'fresh_token', 'Origin is fresh_token');
 
 #################################################################
 # invalid credentials

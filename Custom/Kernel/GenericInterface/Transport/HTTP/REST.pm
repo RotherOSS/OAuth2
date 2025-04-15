@@ -135,6 +135,52 @@ sub ProviderProcessRequest {
     }
 
     my %QueryParams;
+
+# Rpther OSS / OAuth2
+    # Authenthentication header
+    my $AuthenticationHeader = $ParamObject->Header('Authorization');
+
+
+    if( lc($AuthenticationHeader) =~ /^basic /) {
+
+        my $CredentialsBase64 = substr($AuthenticationHeader,6);
+        $CredentialsBase64 =~  s/^\s+|\s+$//g;
+
+        my $Credentials = decode_base64($CredentialsBase64);
+        my ( $Username, $Password ) = split( /:/, $Credentials);
+
+        $QueryParams{Username} = $Username;
+        $QueryParams{Password} = $Password;
+    }
+    elsif( lc($AuthenticationHeader) =~ /^bearer /) {
+
+        my $Token = substr($AuthenticationHeader,7);
+        $Token =~  s/^\s+|\s+$//g;
+
+        my $AuthenticatorObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Authenticator');
+        my $Result = $AuthenticatorObject->Authenticate( Token => $Token);
+
+        if($Result->{Success}) {
+        
+            # report success!
+            $Self->{DebuggerObject}->Debug(
+                Summary => 'Bearer Token decoded:',
+                Data    => $Result->{TokenData},
+            );
+
+            # create new session id
+            my $NewSessionID = $Kernel::OM->Get('Kernel::System::AuthSession')->CreateSessionID(
+                $Result->{UserData}->%*,
+                UserLastRequest => $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch(),
+                UserType        => 'User',
+                SessionSource   => 'GenericInterface',
+            );
+
+            $QueryParams{SessionID} = $NewSessionID;
+        }
+    }
+# EO OAuth2
+
     if ($QueryParamsStr) {
 
         # Remove question mark '?' in the beginning.

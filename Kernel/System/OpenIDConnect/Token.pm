@@ -22,12 +22,7 @@ use warnings;
 
 # CPAN modules
 
-use LWP::Simple;
-use LWP::UserAgent;
-use HTTP::Request::Common;
-use URI::Escape qw(uri_escape_utf8);
 use Crypt::JWT  qw(decode_jwt);
-use JSON;
 
 # OTOBO modules
 use Kernel::System::VariableCheck qw(:all);
@@ -39,11 +34,8 @@ our @ObjectDependencies = (
     'Kernel::Config',
     'Kernel::System::DateTime',
     'Kernel::System::Cache',
-    'Kernel::System::JSON',
     'Kernel::System::Log',
-    'Kernel::System::Main',
-    'Kernel::System::OpenIDConnect',
-    'Kernel::System::OpenIDConnect::TokenRepository',
+    'Kernel::System::OpenIDConnect::Configuration',
 );
 
 =head1 NAME
@@ -229,7 +221,12 @@ sub Validate {
 	my $AuthorizedParty      = $Param{AuthorizedParty};    
 	my $ExpectedScopes       = $Param{ExpectedScopes};    
 
+use Data::Dumper;
+print STDERR Dumper(\%Param);
+
     my $TokenData = $Self->DecodeToken(%Param);
+
+print STDERR Dumper($TokenData);
 
     if( !$TokenData ) {
 
@@ -373,6 +370,8 @@ sub DecodeToken {
             ) // {};
         };
         if( $@ ) {
+            use Data::Dumper;
+            print STDERR Dumper($@);
             $TokenData = undef;
         }
 

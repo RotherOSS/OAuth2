@@ -107,7 +107,7 @@ foreach my $TestCase ( @$TestCases ) {
         Prompt      => $TestCase->{Config}->{Prompt},
     );
 
-    ok($AuthURL eq $Expected);
+    ok($AuthURL eq $Expected, "$AuthURL eq $Expected");
 
 }
 

@@ -21,23 +21,15 @@ use warnings;
 # core modules
 
 # CPAN modules
-use HTTP::Request::Common;
-use LWP::UserAgent;
-use LWP::Simple;
-use URI::Escape qw();
 
 # OTOBO modules
 use Kernel::System::VariableCheck qw(:all);
 
 use namespace::autoclean;
 
-#use parent qw(Kernel::System::OpenIDConnect);
-
 our @ObjectDependencies = (
     'Kernel::Config',
     'Kernel::System::DateTime',
-    'Kernel::System::Cache',
-    'Kernel::System::JSON',
     'Kernel::System::Log',
     'Kernel::System::DB',
 );
@@ -289,13 +281,18 @@ sub Get {
 
     if ( my ( $TokenID, $AccountID, $TokenType, $Token, $ExpiresAt ) = $DBObject->FetchrowArray ) {
 
-        return {
-            TokenID    => $TokenID,
-            AccountID  => $AccountID,
-            TokenType  => $TokenType,
-            Token      => $Token,
-            ExpiresAt  => $ExpiresAt,
-        };
+        my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
+        if( $TokenObject->IsTokenStillValid( Token => $Token )) {
+
+            return {
+                TokenID    => $TokenID,
+                AccountID  => $AccountID,
+                TokenType  => $TokenType,
+                Token      => $Token,
+                ExpiresAt  => $ExpiresAt,
+            };
+        }
+        $Self->Delete( %Param );
     }
 
     return;
@@ -343,7 +340,7 @@ sub List {
 
     if ($ExpiresAfter) {
 
-        $SQL .= "AND expires_at < ? ";
+        $SQL .= "AND expires_at IS NOT NULL AND expires_at != 0 AND expires_at < ? ";
         push @$Bind, \$ExpiresAfter;
     }
 

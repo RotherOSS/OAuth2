@@ -30,12 +30,10 @@ use namespace::autoclean;
 our @ObjectDependencies = (
     'Kernel::Config',
     'Kernel::System::DateTime',
-    'Kernel::System::Cache',
     'Kernel::System::JSON',
     'Kernel::System::Log',
-    'Kernel::System::Main',
-    'Kernel::System::OpenIDConnect',
     'Kernel::System::OpenIDConnect::TokenRepository',
+    'Kernel::System::OpenIDConnect::Configuration',
 );
 
 =head1 NAME
@@ -84,7 +82,6 @@ sub GetUserMappings {
     my $Mappings = $ConfigObject->Get('OpenIDConnect::UserMapping');
 
     my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
-#    my @SearchResult = $SysConfigObject->ConfigurationSearch(Category => 'All', Search => 'OpenIDConnect::UserMapping' );
     
     my %ValidProviderMappings;
     foreach my $SettingName( keys %$Mappings) {

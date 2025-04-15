@@ -27,17 +27,12 @@ use Kernel::System::VariableCheck qw(:all);
 
 use namespace::autoclean;
 
-#use parent qw(Kernel::System::OpenIDConnect);
-
 our @ObjectDependencies = (
     'Kernel::Config',
-    'Kernel::System::DateTime',
+    'Kernel::System::SysConfig',
     'Kernel::System::Cache',
     'Kernel::System::Log',
-    'Kernel::System::Main',
-	'Kernel::System::SysConfig',
-    'Kernel::System::OpenIDConnect',
-#    'Kernel::System::OpenIDConnect::TokenRepository',
+    'Kernel::System::OpenIDConnect::Configuration',
 );
 
 =head1 NAME
@@ -139,6 +134,7 @@ Persists Account in SysConfig.
 		Token             => $Param{TokenType},
 		Username          => $Param{Username},
 		Password          => $Param{Password},		
+        UserID            => # userid making changes
     );
 
 =cut
@@ -191,6 +187,17 @@ sub SaveAccount {
     sleep(1);
 	return $Success;
 }
+
+=head2 DeleteAccount()
+
+Returns a named OAuth Functional accounts configured in SysConfig.
+
+    my $Account = $FunctionalAccountsObject->DeleteAccount(
+        AccountID  => '<SomeAccountName>',
+        UserID     => # UserID making changes
+    );
+
+=cut
 
 sub DeleteAccount {
 
@@ -308,6 +315,19 @@ sub GetIssuer {
 }
 
 
+=head2 GetTokenEndpoint()
+
+
+Returns the token endpoint for this Functional Account.
+
+    my $Issuer = $FunctionalAccountsObject->GetTokenEndpoint(
+        AccountID  => '<SomeAccountName>',
+     );
+
+    this method returns a simple string.
+
+=cut
+
 sub GetTokenEndpoint {
 
     my ( $Self, %Param ) = @_;
@@ -318,6 +338,19 @@ sub GetTokenEndpoint {
 }
 
 
+=head2 GetAuthorizationEndpoint()
+
+
+Returns the authorization (login) endpoint for this Functional Account.
+
+    my $Issuer = $FunctionalAccountsObject->GetAuthorizationEndpoint(
+        AccountID  => '<SomeAccountName>',
+     );
+
+    this method returns a simple string.
+
+=cut
+
 sub GetAuthorizationEndpoint {
 
     my ( $Self, %Param ) = @_;
@@ -327,6 +360,16 @@ sub GetAuthorizationEndpoint {
     return $OpenIDProviderData->{OpenIDConfiguration}->{authorization_endpoint};
 }
 
+
+=head2 ClearCache()
+
+Clears the cached OIDC Provideer data for this functional account
+
+    $FunctionalAccountsObject->ClearCache(
+        AccountID  => '<SomeAccountName>',
+     );
+
+=cut
 
 sub ClearCache {
 
@@ -340,6 +383,8 @@ sub ClearCache {
         Type => 'OpenIDConnect',
         Key  => $ProviderKey,
     );
+
+    return;
 }
 
 1;

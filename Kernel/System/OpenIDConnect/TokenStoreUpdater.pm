@@ -24,6 +24,7 @@ our @ObjectDependencies = (
     'Kernel::System::Main',
     'Kernel::System::DateTime',
     'Kernel::System::OpenIDConnect::TokenProvider',
+    'Kernel::System::OpenIDConnect::TokenRepository',
 );
 
 =head1 NAME
@@ -97,9 +98,8 @@ use Data::Dumper;
 
     my $Tokens;
     eval {
-        my $TokenProvider = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
 
-        $Tokens = $TokenProvider->RenewTokens(%Param);
+        $Tokens = $Self->RenewTokens(%Param);
     };
     if ($@ ) {
 
@@ -123,6 +123,48 @@ use Data::Dumper;
     );
 
     return 1;
+}
+
+
+sub RenewTokens {
+
+    my ( $Self, %Param ) = @_;
+
+    my $Interval = $Param{Interval};
+
+    my $TokenProvider      = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
+    my $TokenRepository    = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
+
+    my $DateTimeObject = $Kernel::OM->Create(
+        'Kernel::System::DateTime',
+    );
+
+    my $Success = $DateTimeObject->ToTimeZone(
+        TimeZone => 'UTC'
+    );
+
+    my $Epoch = $DateTimeObject->ToEpoch() + $Interval;
+
+    my $Tokens = $TokenRepository->List(
+        ExpiresAfter => $Epoch
+    );
+
+    TOKEN:
+    for my $Token (@$Tokens) {
+
+        my $Result = $TokenProvider->FetchToken(
+
+            AccountID    => $Token->{AccountID},
+            RefreshToken => $Token->{Token},
+        );
+
+        $Token->{Result} = {
+            Success => $Result->{Success},
+            Error   => $Result->{Error},
+        };
+    }
+
+    return $Tokens;
 }
 
 1;

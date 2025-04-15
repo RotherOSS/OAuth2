@@ -94,12 +94,15 @@ sub AssertHttpCallLog {
             my $Op = $Expectation->{operator} || 'equal';
 
             ok( $Actual->{endpoint} eq $Expectation->{endpoint},  $Actual->{endpoint} ." equals ". $Expectation->{endpoint});
-            if($Op eq 'match') {
-                my $Regex  = qr/$ExpectedContent/;
-                ok( $Actual->{content} =~ $Regex, $Actual->{content}.' matches '.$ExpectedContent);
-            }
-            else {
-                ok( $Actual->{content} eq $ExpectedContent, $Actual->{content}.' equals '.$ExpectedContent);
+
+            if($ExpectedContent) {
+                if($Op eq 'match') {
+                    my $Regex  = qr/$ExpectedContent/;
+                    ok( $Actual->{content} =~ $Regex, $Actual->{content}.' matches '.$ExpectedContent);
+                }
+                else {
+                    ok( $Actual->{content} eq $ExpectedContent, $Actual->{content}.' equals '.$ExpectedContent);
+                }
             }
             $Index++;
         }

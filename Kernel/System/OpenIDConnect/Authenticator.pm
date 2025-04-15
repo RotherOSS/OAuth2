@@ -67,9 +67,17 @@ sub new {
 
 	Authenticates an incoming Bearer Token
 
-    my $Boolean = $AuthenticatorObject->Authenticate(
+    my $Result = $AuthenticatorObject->Authenticate(
 		Token => $Token,
 	);
+
+    where
+
+    my $Result = {
+			Success   => 1,
+			TokenData => $TokenData,
+			UserData  => \%UserData,    
+    };
 
 =cut
 
@@ -93,6 +101,8 @@ sub Authenticate {
     ACCOUNTNAME:
     for my $AccountName ( keys %$Accounts ) {
 
+print STDERR "ANAME: $AccountName\n";
+
         # get functional account data
         my $Account = $Accounts->{$AccountName};
 
@@ -103,7 +113,8 @@ sub Authenticate {
             Token                => $BearerToken,
             %Param,
         );
-
+use Data::Dumper;
+print STDERR Dumper($TokenResult);
         # if token not validated, try next token
         if ( !$TokenResult->{Success} ) {
             next ACCOUNTNAME;

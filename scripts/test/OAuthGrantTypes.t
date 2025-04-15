@@ -144,8 +144,8 @@ foreach my $TestCase( @$TestCases ) {
                         my $Result = $TokenProvider->Fetch(
                             AccountID => '_UnitTest1',  
                         );
-                        ok($Result->{Success});
-                        ok($Result->{Origin} eq 'fresh_token');
+                        ok($Result->{Success}, "Result is Success.");
+                        ok($Result->{Origin} eq 'fresh_token', "Origin is fresh_token.");
                     }
                     else {
 
@@ -164,8 +164,8 @@ foreach my $TestCase( @$TestCases ) {
                         $Result = $TokenProvider->Fetch(
                             AccountID => '_UnitTest1',  
                         );
-                        ok($Result->{Success});
-                        ok($Result->{Origin} eq 'cache');
+                        ok($Result->{Success}, "Result is Success.");
+                        ok($Result->{Origin} eq 'cache', "Origin is cache");
                     }
 
                     # patch up Expected Content dynamically with

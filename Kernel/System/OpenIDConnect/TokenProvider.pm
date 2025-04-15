@@ -22,13 +22,6 @@ use warnings;
 
 # CPAN modules
 
-use LWP::Simple;
-use LWP::UserAgent;
-use HTTP::Request::Common;
-use URI::Escape qw(uri_escape_utf8);
-use Crypt::JWT  qw(decode_jwt);
-use JSON;
-
 # OTOBO modules
 use Kernel::System::VariableCheck qw(:all);
 
@@ -43,9 +36,11 @@ our @ObjectDependencies = (
     'Kernel::System::JSON',
     'Kernel::System::Log',
     'Kernel::System::Main',
-    'Kernel::System::OpenIDConnect',
+    'Kernel::System::OpenIDConnect::Configuration',
     'Kernel::System::OpenIDConnect::FunctionalAccounts',
     'Kernel::System::OpenIDConnect::TokenRepository',
+    'Kernel::System::OpenIDConnect::Token',
+    'Kernel::System::OpenIDConnect::OAuth2',
 );
 
 =head1 NAME
@@ -68,17 +63,7 @@ sub new {
     my ( $Type, %Param ) = @_;
 
     # allocate new hash for object
-    my $Self = {
-        SSLOptionMap => {
-            SSLCertificate    => 'SSL_cert_file',
-            SSLKey            => 'SSL_key_file',
-            SSLPassword       => 'SSL_passwd_cb',
-            SSLCAFile         => 'SSL_ca_file',
-            SSLCADir          => 'SSL_ca_path',
-            SSLVerifyHostname => 'verify_hostname',
-            SSLVerifyMode     => 'SSL_verify_mode',
-        },
-    };
+    my $Self = {};
     bless( $Self, $Type );
 
     return $Self;
@@ -153,7 +138,7 @@ sub Fetch {
         TokenType  => $TokenType,
     );
 
-    if( $Token && $TokenObject->IsTokenStillValid( Token => $Token ) ) {
+    if( $Token ) {
 
         return {
             Success => 1,
@@ -170,13 +155,11 @@ sub Fetch {
         TokenType  => $TokenType,
     );
 
-    $Token = $TokenData->{Token};
-
-    if( $Token && $TokenObject->IsTokenStillValid( Token => $Token ) ) {
+    if( $TokenData && $TokenData->{Token} ) {
 
         return {
             Success => 1,
-            Token   => $Token,
+            Token   => $TokenData->{Token},
             Origin  => 'db',
         };
     }
@@ -188,7 +171,7 @@ sub Fetch {
         TokenType  => 'refresh_token',
     );
 
-    if ($RefreshToken) {
+    if ($RefreshToken && $RefreshToken->{Token}) {
 
         my $Result = $Self->FetchToken(
             AccountID    => $AccountID,
@@ -196,7 +179,7 @@ sub Fetch {
             RefreshToken => $RefreshToken->{Token},
         );
 
-        if( $Result->{Token} && $TokenObject->IsTokenStillValid( Token => $Result->{Token} ) ) {
+        if( $Result->{Success} && $Result->{Token} ) {
 
             return {
                 Success => 1,
@@ -228,74 +211,24 @@ sub Fetch {
     );
 }
 
-=head2 sub RenewTokens()
-
-Main interface for the refresh via refresh_tokens cron job.
-
-    my $TokensProcessed = $TokenProviderObject->RenewTokens(
-        Interval => 600 # time in mislisec between cron jobs
-    );
-
-=cut
-
-sub RenewTokens {
-
-    my ( $Self, %Param ) = @_;
-
-    my $Interval = $Param{Interval};
-
-    my $TokenRepository    = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
-    my $FunctionalAccounts = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
-
-    my $DateTimeObject = $Kernel::OM->Create(
-        'Kernel::System::DateTime',
-    );
-
-    my $Success = $DateTimeObject->ToTimeZone(
-        TimeZone => 'UTC'
-    );
-
-    my $Epoch = $DateTimeObject->ToEpoch() + $Interval;
-
-    my $Tokens = $TokenRepository->List(
-        ExpiresAfter => $Epoch
-    );
-
-    my $Accounts = $FunctionalAccounts->GetAccounts();
-
-    TOKEN:
-    for my $Token (@$Tokens) {
-
-        my $Account = $Accounts->{ $Token->{AccountID} };
-
-        my $TokenType = $Account->{Token} || 'access_token';
-
-        my $Result = $Self->FetchToken(
-
-            AccountID    => $Token->{AccountID},
-            TokenType    => $TokenType,
-            RefreshToken => $Token->{Token},
-        );
-
-        $Token->{Result} = {
-            Success => $Result->{Success},
-            Error   => $Result->{Error},
-        };
-    }
-
-    return $Tokens;
-}
 
 =head2 sub FetchToken()
 
     Called internally when password or client_credential grant are configured.
-    Also calles when refreshing via refresh_token.
+    Also calleD internally when refreshing via refresh_token.
 
     Callled from client code when completing the authorization_code browser flow,
     passing the received Code parameter.
 
     my $TokenResult = $TokenProviderObject->FetchToken(
         AccountID  => '<SomeAccountName>',
+    );
+
+    or
+
+    my $TokenResult = $TokenProviderObject->FetchToken(
+        AccountID  => '<SomeAccountName>',
+        RefreshToken => $Token,
     );
 
     or
@@ -355,10 +288,7 @@ sub FetchToken {
         };
     }
 
-    my $TokenType         = $Account->{Token}             || 'access_token';
-    my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
-    my $ResourceIds       = $Account->{Resources};
-    my $Scope             = $Account->{Scope};
+    my $TokenType = $Account->{Token} || 'access_token';
 
     my $OpenIDConfig = $FunctionalAccountsObject->GetOpenIDConfig(
         AccountID  => $AccountID,
@@ -367,10 +297,10 @@ sub FetchToken {
     # fetch the token
     my $Result = $Self->FetchTokenFromConfig(
         TokenType         => $TokenType,
-        ResourceParamName => $ResourceParamName,
-        Resources         => $ResourceIds,
-        Scope             => $Scope,
         OpenIDConfig      => $OpenIDConfig,
+        ResourceParamName => $Account->{ResourceParamName} || 'resource',
+        Resources         => $Account->{Resources},
+        Scope             => $Account->{Scope},
         GrantType         => $Account->{GrantType},
         Username          => $Account->{Username},
         Password          => $Account->{Password},
@@ -458,6 +388,43 @@ sub FetchToken {
     };
 }
 
+=head2 sub FetchTokenFromConfig()
+
+Low level FetchToken helper
+
+This fetches token only based on OpenIDConfig + Parameters,
+no dependency on Functional Accounts.
+
+Used internall by FetchToken() above, but also from
+Kernel::System::Console::Command::Admin::OAuth2::ImportUser.pm
+
+returns the JSON response decoded as a Perl data structure,
+any further validation is supposed to happen upstream.
+
+
+    my $Result = $TokenProviderObject->FetchTokenFromConfig(
+
+        OpenIDConfig      => $OpenIDConfig, # from SysSetting
+        GrantType         => 'client_credential' | 'authorization_code' | 'password' | 'refresh_token'
+        TokenType         => 'access_token' | 'id_token',
+        ResourceParamName => 'resource',                 # defaults
+        Resources         => '<space separated list>',
+        Scope             => '<space separated list>',
+        Username          => '',
+        Password          => '',
+        RefreshToken      => $RefreshToken, # optional
+        Code              => '<the code from oauth callback>',
+        RedirectURL       => 'the redirect url used with autorization endpoint',  
+    );
+
+    with:
+
+    my $Result = {
+        Success => 1,
+        DecodedContent => {} # JSON result from token request, decoded to Perl
+    };
+
+=cut
 
 sub FetchTokenFromConfig {
 
@@ -478,18 +445,10 @@ sub FetchTokenFromConfig {
     }
 
     my $LanguageObject    = $Kernel::OM->Get('Kernel::Language');
-	my $TokenObject       = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
     my $OIDCConfiguration = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
 
-    # determine which token are we expected to pass to remote system
-    my $TokenType         = $Param{Token}             || 'access_token';
     my $ResourceParamName = $Param{ResourceParamName} || 'resource';
-    my $ResourceIds       = $Param{Resources};
-    my $Scope             = $Param{Scope};
     my $OpenIDConfig      = $Param{OpenIDConfig};
-    my $GrantType         = $Param{GrantType};
-    my $Username          = $Param{Username};
-    my $Password          = $Param{Password};
 
 	my $TokenEndpoint = $OIDCConfiguration->GetTokenEndpoint(
         OpenIDConfig  => $OpenIDConfig,
@@ -502,82 +461,23 @@ sub FetchTokenFromConfig {
         };
     }
 
-    # prepare the fetch token request
-    my $UserAgent = $Self->_GetUserAgent( OpenIDConfig => $OpenIDConfig );
+    my $OAuth2Object = $Kernel::OM->Get('Kernel::System::OpenIDConnect::OAuth2');
 
-    # prepare post data
-    my $PostData;
-
-    if ( $Param{RefreshToken} ) {
-
-        # refresh_token flow
-        $PostData = [
-            grant_type    => 'refresh_token',
-            refresh_token => $Param{RefreshToken},
-        ];
-    }
-    elsif (
-        $Param{GrantType} eq 'password'
-        &&
-        IsStringWithData( $Username ) &&
-        IsStringWithData( $Password )
-        )
-    {
-
-        # password flow
-        $PostData = [
-            grant_type => 'password',
-            username   => $Username,
-            password   => $Password,
-        ];
-    }
-    elsif ( $Param{GrantType} eq 'client_credentials' ) {
-
-        # client_credentials flow
-        $PostData = [
-            grant_type => 'client_credentials',
-        ];
-    }
-    elsif ( $Param{Code} && $Param{GrantType} eq 'authorization_code' ) {
-
-        # authorization code
-        $PostData = [
-            grant_type   => 'authorization_code',
-            code         => $Param{Code},
-            redirect_uri => $Param{RedirectURL},
-        ];
-    }
-
-    if ( !$Param{RefreshToken} && $ResourceIds && $ResourceIds ne '' ) {
-
-        push @$PostData, "$ResourceParamName" => $ResourceIds;
-    }
-
-    if ( !$Param{RefreshToken} && $Scope && $Scope ne '' ) {
-
-        push @$PostData, scope => $Scope;
-    }
-
-    # actually send the request
-    my $Response = $Self->_SendRequest(
-        OpenIDConfig => $OpenIDConfig,
-        UserAgent    => $UserAgent,
-        EndPoint     => $TokenEndpoint,
-        PostData     => $PostData,
+    return $OAuth2Object->RequestToken(
+        TokenEndpoint     => $TokenEndpoint,                        
+        ClientID          => $OpenIDConfig->{ClientSettings}{ClientID},
+        ClientSecret      => $OpenIDConfig->{ClientSettings}{ClientSecret},
+        Scope             => $Param{Scope},
+        Resources         => $Param{Resources},
+        ResourceParamName => $ResourceParamName,
+        GrantType         => $Param{GrantType},
+        Username          => $Param{Username},
+        Password          => $Param{Password},
+        RefreshToken      => $Param{RefreshToken},
+        Code              => $Param{Code},
+        RedirectURL       => $Param{RedirectURL},
+        SSLOptions        => $OpenIDConfig->{ProviderSettings}{SSLOptions}, 
     );
-
-    if ( !$Response->{Success} ) {
-
-        return {
-            Success => 0,
-            Error   => $LanguageObject->Translate("Error fetching Token for Invoker: %s", $Response->{Error} ),
-        };
-    }
-
-    return {
-        Success => 1,
-        DecodedContent => $Response->{Content}
-    };
 }
 
 =head2 GetAuthURL()
@@ -587,7 +487,9 @@ Build the URL to request an authorization code.
 Example:
     my $AuthURL = $TokenProviderObject->GetAuthURL(
         AccountID   => '<FunctionalAccountName>',
-        RedirectURI => 'https://your.otobo.url/otobo/index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth'
+        RedirectURI => 'https://your.otobo.url/otobo/index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth',
+        Nonce => $Nonce, # optional
+        State => $State, # optional, uses this state instead of random string (for testing)
     );
 
 Returns:
@@ -624,117 +526,45 @@ sub GetAuthURL {
     }
 
     my $TokenType = $Account->{Token} || 'access_token';
+    my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
 
     my $OpenIDConfig = $FunctionalAccountsObject->GetOpenIDConfig(
         AccountID  => $AccountID,
     );
 
-    # Create a random string to prevent cross-site requests.
-    my $RandomString = $Kernel::OM->Get('Kernel::System::Main')->GenerateRandomString(
-        Length => 22    #$OAuthConfig->{StateNonceLength} || 22,
-    );
-
-    my $AuthRequest = {
-        ResponseType => ['code'],
-        State        => $Param{State} || $RandomString,
-        RedirectURI  => $Param{RedirectURI},
-    };
-
-    my $Resources = $Account->{Resources};
-    my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
-
-    my $Scope = $Account->{Scope};
-
-    if ( $TokenType eq 'id_token' ) {
-
-        push $AuthRequest->{ResponseType}->@*, 'id_token';
-    }
-
-#    my $RedirectURL = $Self->_BuildRedirectURL(
- #       AuthRequest      => $AuthRequest,
-  #      Login            => $Param{Login},
-    #    Prompt           => $Param{Prompt},
-	#	OpenIDConfig     => $OpenIDConfig,
-    #);
-
-#	my $OpenIDConfig     = $Param{OpenIDConfig};
-	my $ClientSettings   = $OpenIDConfig->{ClientSettings};
-
-#	my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
- 
 	my $AuthEndpoint = $FunctionalAccountsObject->GetAuthorizationEndpoint(
 		AccountID => $AccountID,
 	);
 
-    if ( !$AuthEndpoint ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => 'Could not retrieve the authorization endpoint!',
-        );
+    my $OAuth2Object = $Kernel::OM->Get('Kernel::System::OpenIDConnect::OAuth2');
 
-        return;
-    }
-#
-#	my $OpenIDProviderData = $FunctionalAccountsObject->GetProviderData(
-#		AccountID => $AccountID,
-#	);
-#
-    my $RedirectURL = $AuthEndpoint;
-    $RedirectURL .= '?response_type=' . join( '%20', @{ $AuthRequest->{ResponseType} } );
+    return $OAuth2Object->GetAuthURL(
+        AuthorizationEndpoint => $AuthEndpoint,                     
+        ClientID              => $OpenIDConfig->{ClientSettings}{ClientID},
+        TokenType             => $TokenType,
+        Scope                 => $Account->{Scope},
+        Resources             => $Account->{Resources},
+        ResourceParamName     => $ResourceParamName,
+        Login                 => $Param{Login},
+        Prompt                => $Param{Prompt},
+        Nonce                 => $Param{Nonce},
+        RedirectURL           => $Param{RedirectURI},
+        State                 => $Param{State},
+        %Param,
+    );
+}
 
-    if ( $Param{AdditionalScope} ) {
-        $RedirectURL .= '&scope=openid%20' . uri_escape_utf8($Param{AdditionalScope});
-    }
-    elsif ( $Scope ) {
-        $RedirectURL .= '&scope='. uri_escape_utf8($Scope);
-    }
-    else {
-        $RedirectURL .= '&scope=openid';
-    }
+=head2 EmptyCache()
 
-    $RedirectURL .= '&client_id=' . $ClientSettings->{ClientID};
+Empty cached tokens and provider data in case of re-configuration
 
-    if ( $Resources ) {
-        $RedirectURL .= "&".$ResourceParamName."=" . uri_escape_utf8($Resources);
-    }
-
-    if ( $AuthRequest->{Nonce} ) {
-        $RedirectURL .= '&nonce=' . $AuthRequest->{Nonce};
-    }
-
-    if ( grep { $_ eq 'id_token' } @{ $AuthRequest->{ResponseType} } ) {
-        $RedirectURL .= '&response_mode=form_post';
-    }
-
-    if ( $Param{Login} ) {
-        $RedirectURL .= '&login_hint=' . uri_escape_utf8( $Param{Login} );
-    }
-
-    if ( $Param{Prompt} ) {
-        $RedirectURL .= '&prompt=login';
-    }
-
-    $RedirectURL .= '&state=' . $AuthRequest->{State};
-    $RedirectURL .= '&redirect_uri=' . uri_escape_utf8( $AuthRequest->{RedirectURI} || $ClientSettings->{RedirectURI} );
-
-    $Param{RedirectURL} = $AuthRequest->{RedirectURI};
-
-    # Save all parameters to use after successful authorization.
-    $Kernel::OM->Get('Kernel::System::Cache')->Set(
-        Type  => 'TokenProvider',
-        TTL   => 60 * 15,                                       # TODO make configurable
-        Key   => "TokenProvider::OAuth2State::$RandomString",
-        Value => \%Param,
+Example:
+    $TokenProviderObject->EmptyCache(
+        AccountID   => '<FunctionalAccountName>',
     );
 
-# TODO: endsession_endpoint in provider info
-# my $LogoutURL = "https://keycloak:8443/realms/master/protocol/openid-connect/logout?client_id=otobo&post_logout_redirect_uri=";
-# $LogoutURL .= uri_escape_utf8($RedirectURL);
-# https://auth-server/auth/realms/{realm-name}/protocol/openid-connect/logout?redirect_uri=https://auth-server/auth/realms/{realm-name}/protocol/openid-connect/auth?client_id=client_id&redirect_uri
-# print STDERR "WRAPPED: $LogoutURL\n";
 
-    return $RedirectURL;
-}
+=cut
 
 sub EmptyCache {
 
@@ -766,10 +596,13 @@ sub EmptyCache {
         );
     }
 
+    # clear provider data cache as well
     my $FunctionalAccounts = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
 	$FunctionalAccounts->ClearCache(
         AccountID  => $AccountID,
     );
+
+    return;
 }
 
 # helpers
@@ -801,7 +634,22 @@ sub _FetchTokenFromCache {
         Key  => $CacheKey,
     );
 
-    return $Token;
+    if(!$Token) {
+        return;
+    }
+
+    my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
+    if( $TokenObject->IsTokenStillValid( Token => $Token )) {
+
+        return $Token;
+    }
+
+    $CacheObject->Delete(
+        Type => $CacheType,
+        Key  => $CacheKey,
+    );
+
+    return;
 }
 
 sub _PopulateCache {
@@ -853,104 +701,6 @@ sub _PopulateCache {
     return $Token;
 }
 
-sub _GetUserAgent {
-
-    my ( $Self, %Param ) = @_;
-
-    my $OpenIDConfig = $Param{OpenIDConfig};
-
-    # prepare the fetch token request
-    my $UserAgent = LWP::UserAgent->new();
-
-    # SSL options
-    if ( $OpenIDConfig->{ProviderSettings}{SSLOptions} ) {
-        OPTION:
-        for my $Key ( keys $OpenIDConfig->{ProviderSettings}{SSLOptions}->%* ) {
-            next OPTION if !$Self->{SSLOptionMap}{$Key};
-
-            if ( $Key eq 'SSLPassword' ) {
-                $UserAgent->ssl_opts(
-                    $Self->{SSLOptionMap}{$Key} => sub { $OpenIDConfig->{ProviderSettings}{SSLOptions}{$Key} },
-                );
-
-                next OPTION;
-            }
-
-            $UserAgent->ssl_opts(
-                $Self->{SSLOptionMap}{$Key} => $OpenIDConfig->{ProviderSettings}{SSLOptions}{$Key},
-            );
-        }
-    }
-
-    return $UserAgent;
-}
-
-sub _SendRequest {
-
-    my ( $Self, %Param ) = @_;
-
-    my $OpenIDConfig = $Param{OpenIDConfig};
-    my $UserAgent    = $Param{UserAgent};
-    my $EndPoint     = $Param{EndPoint};
-    my $PostData     = $Param{PostData};
-
-    # send the data form-encoded
-    my $Request = POST(
-        $EndPoint,
-        $PostData
-    );
-
-    my $LanguageObject = $Kernel::OM->Get('Kernel::Language');
-
-    # add client_id and client_secret to authenticate the client
-    if ( !$OpenIDConfig->{ClientSettings}{ClientID} || !$OpenIDConfig->{ClientSettings}{ClientSecret} ) {
-
-        return {
-            Success => 0,
-            Error   => $LanguageObject->Translate('Need ClientID and ClientSecret!'),
-        };
-    }
-
-    $Request->authorization_basic( $OpenIDConfig->{ClientSettings}{ClientID}, $OpenIDConfig->{ClientSettings}{ClientSecret} );
-
-    # execute request
-    my $Response = $UserAgent->request($Request);
-    my $Content  = $Response->content();
-
-    if ( !$Content ) {
-
-        return {
-            Success => 0,
-            Error   => $LanguageObject->Translate("Got no content when requesting Token. Response Code: %s", $Response->code()),
-        };
-    }
-
-    # decode content
-    my $DecodedContent = $Kernel::OM->Get('Kernel::System::JSON')->Decode(
-        Data => $Content,
-    );
-
-    if ( !IsHashRefWithData($DecodedContent) ) {
-
-        return {
-            Success => 0,
-            Error   => $LanguageObject->Translate("Got no JSON object when requesting Token. Response: %s", $Content),
-        };
-    }
-
-    # fetch the desired token (access_token (default) or id_token)
-    if ( $DecodedContent->{error} ) {
-        return {
-            Success => 0,
-            Error   => "Error: ". $DecodedContent->{erro}. ". Description: ".$DecodedContent->{error_description},
-        };
-    }
-
-    return {
-        Success => 1,
-        Content => $DecodedContent,
-    };
-}
 
 sub _ProcessNewToken {
 
@@ -1012,86 +762,6 @@ sub _ProcessNewToken {
     );
 
     return 1;
-}
-
-sub _BuildRedirectURL {
-    my ( $Self, %Param ) = @_;
-
-    for my $Needed (qw/AuthRequest OpenIDConfig/) {
-        if ( !$Param{$Needed} ) {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'error',
-                Message  => "Need $Needed!",
-            );
-
-            return;
-        }
-    }
-
-    if ( !IsArrayRefWithData( $Param{AuthRequest}{ResponseType} ) ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "ResponseType must be an array ref with data!",
-        );
-
-        return;
-    }
-
-	my $OpenIDConfig     = $Param{OpenIDConfig};
-	my $ClientSettings   = $OpenIDConfig->{ClientSettings};
-
-	my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
-
-	my $RedirectURL = $OIDCConfigurationObject->GetAuthorizationEndpoint();
-
-    if ( !$RedirectURL ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => 'Could not retrieve the authorization endpoint!',
-        );
-
-        return;
-    }
-
-    $RedirectURL .= '?response_type=' . join( '%20', @{ $Param{AuthRequest}{ResponseType} } );
-
-    if ( $Param{AdditionalScope} ) {
-        $RedirectURL .= '&scope=' . join( '%20', ( 'openid', @{ $Param{AuthRequest}{AdditionalScope} // [] } ) );
-    }
-    elsif ( $Param{Scope} ) {
-        $RedirectURL .= '&scope=' . join( '%20', ( @{ $Param{AuthRequest}{Scope} // [] } ) );
-    }
-    else {
-        $RedirectURL .= '&scope=openid';
-    }
-
-    $RedirectURL .= '&client_id=' . $Param{ClientSettings}{ClientID};
-    $RedirectURL .= '&state=' . $Param{AuthRequest}{State};
-    $RedirectURL .= '&redirect_uri=' . uri_escape_utf8( $Param{AuthRequest}{RedirectURI} || $Param{ClientSettings}{RedirectURI} );
-
-    if ( exists $Param{AuthRequest}->{ResourceParamName} ) {
-        my $Resources = $Param{AuthRequest}->{ $Param{AuthRequest}->{ResourceParamName} };
-        $RedirectURL .= "&$Param{AuthRequest}->{ResourceParamName}=" .
-            join( '%20', ( @{ $Resources // [] } ) );
-    }
-
-    if ( $Param{AuthRequest}{Nonce} ) {
-        $RedirectURL .= '&nonce=' . $Param{AuthRequest}{Nonce};
-    }
-
-    if ( grep { $_ eq 'id_token' } @{ $Param{AuthRequest}{ResponseType} } ) {
-        $RedirectURL .= '&response_mode=form_post';
-    }
-
-    if ( $Param{Login} ) {
-        $RedirectURL .= '&login_hint=' . uri_escape_utf8( $Param{Login} );
-    }
-
-    if ( $Param{Prompt} ) {
-        $RedirectURL .= '&prompt=login';
-    }
-
-    return $RedirectURL;
 }
 
 1;
