@@ -59,7 +59,9 @@ sub Run {
 
     my ( $Self, %Param ) = @_;
 
-    my $MainObject = $Kernel::OM->Get('Kernel::System::Main');
+    my $MainObject   = $Kernel::OM->Get('Kernel::System::Main');
+    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
+    my $LogDir       = $ConfigObject->Get('Home').'/var/log/';
 
     my $Log = "TokenStorageUpdater has been called with:\n";
 
@@ -92,7 +94,7 @@ sub Run {
     }
 
     my $FileLocation = $MainObject->FileWrite(
-        Directory => '/opt/otobo/var/log/',
+        Directory => $LogDir,
         Filename  => 'tokenupdater.log',
         Content   => \$Log,
     );
