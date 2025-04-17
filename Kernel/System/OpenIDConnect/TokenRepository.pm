@@ -29,9 +29,10 @@ use namespace::autoclean;
 
 our @ObjectDependencies = (
     'Kernel::Config',
-    'Kernel::System::DateTime',
-    'Kernel::System::Log',
     'Kernel::System::DB',
+    'Kernel::System::Log',
+    'Kernel::System::DateTime',
+    'Kernel::System::OpenIDConnect::Token',
 );
 
 =head1 NAME
@@ -94,10 +95,10 @@ sub Save {
 
     $Self->Delete(%Param);
 
-    my $AccountID  = $Param{AccountID};
-    my $TokenType  = $Param{TokenType};
-    my $Token      = $Param{Token};
-    my $ExpiresAt  = $Param{ExpiresAt};
+    my $AccountID = $Param{AccountID};
+    my $TokenType = $Param{TokenType};
+    my $Token     = $Param{Token};
+    my $ExpiresAt = $Param{ExpiresAt};
 
     my $InsertSuccess = $DBObject->Do(
         SQL  => "INSERT INTO token_storage (account_id, token_type, token, expires_at) VALUES (?, ?, ?, ?)",
@@ -156,7 +157,7 @@ sub Delete {
         return;
     }
 
-    my $AccountID  = $Param{AccountID};
+    my $AccountID = $Param{AccountID};
 
     my $SQL  = "DELETE FROM token_storage WHERE account_id = ? ";
     my $Bind = [ \$AccountID, ];
@@ -267,8 +268,8 @@ sub Get {
             return;
         }
 
-        my $AccountID  = $Param{AccountID};
-        my $TokenType  = $Param{TokenType};
+        my $AccountID = $Param{AccountID};
+        my $TokenType = $Param{TokenType};
 
         $DBObject->Prepare(
             SQL => "SELECT id, account_id, token_type, token, expires_at
@@ -282,17 +283,17 @@ sub Get {
     if ( my ( $TokenID, $AccountID, $TokenType, $Token, $ExpiresAt ) = $DBObject->FetchrowArray ) {
 
         my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
-        if( $TokenObject->IsTokenStillValid( Token => $Token )) {
+        if ( $TokenObject->IsTokenStillValid( Token => $Token ) ) {
 
             return {
-                TokenID    => $TokenID,
-                AccountID  => $AccountID,
-                TokenType  => $TokenType,
-                Token      => $Token,
-                ExpiresAt  => $ExpiresAt,
+                TokenID   => $TokenID,
+                AccountID => $AccountID,
+                TokenType => $TokenType,
+                Token     => $Token,
+                ExpiresAt => $ExpiresAt,
             };
         }
-        $Self->Delete( %Param );
+        $Self->Delete(%Param);
     }
 
     return;
@@ -355,11 +356,11 @@ sub List {
     while ( my ( $TokenID, $AccountID, $TokenType, $Token, $ExpiresAt ) = $DBObject->FetchrowArray ) {
 
         push @Result, {
-            TokenID    => $TokenID,
-            AccountID  => $AccountID,
-            TokenType  => $TokenType,
-            Token      => $Token,
-            ExpiresAt  => $ExpiresAt,
+            TokenID   => $TokenID,
+            AccountID => $AccountID,
+            TokenType => $TokenType,
+            Token     => $Token,
+            ExpiresAt => $ExpiresAt,
         };
     }
 
@@ -406,7 +407,6 @@ sub Lookup {
     return \%GenericInterfaceTokenLookup;
 }
 
-
 =head2 ValidateTokenType()
 
     Validate TokenType value.
@@ -422,7 +422,7 @@ sub ValidateTokenType {
 
     if (
         $Param{TokenType} ne 'access_token' &&
-        $Param{TokenType} ne 'id_token' &&
+        $Param{TokenType} ne 'id_token'     &&
         $Param{TokenType} ne 'refresh_token'
         )
     {

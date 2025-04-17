@@ -25,9 +25,13 @@ use Kernel::System::VariableCheck qw(:all);
 use parent qw(Kernel::System::Console::BaseCommand);
 
 our @ObjectDependencies = (
-    'Kernel::System::GenericInterface::Webservice',
+    'Kernel::Config',
     'Kernel::System::Main',
-    'Kernel::System::YAML',
+    'Kernel::System::User',
+    'Kernel::System::Group',
+    'Kernel::System::OpenIDConnect::Configuration',
+    'Kernel::System::OpenIDConnect::Token',
+    'Kernel::System::OpenIDConnect::TokenProvider',
 );
 
 sub Configure {
@@ -36,10 +40,11 @@ sub Configure {
     $Self->Description('Import a Functional User Account from an OpenID Connect Provider.');
     $Self->AddOption(
         Name        => 'openid-config',
-        Description => "The name of OpenID Config to use. Defaults to 'AuthModule::OpenIDConnect::Config' for using the default OIDC login provider if this system uses OIDC for login purposes. Otherwise use one of 'OpenIDConnect::UserMapping###Custom1' ... CustomN Keys. ",
-        Required    => 0,
-        HasValue    => 1,
-        ValueRegex  => qr/.*/smx,
+        Description =>
+            "The name of OpenID Config to use. Defaults to 'AuthModule::OpenIDConnect::Config' for using the default OIDC login provider if this system uses OIDC for login purposes. Otherwise use one of 'OpenIDConnect::UserMapping###Custom1' ... CustomN Keys. ",
+        Required   => 0,
+        HasValue   => 1,
+        ValueRegex => qr/.*/smx,
     );
     $Self->AddOption(
         Name        => 'grant-type',
@@ -139,26 +144,26 @@ sub Run {
     my $OpenIDConfigName = $Self->GetOption('openid-config') || 'AuthModule::OpenIDConnect::Config';
 
     my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
-    my $ConfigObject    = $Kernel::OM->Get('Kernel::Config');
+    my $ConfigObject            = $Kernel::OM->Get('Kernel::Config');
 
     my $Profiles = $OIDCConfigurationObject->GetOAuthProfiles();
 
-    if( !exists $Profiles->{$OpenIDConfigName} ) {
+    if ( !exists $Profiles->{$OpenIDConfigName} ) {
 
         $Self->PrintError('OpenIDConfig not found!');
         return $Self->ExitCodeError();
     }
 
     my $OpenIDConfig = $ConfigObject->Get($OpenIDConfigName);
-    if( !IsHashRefWithData($OpenIDConfig) ) {
+    if ( !IsHashRefWithData($OpenIDConfig) ) {
 
         $Self->PrintError('Invalid OpenIDConfig!');
         return $Self->ExitCodeError();
     }
 
     my $GrantType = $Self->GetOption('grant-type');
-    if( $GrantType eq 'password' ) {
-        if(!$Self->GetOption('username')) {
+    if ( $GrantType eq 'password' ) {
+        if ( !$Self->GetOption('username') ) {
 
             $Self->PrintError("Need --username (and probably --password) for grant-type 'password'.");
             return $Self->ExitCodeError();
@@ -166,15 +171,15 @@ sub Run {
     }
 
     my $TokenType = $Self->GetOption('token-type') || 'id_token';
-    my $UID       = $Self->GetOption('uid') || 'sub';
-    my $UserMap   = $ConfigObject->Get( $Self->GetOption('user-map') || 'AuthModule::OpenIDConnect::UserMap');
-    my $RoleMap   = $ConfigObject->Get( $Self->GetOption('role-map') || 'AuthModule::OpenIDConnect::RoleMap');
+    my $UID       = $Self->GetOption('uid')        || 'sub';
+    my $UserMap   = $ConfigObject->Get( $Self->GetOption('user-map') || 'AuthModule::OpenIDConnect::UserMap' );
+    my $RoleMap   = $ConfigObject->Get( $Self->GetOption('role-map') || 'AuthModule::OpenIDConnect::RoleMap' );
 
     # now use TokenProvider to do the Token fetching for us
     my $TokenProvider = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
 
     my $Result = $TokenProvider->FetchTokenFromConfig(
-        TokenType         => $Self->GetOption('token-type') || 'access_token',
+        TokenType         => $Self->GetOption('token-type')          || 'access_token',
         ResourceParamName => $Self->GetOption('resource-param-name') || 'resource',
         Resources         => $Self->GetOption('resource'),
         Scope             => $Self->GetOption('scope'),
@@ -184,13 +189,13 @@ sub Run {
         Password          => $Self->GetOption('password'),
     );
 
-    if(!$Result->{Success}) {
-        $Self->PrintError('Error Fetching Token: ' . $Result->{Error} );
+    if ( !$Result->{Success} ) {
+        $Self->PrintError( 'Error Fetching Token: ' . $Result->{Error} );
         return $Self->ExitCodeError();
     }
 
     my $Token = $Result->{DecodedContent}->{$TokenType};
-    if( !$Token ) {
+    if ( !$Token ) {
 
         $Self->PrintError("Did not receive desired token type '$TokenType'.");
         return $Self->ExitCodeError();
@@ -198,9 +203,9 @@ sub Run {
 
     # inspect the Token payload
     my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
-    my $TokenData = $TokenObject->Inspect( Token => $Token );
+    my $TokenData   = $TokenObject->Inspect( Token => $Token );
 
-    $Self->Print(encode_json($TokenData)."\n");
+    $Self->Print( encode_json($TokenData) . "\n" );
 
     # determine jwt clain to otobo UserLogin mapping
     my $Identifier = $ConfigObject->Get('AuthModule::OpenIDConnect::UID');
@@ -240,17 +245,17 @@ sub Run {
         delete $UserData{UserID};
         delete $UserData{UserPw};
 
-        $UserData{UserFirstname} = $UserData{UserFirstname} || $TokenData->{azp} || 'otobo';
+        $UserData{UserFirstname} = $UserData{UserFirstname} || $TokenData->{azp}                || 'otobo';
         $UserData{UserLastname}  = $UserData{UserLastname}  || $TokenData->{preferred_username} || 'bot';
-        $UserData{UserEmail}     = $UserData{UserEmail}     || $TokenData->{email} || 'systemuser@otobo.local';
+        $UserData{UserEmail}     = $UserData{UserEmail}     || $TokenData->{email}              || 'systemuser@otobo.local';
 
         if ( !%User ) {
 
             $Self->Print("<yellow>Adding User  $UserLogin </yellow>\n");
 
-            foreach my $Key ( keys %UserData ) {
-                $Self->Print("    <yellow>$Key : ".$UserData{$Key}."</yellow>\n");
-            }                
+            for my $Key ( keys %UserData ) {
+                $Self->Print( "    <yellow>$Key : " . $UserData{$Key} . "</yellow>\n" );
+            }
 
             $UserID = $UserObject->UserAdd(
                 UserFirstname => '-',
@@ -266,8 +271,8 @@ sub Run {
 
             $Self->Print("<yellow>Updating User  $UserLogin </yellow>\n");
 
-            foreach my $Key ( keys %UserData ) {
-                $Self->Print("    <yellow>$Key : ".$UserData{$Key}."</yellow>\n");
+            for my $Key ( keys %UserData ) {
+                $Self->Print( "    <yellow>$Key : " . $UserData{$Key} . "</yellow>\n" );
             }
 
             my $Update;
@@ -289,7 +294,6 @@ sub Run {
             }
         }
     }
-
 
     $UserID //= $User{UserID};
 
@@ -328,7 +332,6 @@ sub Run {
     $Self->Print("<green>Done.</green>\n");
     return $Self->ExitCodeOk();
 }
-
 
 sub _ExtractMap {
     my ( $Self, %Param ) = @_;

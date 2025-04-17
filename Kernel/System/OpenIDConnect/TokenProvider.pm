@@ -31,6 +31,7 @@ use namespace::autoclean;
 
 our @ObjectDependencies = (
     'Kernel::Config',
+    'Kernel::Language',
     'Kernel::System::DateTime',
     'Kernel::System::Cache',
     'Kernel::System::JSON',
@@ -110,12 +111,12 @@ sub Fetch {
         }
     }
 
-    my $AccountID  = $Param{AccountID};
+    my $AccountID = $Param{AccountID};
 
     my $LanguageObject           = $Kernel::OM->Get('Kernel::Language');
     my $FunctionalAccountsObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
-	my $TokenObject              = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
-    my $Account                  = $FunctionalAccountsObject->GetAccount( AccountID  => $AccountID );
+    my $TokenObject              = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
+    my $Account                  = $FunctionalAccountsObject->GetAccount( AccountID => $AccountID );
 
     if ( !IsHashRefWithData($Account) ) {
 
@@ -126,7 +127,7 @@ sub Fetch {
 
         return {
             Success => 0,
-            Error   => $LanguageObject->Translate("AccountID %s not found!", $AccountID),
+            Error   => $LanguageObject->Translate( "AccountID %s not found!", $AccountID ),
         };
     }
 
@@ -134,11 +135,11 @@ sub Fetch {
 
     # 1) try fetch from Cache
     my $Token = $Self->_FetchTokenFromCache(
-        AccountID  => $AccountID,
-        TokenType  => $TokenType,
+        AccountID => $AccountID,
+        TokenType => $TokenType,
     );
 
-    if( $Token ) {
+    if ($Token) {
 
         return {
             Success => 1,
@@ -151,11 +152,11 @@ sub Fetch {
     my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 
     my $TokenData = $TokenRepository->Get(
-        AccountID  => $AccountID,
-        TokenType  => $TokenType,
+        AccountID => $AccountID,
+        TokenType => $TokenType,
     );
 
-    if( $TokenData && $TokenData->{Token} ) {
+    if ( $TokenData && $TokenData->{Token} ) {
 
         return {
             Success => 1,
@@ -167,11 +168,11 @@ sub Fetch {
     # 3) try refresh_token, if any
 
     my $RefreshToken = $TokenRepository->Get(
-        AccountID  => $AccountID,
-        TokenType  => 'refresh_token',
+        AccountID => $AccountID,
+        TokenType => 'refresh_token',
     );
 
-    if ($RefreshToken && $RefreshToken->{Token}) {
+    if ( $RefreshToken && $RefreshToken->{Token} ) {
 
         my $Result = $Self->FetchToken(
             AccountID    => $AccountID,
@@ -179,7 +180,7 @@ sub Fetch {
             RefreshToken => $RefreshToken->{Token},
         );
 
-        if( $Result->{Success} && $Result->{Token} ) {
+        if ( $Result->{Success} && $Result->{Token} ) {
 
             return {
                 Success => 1,
@@ -201,21 +202,20 @@ sub Fetch {
 
         return {
             Success => 0,
-            Error   => $LanguageObject->Translate("No valid refresh_token for Account %s using grant_tpye 'authorization code' !", $AccountID),
+            Error   => $LanguageObject->Translate( "No valid refresh_token for Account %s using grant_tpye 'authorization code' !", $AccountID ),
         };
     }
 
     return $Self->FetchToken(
-        AccountID  => $AccountID,
-        TokenType  => $TokenType,
+        AccountID => $AccountID,
+        TokenType => $TokenType,
     );
 }
 
-
 =head2 sub FetchToken()
 
-    Called internally when password or client_credential grant are configured.
-    Also calleD internally when refreshing via refresh_token.
+    Called internaly when password or client_credential grant are configured.
+    Also calleD internaly when refreshing via refresh_token.
 
     Callled from client code when completing the authorization_code browser flow,
     passing the received Code parameter.
@@ -269,13 +269,13 @@ sub FetchToken {
     }
 
     my $LanguageObject           = $Kernel::OM->Get('Kernel::Language');
-	my $TokenObject              = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
+    my $TokenObject              = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
     my $FunctionalAccountsObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
 
     # Fetch config data from account
     my $AccountID = $Param{AccountID};
-    my $Account   = $FunctionalAccountsObject->GetAccount( AccountID  => $AccountID );
-    
+    my $Account   = $FunctionalAccountsObject->GetAccount( AccountID => $AccountID );
+
     if ( !IsHashRefWithData($Account) ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'error',
@@ -284,14 +284,14 @@ sub FetchToken {
 
         return {
             Success => 0,
-            Error   => $LanguageObject->Translate("Need functional account Invoker settings in SysConfig for %s.", $AccountID),
+            Error   => $LanguageObject->Translate( "Need functional account Invoker settings in SysConfig for %s.", $AccountID ),
         };
     }
 
     my $TokenType = $Account->{Token} || 'access_token';
 
     my $OpenIDConfig = $FunctionalAccountsObject->GetOpenIDConfig(
-        AccountID  => $AccountID,
+        AccountID => $AccountID,
     );
 
     # fetch the token
@@ -306,10 +306,10 @@ sub FetchToken {
         Password          => $Account->{Password},
         RefreshToken      => $Param{RefreshToken},
         Code              => $Param{Code},
-        RedirectURL       => $Param{RedirectURL},  
+        RedirectURL       => $Param{RedirectURL},
     );
 
-    if(!$Result->{Success}) {
+    if ( !$Result->{Success} ) {
         return $Result;
     }
 
@@ -325,7 +325,7 @@ sub FetchToken {
 
         return {
             Success => 0,
-            Error   => $LanguageObject->Translate("Did not receive the desired TokenType '%s' in OIDC provider response for Invoker %s!", $TokenType, $AccountID),
+            Error   => $LanguageObject->Translate( "Did not receive the desired TokenType '%s' in OIDC provider response for Invoker %s!", $TokenType, $AccountID ),
         };
     }
 
@@ -343,7 +343,7 @@ sub FetchToken {
 
         return {
             Success => 0,
-            Error   => $LanguageObject->Translate("Time left on fresh token is: %s s for Invoker %s!", $TimeLeft, $AccountID),
+            Error   => $LanguageObject->Translate( "Time left on fresh token is: %s s for Invoker %s!", $TimeLeft, $AccountID ),
         };
     }
 
@@ -395,7 +395,7 @@ Low level FetchToken helper
 This fetches token only based on OpenIDConfig + Parameters,
 no dependency on Functional Accounts.
 
-Used internall by FetchToken() above, but also from
+Used internally by FetchToken() above, but also from
 Kernel::System::Console::Command::Admin::OAuth2::ImportUser.pm
 
 returns the JSON response decoded as a Perl data structure,
@@ -414,7 +414,7 @@ any further validation is supposed to happen upstream.
         Password          => '',
         RefreshToken      => $RefreshToken, # optional
         Code              => '<the code from oauth callback>',
-        RedirectURL       => 'the redirect url used with autorization endpoint',  
+        RedirectURL       => 'the redirect url used with autorization endpoint',
     );
 
     with:
@@ -450,9 +450,9 @@ sub FetchTokenFromConfig {
     my $ResourceParamName = $Param{ResourceParamName} || 'resource';
     my $OpenIDConfig      = $Param{OpenIDConfig};
 
-	my $TokenEndpoint = $OIDCConfiguration->GetTokenEndpoint(
-        OpenIDConfig  => $OpenIDConfig,
-	);
+    my $TokenEndpoint = $OIDCConfiguration->GetTokenEndpoint(
+        OpenIDConfig => $OpenIDConfig,
+    );
     if ( !$TokenEndpoint ) {
 
         return {
@@ -464,7 +464,7 @@ sub FetchTokenFromConfig {
     my $OAuth2Object = $Kernel::OM->Get('Kernel::System::OpenIDConnect::OAuth2');
 
     return $OAuth2Object->RequestToken(
-        TokenEndpoint     => $TokenEndpoint,                        
+        TokenEndpoint     => $TokenEndpoint,
         ClientID          => $OpenIDConfig->{ClientSettings}{ClientID},
         ClientSecret      => $OpenIDConfig->{ClientSettings}{ClientSecret},
         Scope             => $Param{Scope},
@@ -476,7 +476,7 @@ sub FetchTokenFromConfig {
         RefreshToken      => $Param{RefreshToken},
         Code              => $Param{Code},
         RedirectURL       => $Param{RedirectURL},
-        SSLOptions        => $OpenIDConfig->{ProviderSettings}{SSLOptions}, 
+        SSLOptions        => $OpenIDConfig->{ProviderSettings}{SSLOptions},
     );
 }
 
@@ -511,10 +511,10 @@ sub GetAuthURL {
         }
     }
 
-    my $AccountID  = $Param{AccountID};
+    my $AccountID = $Param{AccountID};
 
     my $FunctionalAccountsObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
-    my $Account                  = $FunctionalAccountsObject->GetAccount( AccountID  => $AccountID );
+    my $Account                  = $FunctionalAccountsObject->GetAccount( AccountID => $AccountID );
 
     if ( !IsHashRefWithData($Account) ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
@@ -525,21 +525,21 @@ sub GetAuthURL {
         return;
     }
 
-    my $TokenType = $Account->{Token} || 'access_token';
+    my $TokenType         = $Account->{Token}             || 'access_token';
     my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
 
     my $OpenIDConfig = $FunctionalAccountsObject->GetOpenIDConfig(
-        AccountID  => $AccountID,
+        AccountID => $AccountID,
     );
 
-	my $AuthEndpoint = $FunctionalAccountsObject->GetAuthorizationEndpoint(
-		AccountID => $AccountID,
-	);
+    my $AuthEndpoint = $FunctionalAccountsObject->GetAuthorizationEndpoint(
+        AccountID => $AccountID,
+    );
 
     my $OAuth2Object = $Kernel::OM->Get('Kernel::System::OpenIDConnect::OAuth2');
 
     return $OAuth2Object->GetAuthURL(
-        AuthorizationEndpoint => $AuthEndpoint,                     
+        AuthorizationEndpoint => $AuthEndpoint,
         ClientID              => $OpenIDConfig->{ClientSettings}{ClientID},
         TokenType             => $TokenType,
         Scope                 => $Account->{Scope},
@@ -581,7 +581,7 @@ sub EmptyCache {
         }
     }
 
-    my $AccountID  = $Param{AccountID};
+    my $AccountID = $Param{AccountID};
 
     my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
 
@@ -598,8 +598,8 @@ sub EmptyCache {
 
     # clear provider data cache as well
     my $FunctionalAccounts = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
-	$FunctionalAccounts->ClearCache(
-        AccountID  => $AccountID,
+    $FunctionalAccounts->ClearCache(
+        AccountID => $AccountID,
     );
 
     return;
@@ -621,8 +621,8 @@ sub _FetchTokenFromCache {
         }
     }
 
-    my $AccountID  = $Param{AccountID};
-    my $TokenType  = $Param{TokenType};
+    my $AccountID = $Param{AccountID};
+    my $TokenType = $Param{TokenType};
 
     my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
 
@@ -634,12 +634,12 @@ sub _FetchTokenFromCache {
         Key  => $CacheKey,
     );
 
-    if(!$Token) {
+    if ( !$Token ) {
         return;
     }
 
     my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
-    if( $TokenObject->IsTokenStillValid( Token => $Token )) {
+    if ( $TokenObject->IsTokenStillValid( Token => $Token ) ) {
 
         return $Token;
     }
@@ -667,13 +667,13 @@ sub _PopulateCache {
         }
     }
 
-    my $AccountID  = $Param{AccountID};
-    my $TokenType  = $Param{TokenType};
-    my $Token      = $Param{Token};
-    my $ExpiresAt  = $Param{ExpiresAt};
+    my $AccountID = $Param{AccountID};
+    my $TokenType = $Param{TokenType};
+    my $Token     = $Param{Token};
+    my $ExpiresAt = $Param{ExpiresAt};
 
     my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
-	my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
+    my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
 
     my $CacheType = "TokenProvider";
     my $CacheKey  = join( ',', 'Invoker', $AccountID, $TokenType );
@@ -701,7 +701,6 @@ sub _PopulateCache {
     return $Token;
 }
 
-
 sub _ProcessNewToken {
 
     my ( $Self, %Param ) = @_;
@@ -719,7 +718,7 @@ sub _ProcessNewToken {
     if ( $TokenType eq 'refresh_token' ) {
 
         my $Result = $TokenObject->Inspect(
-			Token  => $Token,
+            Token => $Token,
         );
 
         return unless $Result;
@@ -729,11 +728,11 @@ sub _ProcessNewToken {
     else {
 
         my $Result = $TokenObject->Validate(
-            Token                => $Token,
-			OpenIDConfig         => $OpenIDConfig,
-            ExpectedAudience     => $TokenType eq 'id_token' ? $OpenIDConfig->{ClientSettings}->{ClientID} : undef,
-            AuthorizedParty      => $OpenIDConfig->{ClientSettings}->{ClientID},
-            ExpectedScopes       => $Account->{Scope},
+            Token            => $Token,
+            OpenIDConfig     => $OpenIDConfig,
+            ExpectedAudience => $TokenType eq 'id_token' ? $OpenIDConfig->{ClientSettings}->{ClientID} : undef,
+            AuthorizedParty  => $OpenIDConfig->{ClientSettings}->{ClientID},
+            ExpectedScopes   => $Account->{Scope},
         );
 
         return unless $Result->{Success};
@@ -746,19 +745,19 @@ sub _ProcessNewToken {
     my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 
     my $Success = $TokenRepository->Save(
-        AccountID  => $AccountID,
-        TokenType  => $TokenType,
-        Token      => $Token,
-        ExpiresAt  => $ExpiresAt,
+        AccountID => $AccountID,
+        TokenType => $TokenType,
+        Token     => $Token,
+        ExpiresAt => $ExpiresAt,
     );
 
     return unless $Success;
 
     $Self->_PopulateCache(
-        AccountID  => $AccountID,
-        TokenType  => $TokenType,
-        Token      => $Token,
-        ExpiresAt  => $ExpiresAt,
+        AccountID => $AccountID,
+        TokenType => $TokenType,
+        Token     => $Token,
+        ExpiresAt => $ExpiresAt,
     );
 
     return 1;

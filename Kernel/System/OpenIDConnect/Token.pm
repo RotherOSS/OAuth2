@@ -22,13 +22,12 @@ use warnings;
 
 # CPAN modules
 
-use Crypt::JWT  qw(decode_jwt);
+use Crypt::JWT qw(decode_jwt);
 
 # OTOBO modules
 use Kernel::System::VariableCheck qw(:all);
 
 use namespace::autoclean;
-
 
 our @ObjectDependencies = (
     'Kernel::Config',
@@ -68,7 +67,7 @@ sub new {
 
 =head2 Inspect()
 
-	Inspect Token payload without validating the signature.
+    Inspect Token payload without validating the signature.
 
     my $TokenData = $TokenObject->Inspect( Token => $Token );
 
@@ -101,7 +100,6 @@ sub Inspect {
 
     return $TokenData;
 }
-
 
 =head2 sub IsTokenStillValid()
 
@@ -162,8 +160,8 @@ sub TimeLeft {
         }
     }
 
-    my $TokenData = $Self->Inspect( %Param );
-    if (!$TokenData) {
+    my $TokenData = $Self->Inspect(%Param);
+    if ( !$TokenData ) {
         return 0;
     }
 
@@ -183,105 +181,123 @@ sub TimeLeft {
 
 =head2 Validate()
 
-	Validates a Token
+    Validates a Token
 
     my $Result = $TokenObject->Validate(
         Token             => $Token,
-		OpenIDConfig      => $OpenIDConfig,
+        OpenIDConfig      => $OpenIDConfig,
         ExpectedScopes    => <space separated list>, # optional
         ExpectedAudiences => <space separated list>, # optional
         AuthroziedParty   => '<identifier>',         # optional
     );
 
-	returns
+    returns
 
-	{ Success => 0, Error => 'msg' }
+    { Success => 0, Error => 'msg' }
 
-	or
+    or
 
-	{ Success => 1, TokenData => {...} }
+    { Success => 1, TokenData => {...} }
 
 =cut
 
 sub Validate {
     my ( $Self, %Param ) = @_;
 
-    my $Return    = { Success => 0 };
+    my $Return = { Success => 0 };
     for my $Needed (qw/Token OpenIDConfig/) {
         if ( !$Param{$Needed} ) {
 
-            return { Success => 0, Error => "Need $Needed!" };
+            return {
+                Success => 0,
+                Error   => "Need $Needed!"
+            };
         }
     }
 
-
-	my $OpenIDConfig         = $Param{OpenIDConfig};
-	my $ClientSettings       = $OpenIDConfig->{ClientSettings};
-	my $ExpectedAudience     = $Param{ExpectedAudience};
-	my $AuthorizedParty      = $Param{AuthorizedParty};    
-	my $ExpectedScopes       = $Param{ExpectedScopes};    
-
-use Data::Dumper;
-print STDERR Dumper(\%Param);
+    my $OpenIDConfig     = $Param{OpenIDConfig};
+    my $ClientSettings   = $OpenIDConfig->{ClientSettings};
+    my $ExpectedAudience = $Param{ExpectedAudience};
+    my $AuthorizedParty  = $Param{AuthorizedParty};
+    my $ExpectedScopes   = $Param{ExpectedScopes};
 
     my $TokenData = $Self->DecodeToken(%Param);
 
-print STDERR Dumper($TokenData);
+    if ( !$TokenData ) {
 
-    if( !$TokenData ) {
-
-        return { Success => 0, Error => "Decode Token failed!." };
+        return {
+            Success => 0,
+            Error   => "Decode Token failed!."
+        };
     }
 
     for my $Needed (qw/iss sub aud exp iat/) {
 
         if ( !$TokenData->{$Needed} ) {
 
-            return { Success => 0, Error => "Token invalid: <$Needed> not included." };
+            return {
+                Success => 0,
+                Error   => "Token invalid: <$Needed> not included."
+            };
         }
     }
 
-	my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
-	my $OpenIDProviderData = $OIDCConfigurationObject->GetProviderData(
-		OpenIDConfig => $OpenIDConfig,
-	);
+    my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+    my $OpenIDProviderData      = $OIDCConfigurationObject->GetProviderData(
+        OpenIDConfig => $OpenIDConfig,
+    );
 
     my $Issuer = $OpenIDProviderData->{OpenIDConfiguration}{issuer};
 
     # do the validation
     if ( $TokenData->{iss} ne $Issuer ) {
 
-        return { Success => 0, Error => "<iss> wrong. IDToken is issued by '$TokenData->{iss}', but '$Issuer' is required." };
+        return {
+            Success => 0,
+            Error   => "<iss> wrong. IDToken is issued by '$TokenData->{iss}', but '$Issuer' is required."
+        };
     }
 
     my @Audience = ref $TokenData->{aud} ? @{ $TokenData->{aud} } : ( $TokenData->{aud} );
 
-    if ( $ExpectedAudience ) {
+    if ($ExpectedAudience) {
 
         if ( !grep { $_ eq $ExpectedAudience } @Audience ) {
 
-            return { Success => 0, Error => "<aud> wrong. IDToken is addressed to '@Audience' which does not contain '$ExpectedAudience'." };
+            return {
+                Success => 0,
+                Error   => "<aud> wrong. IDToken is addressed to '@Audience' which does not contain '$ExpectedAudience'."
+            };
         }
     }
 
     if ( ref $TokenData->{aud} && !$TokenData->{azp} ) {
 
-        return { Success => 0, Error => "<aud> is an array but <azp> not present." };
+        return {
+            Success => 0,
+            Error   => "<aud> is an array but <azp> not present."
+        };
     }
 
     if ( $AuthorizedParty && $TokenData->{azp} && $AuthorizedParty !~ $TokenData->{azp} ) {
 
-        return { Success => 0, Error => "<azp> present and wrong. Authorized party is specified as '$TokenData->{azp}', we are '$ClientSettings->{ClientID}'." };
+        return {
+            Success => 0,
+            Error   => "<azp> present and wrong. Authorized party is specified as '$TokenData->{azp}', we are '$ClientSettings->{ClientID}'."
+        };
     }
 
-    if( $ExpectedScopes && $TokenData->{scope} ) {
+    if ( $ExpectedScopes && $TokenData->{scope} ) {
 
         my @Scopes = split / +/, $ExpectedScopes;
-        foreach my $Scope( @Scopes ) {
+        for my $Scope (@Scopes) {
             my $Regex = qr/\b$Scope\b/;
-            if( $TokenData->{scope} !~ /$Regex/ ) {
+            if ( $TokenData->{scope} !~ /$Regex/ ) {
 
-                return { Success => 0, Error => "<scope> invalid. '".$TokenData->{scope}."' does not include $Scope" };
+                return {
+                    Success => 0,
+                    Error   => "<scope> invalid. '" . $TokenData->{scope} . "' does not include $Scope"
+                };
             }
         }
     }
@@ -291,18 +307,27 @@ print STDERR Dumper($TokenData);
 
     if ( $TokenData->{iat} - $Leeway > $CurrentTime ) {
 
-        return { Success => 0, Error => "<iat> invalid. IDToken creation time is in the future. Token: $TokenData->{iat}; Current: $CurrentTime;" };
+        return {
+            Success => 0,
+            Error   => "<iat> invalid. IDToken creation time is in the future. Token: $TokenData->{iat}; Current: $CurrentTime;"
+        };
     }
 
     if ( $TokenData->{exp} + $Leeway <= $CurrentTime ) {
 
-        return { Success => 0, Error => "<exp> invalid. IDToken expired. Expiration Time: $TokenData->{exp}; Current: $CurrentTime;" };
+        return {
+            Success => 0,
+            Error   => "<exp> invalid. IDToken expired. Expiration Time: $TokenData->{exp}; Current: $CurrentTime;"
+        };
     }
 
     if ( $Param{UseNonce} ) {
         if ( !$TokenData->{nonce} ) {
 
-            return { Success => 0, Error => "No nonce in Token." };
+            return {
+                Success => 0,
+                Error   => "No nonce in Token."
+            };
         }
 
         my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
@@ -316,7 +341,10 @@ print STDERR Dumper($TokenData);
         }
         else {
 
-            return { Success => 0, Error => "<nonce> invalid." };
+            return {
+                Success => 0,
+                Error   => "<nonce> invalid."
+            };
         }
     }
 
@@ -332,7 +360,7 @@ Returns the decoded token
 
     my $TokenData = $TokenObject->DecodeToken(
         Token          => $Token,
-		OpenIDConfig   => $OpenIDConfig,
+        OpenIDConfig   => $OpenIDConfig,
     );
 
 =cut
@@ -350,13 +378,13 @@ sub DecodeToken {
         }
     }
 
-	my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
-	my $OpenIDProviderData = $OIDCConfigurationObject->GetProviderData(
-		OpenIDConfig => $Param{OpenIDConfig},
-	);
+    my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+    my $OpenIDProviderData      = $OIDCConfigurationObject->GetProviderData(
+        OpenIDConfig => $Param{OpenIDConfig},
+    );
 
     # get the OpenIDConfiguration and Keys
-    my $Try                = 0;
+    my $Try = 0;
 
     # decode the token; retry once if it doesn't work for cached config
     my $TokenData;
@@ -369,9 +397,7 @@ sub DecodeToken {
                 kid_keys => $OpenIDProviderData->{KeyData},
             ) // {};
         };
-        if( $@ ) {
-            use Data::Dumper;
-            print STDERR Dumper($@);
+        if ($@) {
             $TokenData = undef;
         }
 
@@ -381,10 +407,10 @@ sub DecodeToken {
         }
         elsif ( $Try < 2 ) {
 
-			$OpenIDProviderData = $OIDCConfigurationObject->GetProviderData(
-				OpenIDConfig => $Param{OpenIDConfig},
-				NoCache => 1,
-			);
+            $OpenIDProviderData = $OIDCConfigurationObject->GetProviderData(
+                OpenIDConfig => $Param{OpenIDConfig},
+                NoCache      => 1,
+            );
         }
     }
 

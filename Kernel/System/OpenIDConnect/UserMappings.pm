@@ -29,8 +29,7 @@ use namespace::autoclean;
 
 our @ObjectDependencies = (
     'Kernel::Config',
-    'Kernel::System::DateTime',
-    'Kernel::System::JSON',
+    'Kernel::System::SysConfig',
     'Kernel::System::Log',
     'Kernel::System::OpenIDConnect::TokenRepository',
     'Kernel::System::OpenIDConnect::Configuration',
@@ -40,7 +39,9 @@ our @ObjectDependencies = (
 
 Kernel::System::OpenIDConnect::UserMappings
 
-manage mappings for incoming webservice calls 
+=for stopwords OIDC
+
+manage mappings for incoming web-service calls
 authorized with an OIDC OAuth2 bearer token.
 
 =head1 SYNOPSIS
@@ -82,23 +83,21 @@ sub GetUserMappings {
     my $Mappings = $ConfigObject->Get('OpenIDConnect::UserMapping');
 
     my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
-    
+
     my %ValidProviderMappings;
-    foreach my $SettingName( keys %$Mappings) {
-        my %Setting = $SysConfigObject->SettingGet(Name => 'OpenIDConnect::UserMapping###'.$SettingName);
-        if(scalar keys %Setting) {
-            if( $Setting{IsValid}) {
-                $ValidProviderMappings{'OpenIDConnect::UserMapping###'.$SettingName} = $Setting{EffectiveValue};
+    for my $SettingName ( keys %$Mappings ) {
+        my %Setting = $SysConfigObject->SettingGet( Name => 'OpenIDConnect::UserMapping###' . $SettingName );
+        if ( scalar keys %Setting ) {
+            if ( $Setting{IsValid} ) {
+                $ValidProviderMappings{ 'OpenIDConnect::UserMapping###' . $SettingName } = $Setting{EffectiveValue};
             }
         }
         else {
-            $ValidProviderMappings{'OpenIDConnect::UserMapping###'.$SettingName} = $Mappings->{$SettingName};
+            $ValidProviderMappings{ 'OpenIDConnect::UserMapping###' . $SettingName } = $Mappings->{$SettingName};
         }
     }
 
     return \%ValidProviderMappings;
-
-    return {};
 }
 
 =head2 GetUserMapping()
@@ -147,11 +146,11 @@ sub GetOpenIDConfig {
 
     my ( $Self, %Param ) = @_;
 
-	my $Mapping = $Self->GetUserMapping(%Param);
-	return unless IsHashRefWithData($Mapping);
+    my $Mapping = $Self->GetUserMapping(%Param);
+    return unless IsHashRefWithData($Mapping);
 
-	my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
-	return $ConfigObject->Get( $Mapping->{OpenIDConfig} );
+    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
+    return $ConfigObject->Get( $Mapping->{OpenIDConfig} );
 }
 
 =head2 GetProviderData()
@@ -159,7 +158,7 @@ sub GetOpenIDConfig {
 Returns the OpenId dynamic Provider Data for a named OAuth Functional accounts configured in SysConfig.
 
     my $OpenIDProviderData = $UserMappingsObject->GetProviderData(
-        AccountId => 'AccountName',                
+        AccountId => 'AccountName',
     );
 
 =cut
@@ -171,10 +170,10 @@ sub GetProviderData {
     my $OpenIDConfig = $Self->GetOpenIDConfig(%Param);
     return unless IsHashRefWithData($OpenIDConfig);
 
-	my $OIDCConfiguration = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
-	my $OpenIDProviderData = $OIDCConfiguration->GetProviderData(
-		OpenIDCOnfig => $OpenIDConfig
-	);
+    my $OIDCConfiguration  = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+    my $OpenIDProviderData = $OIDCConfiguration->GetProviderData(
+        OpenIDCOnfig => $OpenIDConfig
+    );
 
     return $OpenIDProviderData;
 }

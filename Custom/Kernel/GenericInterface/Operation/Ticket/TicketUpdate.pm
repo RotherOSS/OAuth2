@@ -147,9 +147,9 @@ if applicable the created ArticleID.
                 ForceNotificationToUserID       => [1, 2, 3]                   # optional
                 ExcludeNotificationToUserID     => [1, 2, 3]                   # optional
                 ExcludeMuteNotificationToUserID => [1, 2, 3]                   # optional
-# Rother OSS / OAuth2                
+# Rother OSS / OAuth2
                 SendEmail                       => 1                           # optional, defaults to 0
-# EO OAuth2                
+# EO OAuth2
             },
 
             DynamicField => [                                                  # optional
@@ -1262,7 +1262,6 @@ sub _CheckAttachment {
         }
     }
 
-
     # if everything is OK then return Success
     return {
         Success => 1,
@@ -2023,18 +2022,18 @@ sub _TicketUpdate {
                 UserID => $Param{UserID},
             );
 
-# Rother OSS / OAuth2
-#           $From = $UserData{UserFullname};            
+            # Rother OSS / OAuth2
+            #           $From = $UserData{UserFullname};
 
-            if( $Article->{SendMail} ) {
+            if ( $Article->{SendMail} ) {
 
-                if($Article->{From}) {
+                if ( $Article->{From} ) {
                     $From = $Article->{From};
                 }
                 else {
                     my %TicketData = $TicketObject->TicketGet(
                         TicketID      => $TicketID,
-                        DynamicFields => 0,       
+                        DynamicFields => 0,
                         UserID        => $Param{UserID},
                         Silent        => 1,
                     );
@@ -2042,13 +2041,14 @@ sub _TicketUpdate {
                     $From = $Kernel::OM->Get('Kernel::System::TemplateGenerator')->Sender(
                         QueueID => $TicketData{QueueID},
                         UserID  => $Param{UserID},
-                    );                
+                    );
                 }
             }
             else {
                 $From = $UserData{UserFullname};
             }
-# EO / PAuth2            
+
+            # EO / PAuth2
         }
 
         # Set Article To, Cc, Bcc.
@@ -2105,9 +2105,9 @@ sub _TicketUpdate {
             );
         }
 
-# Rother OSS / OAuth2
-#        # Create article.
-#        $ArticleID = $ArticleBackendObject->ArticleCreate(
+        # Rother OSS / OAuth2
+        #        # Create article.
+        #        $ArticleID = $ArticleBackendObject->ArticleCreate(
 
         # Create article and optionally send email.
 
@@ -2115,11 +2115,13 @@ sub _TicketUpdate {
             $Article->{SenderType} eq 'agent' &&
             $Article->{CommunicationChannel} eq 'Email';
 
-        my $ArticleMethodRef = $ShallSendEmail ?
-            $ArticleBackendObject->can('ArticleSend') :
+        my $ArticleMethodRef = $ShallSendEmail
+            ?
+            $ArticleBackendObject->can('ArticleSend')
+            :
             $ArticleBackendObject->can('ArticleCreate');
 
-        my $Tn = $TicketObject->TicketNumberLookup( TicketID => $TicketID );
+        my $Tn      = $TicketObject->TicketNumberLookup( TicketID => $TicketID );
         my $Subject = $TicketObject->TicketSubjectBuild(
             TicketNumber => $Tn,
             Subject      => $Article->{Subject} || '',
@@ -2127,7 +2129,8 @@ sub _TicketUpdate {
 
         $ArticleID = $ArticleMethodRef->(
             $ArticleBackendObject,
-# EO OAuth2
+
+            # EO OAuth2
             NoAgentNotify        => $Article->{NoAgentNotify} || 0,
             TicketID             => $TicketID,
             SenderTypeID         => $Article->{SenderTypeID} || '',
@@ -2137,20 +2140,22 @@ sub _TicketUpdate {
             To                   => $To,
             Cc                   => $Cc,
             Bcc                  => $Bcc,
-# Rother OSS / OAuth2            
-#           Subject              => $Article->{Subject},
-            Subject              => $Subject,
-# EO OAuth2
-            Body                 => $Article->{Body},
-            MimeType             => $Article->{MimeType}    || '',
-            Charset              => $Article->{Charset}     || '',
-            ContentType          => $Article->{ContentType} || '',
-            UserID               => $Param{UserID},
-            HistoryType          => $Article->{HistoryType},
-            HistoryComment       => $Article->{HistoryComment} || '%%',
-            AutoResponseType     => $Article->{AutoResponseType},
-            UnlockOnAway         => $UnlockOnAway,
-            OrigHeader           => {
+
+            # Rother OSS / OAuth2
+            #           Subject              => $Article->{Subject},
+            Subject => $Subject,
+
+            # EO OAuth2
+            Body             => $Article->{Body},
+            MimeType         => $Article->{MimeType}    || '',
+            Charset          => $Article->{Charset}     || '',
+            ContentType      => $Article->{ContentType} || '',
+            UserID           => $Param{UserID},
+            HistoryType      => $Article->{HistoryType},
+            HistoryComment   => $Article->{HistoryComment} || '%%',
+            AutoResponseType => $Article->{AutoResponseType},
+            UnlockOnAway     => $UnlockOnAway,
+            OrigHeader       => {
                 From    => $From,
                 To      => $To,
                 Subject => $Article->{Subject},

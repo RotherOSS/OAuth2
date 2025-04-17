@@ -252,7 +252,7 @@
                                     <div class="Clear"></div>
                                 </fieldset>
                             </div>
-# Rother OSS / Oauth2                            
+# Rother OSS / Oauth2
                             <div class="OAuthAuthField [% Data.OAuthHidden | html %]">
                                 <fieldset class="TableLike">
 

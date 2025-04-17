@@ -39,6 +39,8 @@ our @ObjectDependencies = (
 
 Kernel::System::OpenIDConnect::FunctionalAccounts
 
+=for stopwords OIDC
+
 manage OAuth2/OIDC backed Functional Accounts.
 Currently implemented are accounts for
 Invokers and Providers. MailAccounts next.
@@ -65,7 +67,6 @@ sub new {
     return $Self;
 }
 
-
 =head2 GetAccounts()
 
 Returns the OAuth Functional accounts configured in SysConfig.
@@ -80,19 +81,18 @@ sub GetAccounts {
 
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
-    my $OAuthAccounts = $ConfigObject->Get( 'OpenIDConnect::FunctionalAccounts' );
+    my $OAuthAccounts = $ConfigObject->Get('OpenIDConnect::FunctionalAccounts');
     if ( !IsHashRefWithData($OAuthAccounts) ) {
         return {};
     }
     return $OAuthAccounts;
 }
 
-
 =head2 GetAccount()
 
 Returns a named OAuth Functional accounts configured in SysConfig.
 
-    my $Account = $FunctionalAccountsObject->GetOAuthAccount(
+    my $Account = $FunctionalAccountsObject->GetAccount(
         AccountID  => '<SomeAccountName>',
     );
 
@@ -125,20 +125,19 @@ sub GetAccount {
 Persists Account in SysConfig.
 
     my $Success = $FunctionalAccountsObject->SaveAccount(
-        AccountID  		  => '<SomeAccountName>',
-		OpenIDConfig      => $Param{ProviderName},
-		GrantType         => $Param{GrantType},
-		Scope             => $Param{InvokerScopes},
-		Resources         => $Param{Resources},
-		ResourceParamName => $Param{ResourceParam},
-		Token             => $Param{TokenType},
-		Username          => $Param{Username},
-		Password          => $Param{Password},		
+        AccountID            => '<SomeAccountName>',
+        OpenIDConfig      => $Param{ProviderName},
+        GrantType         => $Param{GrantType},
+        Scope             => $Param{InvokerScopes},
+        Resources         => $Param{Resources},
+        ResourceParamName => $Param{ResourceParam},
+        Token             => $Param{TokenType},
+        Username          => $Param{Username},
+        Password          => $Param{Password},
         UserID            => # userid making changes
     );
 
 =cut
-
 
 sub SaveAccount {
 
@@ -155,37 +154,37 @@ sub SaveAccount {
         }
     }
 
-	my $AccountID    = $Param{AccountID};
-	my $OIDCAccounts = $Self->GetAccounts();
+    my $AccountID    = $Param{AccountID};
+    my $OIDCAccounts = $Self->GetAccounts();
 
-    $OIDCAccounts->{ $AccountID } = {
-		OpenIDConfig      => $Param{ProviderName},
-		GrantType         => $Param{GrantType},
-		Scope             => $Param{InvokerScopes},
-		Resources         => $Param{Resources},
-		ResourceParamName => $Param{ResourceParam},
-		Token             => $Param{TokenType},
-		Username          => $Param{Username},
-		Password          => $Param{Password},
-	};
+    $OIDCAccounts->{$AccountID} = {
+        OpenIDConfig      => $Param{ProviderName},
+        GrantType         => $Param{GrantType},
+        Scope             => $Param{InvokerScopes},
+        Resources         => $Param{Resources},
+        ResourceParamName => $Param{ResourceParam},
+        Token             => $Param{TokenType},
+        Username          => $Param{Username},
+        Password          => $Param{Password},
+    };
 
-	my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
+    my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
 
-	my $Success = $SysConfigObject->SettingsSet(
-		UserID   => $Param{UserID},
-		Comments => "Functional Account " . $AccountID . " created",
-		Settings => [
-			{
-				Name           => 'OpenIDConnect::FunctionalAccounts',
-				EffectiveValue => $OIDCAccounts,
-				IsValid        => 1,
-				NoValidation   => 1,
-			},
-		],
-	);
+    my $Success = $SysConfigObject->SettingsSet(
+        UserID   => $Param{UserID},
+        Comments => "Functional Account " . $AccountID . " created",
+        Settings => [
+            {
+                Name           => 'OpenIDConnect::FunctionalAccounts',
+                EffectiveValue => $OIDCAccounts,
+                IsValid        => 1,
+                NoValidation   => 1,
+            },
+        ],
+    );
 
     sleep(1);
-	return $Success;
+    return $Success;
 }
 
 =head2 DeleteAccount()
@@ -214,32 +213,32 @@ sub DeleteAccount {
         }
     }
 
-	my $AccountID = $Param{AccountID};
+    my $AccountID = $Param{AccountID};
 
-	my $OIDCAccounts = $Self->GetAccounts();
-	if ( exists $OIDCAccounts->{$AccountID} ) {
+    my $OIDCAccounts = $Self->GetAccounts();
+    if ( exists $OIDCAccounts->{$AccountID} ) {
 
-		delete $OIDCAccounts->{$AccountID};
+        delete $OIDCAccounts->{$AccountID};
 
-		my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
+        my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
 
-		my $Success = $SysConfigObject->SettingsSet(
-			UserID   => $Param{UserID},
-			Comments => "Functional Account " . $AccountID . " deleted.",
-			Settings => [
-				{
-					Name           => "OpenIDConnect::FunctionalAccounts",
-					EffectiveValue => $OIDCAccounts,
-					IsValid        => 1,
-					NoValidation   => 1,
-				},
-			],
-		);
+        my $Success = $SysConfigObject->SettingsSet(
+            UserID   => $Param{UserID},
+            Comments => "Functional Account " . $AccountID . " deleted.",
+            Settings => [
+                {
+                    Name           => "OpenIDConnect::FunctionalAccounts",
+                    EffectiveValue => $OIDCAccounts,
+                    IsValid        => 1,
+                    NoValidation   => 1,
+                },
+            ],
+        );
         sleep(1);
-		return $Success;
-	}
+        return $Success;
+    }
 
-	return;
+    return;
 }
 
 =head2 GetOpenIDConfig()
@@ -256,11 +255,11 @@ sub GetOpenIDConfig {
 
     my ( $Self, %Param ) = @_;
 
-	my $Account = $Self->GetAccount(%Param);
-	return unless IsHashRefWithData($Account);
+    my $Account = $Self->GetAccount(%Param);
+    return unless IsHashRefWithData($Account);
 
-	my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
-	my $Result = $ConfigObject->Get( $Account->{OpenIDConfig} );
+    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
+    my $Result       = $ConfigObject->Get( $Account->{OpenIDConfig} );
     return $Result;
 }
 
@@ -281,10 +280,10 @@ sub GetProviderData {
     my $OpenIDConfig = $Self->GetOpenIDConfig(%Param);
     return unless IsHashRefWithData($OpenIDConfig);
 
-	my $OIDCConfiguration = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
-	my $OpenIDProviderData = $OIDCConfiguration->GetProviderData(
-		OpenIDConfig => $OpenIDConfig
-	);
+    my $OIDCConfiguration  = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+    my $OpenIDProviderData = $OIDCConfiguration->GetProviderData(
+        OpenIDConfig => $OpenIDConfig
+    );
 
     return $OpenIDProviderData;
 }
@@ -314,7 +313,6 @@ sub GetIssuer {
     return $OpenIDProviderData->{OpenIDConfiguration}->{issuer};
 }
 
-
 =head2 GetTokenEndpoint()
 
 
@@ -332,11 +330,10 @@ sub GetTokenEndpoint {
 
     my ( $Self, %Param ) = @_;
 
-    my $OpenIDProviderData = $Self->GetProviderData( %Param );
+    my $OpenIDProviderData = $Self->GetProviderData(%Param);
 
     return $OpenIDProviderData->{OpenIDConfiguration}->{token_endpoint};
 }
-
 
 =head2 GetAuthorizationEndpoint()
 
@@ -355,11 +352,10 @@ sub GetAuthorizationEndpoint {
 
     my ( $Self, %Param ) = @_;
 
-    my $OpenIDProviderData = $Self->GetProviderData( %Param );
+    my $OpenIDProviderData = $Self->GetProviderData(%Param);
 
     return $OpenIDProviderData->{OpenIDConfiguration}->{authorization_endpoint};
 }
-
 
 =head2 ClearCache()
 
@@ -375,7 +371,7 @@ sub ClearCache {
 
     my ( $Self, %Param ) = @_;
 
-    my $OpenIDConfig = $Self->GetOpenIDConfig( %Param );
+    my $OpenIDConfig = $Self->GetOpenIDConfig(%Param);
 
     my $ProviderKey = 'ProviderData' . ( $OpenIDConfig->{ProviderSettings}->{Name} // '' );
 

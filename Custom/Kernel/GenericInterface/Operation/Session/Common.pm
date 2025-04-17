@@ -56,12 +56,13 @@ sub CreateSessionID {
     my %UserData;
     my $UserType;
 
-# Rother OSS / OAuth2
+    # Rother OSS / OAuth2
     # special case for session creation based on OAuth Bearer token
     if ( $Param{Data}->{BearerToken} ) {
         return $Self->_CreateSessionIDFromBearerToken(%Param);
     }
-# EO / OAuth2
+
+    # EO / OAuth2
 
     # get params
     my $PostPw = $Param{Data}->{Password} || '';
@@ -121,11 +122,11 @@ sub _CreateSessionIDFromBearerToken {
     my ( $Self, %Param ) = @_;
 
     my $Authenticator = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Authenticator');
-	my $Result = $Authenticator->Authenticate(
-		Token => $Param{Data}->{BearerToken},
-	);
+    my $Result        = $Authenticator->Authenticate(
+        Token => $Param{Data}->{BearerToken},
+    );
 
-	if($Result->{Success}) {
+    if ( $Result->{Success} ) {
 
         # report success!
         $Param{DebuggerObject}->Debug(

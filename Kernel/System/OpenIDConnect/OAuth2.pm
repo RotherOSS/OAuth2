@@ -41,6 +41,8 @@ our @ObjectDependencies = (
     'Kernel::System::JSON',
     'Kernel::System::Log',
     'Kernel::System::Main',
+    'Kernel::Language',
+    'Kernel::System::OpenIDConnect::Token',
 );
 
 =head1 NAME
@@ -53,6 +55,12 @@ OAuth2 basic functionality
 - make endpoint POST calls
 - build login redirect url for authorization_code flow
 - build logout url
+
+=for stopwords OIDC
+
+this is a low level interface that only knows about OAuth2,
+but is completely ignorant of OIDC stuff. all necessary params
+have to be passed in.
 
 create an object
 
@@ -82,12 +90,11 @@ sub new {
     return $Self;
 }
 
-
-=head2 RequestToken
+=head2 RequestToken()
 
 Request a Token from token endpoint
 
-    my $TokenResult = $OAuth2Object->RequestToke(
+    my $TokenResult = $OAuth2Object->RequestToken(
         TokenEndpoint     => $Endpoint,                           # usually from OpenIDConfig
         ClientID          => '<oauth client id>',
         ClientSecret      => '<aouth client secret>',
@@ -123,8 +130,8 @@ sub RequestToken {
         }
     }
 
-    my $LanguageObject    = $Kernel::OM->Get('Kernel::Language');
-	my $TokenObject       = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
+    my $LanguageObject = $Kernel::OM->Get('Kernel::Language');
+    my $TokenObject    = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
 
     my $Scope             = $Param{Scope};
     my $ResourceIds       = $Param{Resources};
@@ -199,17 +206,15 @@ sub RequestToken {
 
         return {
             Success => 0,
-            Error   => $LanguageObject->Translate("Error fetching Token: %s", $Response->{Error} ),
+            Error   => $LanguageObject->Translate( "Error fetching Token: %s", $Response->{Error} ),
         };
     }
 
     return {
-        Success => 1,
+        Success        => 1,
         DecodedContent => $Response->{Content}
     };
 }
-
-
 
 =head2 GetAuthURL()
 
@@ -257,31 +262,31 @@ sub GetAuthURL {
         Length => 22    #$OAuthConfig->{StateNonceLength} || 22,
     );
 
-    my $TokenType         = $Param{TokenType} || 'access_token';
+    my $TokenType         = $Param{TokenType}         || 'access_token';
     my $ResourceParamName = $Param{ResourceParamName} || 'resource';
-    my $State             = $Param{State} || $RandomString;
+    my $State             = $Param{State}             || $RandomString;
 
-    my $ResponseType = $TokenType eq 'access_token' ? [ 'code' ] : [ 'code', 'id_token' ];
+    my $ResponseType = $TokenType eq 'access_token' ? ['code'] : [ 'code', 'id_token' ];
 
     my $RedirectURL = $Param{AuthorizationEndpoint};
-    $RedirectURL .= '?response_type=' . join( '%20', @{ $ResponseType } );
+    $RedirectURL .= '?response_type=' . join( '%20', @{$ResponseType} );
 
     if ( $Param{Scope} ) {
-        $RedirectURL .= '&scope='. uri_escape_utf8($Param{Scope});
+        $RedirectURL .= '&scope=' . uri_escape_utf8( $Param{Scope} );
     }
 
-    $RedirectURL .= '&client_id=' . uri_escape_utf8($Param{ClientID});
+    $RedirectURL .= '&client_id=' . uri_escape_utf8( $Param{ClientID} );
 
     if ( $Param{Resources} ) {
-        $RedirectURL .= "&".uri_escape_utf8($ResourceParamName)
-                     ."=" . uri_escape_utf8($Param{Resources});
+        $RedirectURL .= "&" . uri_escape_utf8($ResourceParamName)
+            . "=" . uri_escape_utf8( $Param{Resources} );
     }
 
     if ( $Param{Nonce} ) {
-        $RedirectURL .= '&nonce=' . uri_escape_utf8($Param{Nonce});
+        $RedirectURL .= '&nonce=' . uri_escape_utf8( $Param{Nonce} );
     }
 
-    if ( grep { $_ eq 'id_token' } @{ $ResponseType } ) {
+    if ( grep { $_ eq 'id_token' } @{$ResponseType} ) {
         $RedirectURL .= '&response_mode=form_post';
     }
 
@@ -299,7 +304,7 @@ sub GetAuthURL {
     # Save all parameters to use after successful authorization.
     $Kernel::OM->Get('Kernel::System::Cache')->Set(
         Type  => 'TokenProvider',
-        TTL   => 60 * 15,                                       # TODO make configurable
+        TTL   => 60 * 15,                                # TODO make configurable
         Key   => "TokenProvider::OAuth2State::$State",
         Value => \%Param,
     );
@@ -313,7 +318,6 @@ sub GetAuthURL {
     return $RedirectURL;
 }
 
-
 sub _GetUserAgent {
 
     my ( $Self, %Param ) = @_;
@@ -324,7 +328,7 @@ sub _GetUserAgent {
     my $UserAgent = LWP::UserAgent->new();
 
     # SSL options
-    if ( $SSLOptions ) {
+    if ($SSLOptions) {
         OPTION:
         for my $Key ( keys $SSLOptions->%* ) {
             next OPTION if !$Self->{SSLOptionMap}{$Key};
@@ -383,7 +387,7 @@ sub _SendRequest {
 
         return {
             Success => 0,
-            Error   => $LanguageObject->Translate("Got no content when requesting Token. Response Code: %s", $Response->code()),
+            Error   => $LanguageObject->Translate( "Got no content when requesting Token. Response Code: %s", $Response->code() ),
         };
     }
 
@@ -396,7 +400,7 @@ sub _SendRequest {
 
         return {
             Success => 0,
-            Error   => $LanguageObject->Translate("Got no JSON object when requesting Token. Response: %s", $Content),
+            Error   => $LanguageObject->Translate( "Got no JSON object when requesting Token. Response: %s", $Content ),
         };
     }
 
@@ -404,7 +408,7 @@ sub _SendRequest {
     if ( $DecodedContent->{error} ) {
         return {
             Success => 0,
-            Error   => "Error: ". $DecodedContent->{erro}. ". Description: ".$DecodedContent->{error_description},
+            Error   => "Error: " . $DecodedContent->{erro} . ". Description: " . $DecodedContent->{error_description},
         };
     }
 

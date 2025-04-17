@@ -40,15 +40,15 @@ sub Data {
     # TokenProvider.pm
     $Self->{Translation}->{'AccountID %s not found!'} = 'Konto mit ID %s nicht gefunden!';
     $Self->{Translation}->{'No valid refresh_token for Account %s using grant_tpye \'authorization code\' !'} = 'Es exisitier kein valides refresh_token für das Konto %s und grant_tpye \'authorization code\' !';
-    $Self->{Translation}->{'Need functional account Invoker settings in SysConfig for %s.'} = 'Fehlende Einstellungen für das funktionale Konto %s in der System Konfiguration.';            
-    $Self->{Translation}->{'Could not get the OAuth2 token_endpoint for Invoker.'} = 'Der OAuth2 token_endpoint konnte nicht bereit gestellt werden.';    
-    $Self->{Translation}->{'Error fetching Token for Invoker: %s'} = 'Fehler beim Abholen des OAuth2 Token for Invoker: %s';    
-    $Self->{Translation}->{'Did not receive the desired TokenType \'%s\' in OIDC provider response for Invoker %s!'} = 'Der erwartete Token Typ \'%s\' für %s war in der OIDC Provider Antwort nicht enthalten!';    
-    $Self->{Translation}->{'Time left on fresh token is: %s s for Invoker %s!'} = 'Verbleibende Zeit für aktuelles Token ist: %s s für Invoker %s!';    
-    $Self->{Translation}->{'Need ClientID and ClientSecret!'} = 'ClientID and ClientSecret fehlen in der OIDC Profil Konfiguration!';    
-    $Self->{Translation}->{'Got no content when requesting Token. Response Code: %s'} = 'Leere Antwort in der Token Anfrage. Response Code: %s';    
-    $Self->{Translation}->{'Got no JSON object when requesting Token. Response: %s'} = 'Die Antwort in der Token Abrage enthielt kein JSON Objekt. Response: %s';    
-    $Self->{Translation}->{'Error: %s. Description: %s'} = 'Fehler: %s. Beschreibung: %s';    
+    $Self->{Translation}->{'Need functional account Invoker settings in SysConfig for %s.'} = 'Fehlende Einstellungen für das funktionale Konto %s in der System Konfiguration.';
+    $Self->{Translation}->{'Could not get the OAuth2 token_endpoint for Invoker.'} = 'Der OAuth2 token_endpoint konnte nicht bereit gestellt werden.';
+    $Self->{Translation}->{'Error fetching Token for Invoker: %s'} = 'Fehler beim Abholen des OAuth2 Token for Invoker: %s';
+    $Self->{Translation}->{'Did not receive the desired TokenType \'%s\' in OIDC provider response for Invoker %s!'} = 'Der erwartete Token Typ \'%s\' für %s war in der OIDC Provider Antwort nicht enthalten!';
+    $Self->{Translation}->{'Time left on fresh token is: %s s for Invoker %s!'} = 'Verbleibende Zeit für aktuelles Token ist: %s s für Invoker %s!';
+    $Self->{Translation}->{'Need ClientID and ClientSecret!'} = 'ClientID and ClientSecret fehlen in der OIDC Profil Konfiguration!';
+    $Self->{Translation}->{'Got no content when requesting Token. Response Code: %s'} = 'Leere Antwort in der Token Anfrage. Response Code: %s';
+    $Self->{Translation}->{'Got no JSON object when requesting Token. Response: %s'} = 'Die Antwort in der Token Abrage enthielt kein JSON Objekt. Response: %s';
+    $Self->{Translation}->{'Error: %s. Description: %s'} = 'Fehler: %s. Beschreibung: %s';
 
     # K/GI/O/S/Common.pm
     $Self->{Translation}->{'OpenID Connect Config is Invalid.'} = 'OpenID Connect Konfiguration ist invalid.';
@@ -86,7 +86,7 @@ sub Data {
     $Self->{Translation}->{'Add Invoker Account'} = 'Invoker Konto hinzufügen';
     $Self->{Translation}->{'Edit Invoker Account'} = 'Invoker Konto bearbeiten';
     $Self->{Translation}->{'The unique name for this Account.'} = 'Der eindeutige Name für dieses Konto.';
-    $Self->{Translation}->{'The OpenID Connect'} = 'Der OpenID Connect'; 
+    $Self->{Translation}->{'The OpenID Connect'} = 'Der OpenID Connect';
     $Self->{Translation}->{'to use for this functional account.'} = 'der für dieses funktionale Konto benutzt werden soll.';
     $Self->{Translation}->{'The OAuth2 grant_type to use for acquiring tokens for this account.'} = 'Der OAuth2 grant_type für dieses Konto.';
     $Self->{Translation}->{"Selecting 'authorization_code' will redirect you to your OpenID Connect Provider's Login Page to validate your account once you click 'Save'."} = "Die Auswahl von 'authorization_code' löst einen Brwoser Redirect zur Login Seite Ihres OIDC Providers.";

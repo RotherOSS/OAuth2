@@ -140,9 +140,9 @@ If you need to set credentials
             Location => 'ftp.otobo.org:80',
         },
         SkipSSLVerification => 1, # (optional)
-# Rother OSS / OAuth2        
+# Rother OSS / OAuth2
         SkipSSLHostnameVerification => 1, # (Optional)
-# EO / OAuth2        
+# EO / OAuth2
         NoLog               => 1, # (optional)
     );
 
@@ -163,7 +163,8 @@ sub Request {
     #   SSL certificate validation.
     if (
         $Param{SkipSSLVerification}
-# Rother OSS / OAuth2        
+
+        # Rother OSS / OAuth2
         || $Kernel::OM->Get('Kernel::Config')->Get('WebUserAgent::DisableSSLVerification')
         )
     {
@@ -174,7 +175,8 @@ sub Request {
 
     if (
         $Param{SkipSSLHostnameVerification}
-# EO / OAuth2        
+
+        # EO / OAuth2
         || $Kernel::OM->Get('Kernel::Config')->Get('WebUserAgent::DisableSSLVerification')
         )
     {

@@ -30,13 +30,13 @@ use Plack::Runner;
 use Plack::Request;
 use Try::Tiny qw(try catch);
 use JSON;
-use Data::Dumper;
 use URI::Escape qw(uri_escape_utf8);
 
 # OTOBO modules
 use Kernel::System::UnitTest::RegisterOM;    # set up $Kernel::OM
 
-require( "$Bin/OAuthProviderMock.pm" );
+my $MainObject = $Kernel::OM->Get('Kernel::System::Main');
+$MainObject->Require("$Bin/OAuthProviderMock");
 
 my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
 my $TokenProvider     = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
@@ -84,14 +84,14 @@ my $TestCases = [
     },
 ];
 
-my $OpenIDConfig = GetTestOpenIDConfig();
+my $OpenIDConfig = OAuthProviderMock::GetTestOpenIDConfig();
 
-foreach my $TestCase ( @$TestCases ) {
+for my $TestCase (@$TestCases) {
 
     PrepareTestSysConfig( $TestCase->{Config}->%* );
 
     my $RandomString = $Kernel::OM->Get('Kernel::System::Main')->GenerateRandomString(
-        Length => 22    
+        Length => 22
     );
 
     my $Expected = $BaseURL . $TestCase->{Expectation};
@@ -107,38 +107,15 @@ foreach my $TestCase ( @$TestCases ) {
         Prompt      => $TestCase->{Config}->{Prompt},
     );
 
-    ok($AuthURL eq $Expected, "$AuthURL eq $Expected");
+    ok( $AuthURL eq $Expected, "$AuthURL eq $Expected" );
 
 }
-
 
 done_testing;
 
 # tear down fake server
-kill( 'TERM', $main::ChildPID );
-waitpid( $main::ChildPID, 0 );
-
-
-sub GetTestOpenIDConfig {
-
-    my $OpenIDConfig = {
-        'ClientSettings' => {
-            'ClientSecret' => '12345678987654321',
-            'ClientID' => 'otobo',
-            'RedirectURI' => 'http://localhost/otobo/index.pl?Action=Login',
-        },
-        'ProviderSettings' => {
-            'TTL' => 1800,
-            'OpenIDConfiguration' => 'http://localhost:2007/realms/master/.well-known/openid-configuration',
-            'Name' => 'UnitTest',
-            'SSLOptions' => {
-                'SSLVerifyMode' => 0,
-                'SSLVerifyHostname' => 0,
-            },
-        },
-    };
-    return $OpenIDConfig;    
-}
+kill( 'TERM', $OAuthProviderMock::ChildPID );
+waitpid( $OAuthProviderMock::ChildPID, 0 );
 
 # patch sysconfig just for this process / request
 
@@ -154,32 +131,21 @@ sub PrepareTestSysConfig {
 
     # configure a functional account that uses above config
     $ConfigObject->Set(
-        Key => 'OpenIDConnect::FunctionalAccounts',
+        Key   => 'OpenIDConnect::FunctionalAccounts',
         Value => {
             '_UnitTest1' => {
 
-                OpenIDConfig      =>'OpenIDConnect::OICDProvider::_UnitTest1',
-                GrantType         => $Param{GrantType} || 'authorization_code',
-                Scope             => $Param{Scope} || 'openid',
-                Resources         => $Param{Resources} || '',
+                OpenIDConfig      => 'OpenIDConnect::OICDProvider::_UnitTest1',
+                GrantType         => $Param{GrantType}         || 'authorization_code',
+                Scope             => $Param{Scope}             || 'openid',
+                Resources         => $Param{Resources}         || '',
                 ResourceParamName => $Param{ResourceParamName} || 'resource',
-                Token             => $Param{Token} || 'access_token',
+                Token             => $Param{Token}             || 'access_token',
                 Username          => $Param{Username},
                 Password          => $Param{Password},
             }
         },
     );
+
+    return;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

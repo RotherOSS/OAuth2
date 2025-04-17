@@ -1,3 +1,12 @@
+package OAuthProviderMock;
+use Test2::V0;
+use Crypt::JWT qw(encode_jwt decode_jwt);
+use Crypt::PK::RSA;
+use Plack::Runner;
+use Plack::Request;
+use Try::Tiny qw(try catch);
+use JSON;
+
 #################################################################
 # OAuth Provider Mock Server
 #################################################################
@@ -8,13 +17,13 @@ my $CurrentTime = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
 # prepare shared RSA key
 #################################################################
 
-$main::PrivateKey = Crypt::PK::RSA->new();
-$main::PrivateKey->generate_key(256, 65537);
+$OAuthProviderMock::PrivateKey = Crypt::PK::RSA->new();
+$OAuthProviderMock::PrivateKey->generate_key(256, 65537);
 
 # prepare kid data to be served from fake authorization server
-my $KidData       = decode_json($main::PrivateKey->export_key_jwk('public'));
-my $KidThumbprint = $main::PrivateKey->export_key_jwk_thumbprint();
-$main::KidID      = '2QqRmKFkfpBHoO4cj-yVfrHJykIBLOMbbe7qBvU5Unk';
+my $KidData               = decode_json($OAuthProviderMock::PrivateKey->export_key_jwk('public'));
+my $KidThumbprint         = $OAuthProviderMock::PrivateKey->export_key_jwk_thumbprint();
+$OAuthProviderMock::KidID = '2QqRmKFkfpBHoO4cj-yVfrHJykIBLOMbbe7qBvU5Unk';
 
 # helper to get an OpenIDConfig
 sub GetTestOpenIDConfig {
@@ -113,9 +122,9 @@ sub AssertHttpCallLog {
 # start test authorization server
 #################################################################
 
-$main::ChildPID = fork();
+$OAuthProviderMock::ChildPID = fork();
 
-if ( !$main::ChildPID ) {
+if ( !$OAuthProviderMock::ChildPID ) {
 
     # i am the forked child
     # run the test server
@@ -227,7 +236,7 @@ if ( !$main::ChildPID ) {
 
                     "keys" => [
                         {
-                            "kid" => $main::KidID,
+                            "kid" => $OAuthProviderMock::KidID,
                             "kty" => $KidData->{kty},
                             "alg" => "RS256",
                             "use" => "sig",
@@ -271,8 +280,8 @@ if ( !$main::ChildPID ) {
                 my $AccessToken = encode_jwt(
                     payload       => $AccessTokenPayload, 
                     alg           =>'RS256', 
-                    key           => $main::PrivateKey,
-                    extra_headers => { kid => $main::KidID },    
+                    key           => $OAuthProviderMock::PrivateKey,
+                    extra_headers => { kid => $OAuthProviderMock::KidID },    
                 );
 
                 my $IDTokenPayload = Payload();
@@ -282,8 +291,8 @@ if ( !$main::ChildPID ) {
                 my $IDToken = encode_jwt(
                     payload       => $IDTokenPayload, 
                     alg           =>'RS256', 
-                    key           => $main::PrivateKey,
-                    extra_headers => { kid => $main::KidID },    
+                    key           => $OAuthProviderMock::PrivateKey,
+                    extra_headers => { kid => $OAuthProviderMock::KidID },    
                 );
 
                 my $Data = {

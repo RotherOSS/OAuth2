@@ -73,7 +73,7 @@
         </Value>
     </Setting>
 
-     <Setting Name="Daemon::SchedulerCronTaskManager::Task###TokenStoreUpdater" Required="0" Valid="0" ConfigLevel="100">
+     <Setting Name="Daemon::SchedulerCronTaskManager::Task###TokenStoreUpdater" Required="0" Valid="1" ConfigLevel="100">
          <Description Translatable="1">Executes a custom command or module. Note: if module is used, function is required.</Description>
          <Navigation>Daemon::SchedulerCronTaskManager::Task</Navigation>
          <Value>
@@ -191,13 +191,13 @@
         well as your OIDC Provider's the well-known metadata discovery url (eg https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration)</Description>
         <Navigation>Core::Auth::OpenIDConnect</Navigation>
         <Value>
-            <Hash> 
+            <Hash>
                 <Item Key="ClientSettings">
                     <Hash>
                         <Item Key="ClientID" ValueType="String">&lt;your_oauth_client_id&gt;</Item>
                         <Item Key="ClientSecret" ValueType="Password">&lt;your_oauth_client_secret&gt;</Item>
                     </Hash>
-                </Item>                    
+                </Item>
                 <Item Key="ProviderSettings">
                     <Hash>
                         <Item Key="Name" ValueType="String">OIDCInternal1</Item>
@@ -225,13 +225,13 @@
         well as your OIDC Provider's the well-known metadata discovery url (eg https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration)</Description>
         <Navigation>Core::Auth::OpenIDConnect</Navigation>
         <Value>
-            <Hash> 
+            <Hash>
                 <Item Key="ClientSettings">
                     <Hash>
                         <Item Key="ClientID" ValueType="String">&lt;your_oauth_client_id&gt;</Item>
                         <Item Key="ClientSecret" ValueType="Password">&lt;your_oauth_client_secret&gt;</Item>
                     </Hash>
-                </Item>                    
+                </Item>
                 <Item Key="ProviderSettings">
                     <Hash>
                         <Item Key="Name" ValueType="String">OIDCInternal2</Item>
@@ -259,13 +259,13 @@
         well as your OIDC Provider's the well-known metadata discovery url (eg https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration)</Description>
         <Navigation>Core::Auth::OpenIDConnect</Navigation>
         <Value>
-            <Hash> 
+            <Hash>
                 <Item Key="ClientSettings">
                     <Hash>
                         <Item Key="ClientID" ValueType="String">&lt;your_oauth_client_id&gt;</Item>
                         <Item Key="ClientSecret" ValueType="Password">&lt;your_oauth_client_secret&gt;</Item>
                     </Hash>
-                </Item>                    
+                </Item>
                 <Item Key="ProviderSettings">
                     <Hash>
                         <Item Key="Name" ValueType="String">OIDCInternal3</Item>
@@ -288,15 +288,4 @@
         </Value>
  </Setting>
 
-<!--
- <Setting Name="OpenIDConnect::ClientProfiles" Required="0" Valid="1">
-        <Description Translatable="1">OAuth2 OpenID Connect Client Profile.</Description>
-        <Navigation>Core::Auth::OpenIDConnect</Navigation>
-        <Value>
-            <Array>
-                <Item>AuthModule::OpenIDConnect::Config</Item>
-            </Array>
-        </Value>
- </Setting>
- -->
 </otobo_config>

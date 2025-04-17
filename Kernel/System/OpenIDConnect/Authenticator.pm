@@ -27,17 +27,18 @@ use Kernel::System::VariableCheck qw(:all);
 
 use namespace::autoclean;
 
-
 our @ObjectDependencies = (
     'Kernel::System::Log',
-	'Kernel::System::User',
-	'Kernel::System::OpenIDConnect::Token',
-	'Kernel::System::OpenIDConnect::UserMappings',
+    'Kernel::System::User',
+    'Kernel::System::OpenIDConnect::Token',
+    'Kernel::System::OpenIDConnect::UserMappings',
 );
 
 =head1 NAME
 
 Kernel::System::OpenIDConnect::Authenticator
+
+=for stopwords OIDC
 
 authenticate incoming OIDC OAuth2 Tokens
 
@@ -65,33 +66,32 @@ sub new {
 
 =head2 Authenticate()
 
-	Authenticates an incoming Bearer Token
+    Authenticates an incoming Bearer Token
 
     my $Result = $AuthenticatorObject->Authenticate(
-		Token => $Token,
-	);
+        Token => $Token,
+    );
 
     where
 
     my $Result = {
-			Success   => 1,
-			TokenData => $TokenData,
-			UserData  => \%UserData,    
+            Success   => 1,
+            TokenData => $TokenData,
+            UserData  => \%UserData,
     };
 
 =cut
-
 
 sub Authenticate {
     my ( $Self, %Param ) = @_;
 
     my $BearerToken = $Param{Token};
 
-	my $Result = { Success => 0 };
+    my $Result = { Success => 0 };
 
     # get all configured OAuth Accounts for API access
     my $UserMappings = $Kernel::OM->Get('Kernel::System::OpenIDConnect::UserMappings');
-    my $Accounts = $UserMappings->GetUserMappings();
+    my $Accounts     = $UserMappings->GetUserMappings();
 
     if ( !IsHashRefWithData($Accounts) ) {
         return $Result;
@@ -101,20 +101,17 @@ sub Authenticate {
     ACCOUNTNAME:
     for my $AccountName ( keys %$Accounts ) {
 
-print STDERR "ANAME: $AccountName\n";
-
         # get functional account data
         my $Account = $Accounts->{$AccountName};
 
         # validate the token
         my $TokenResult = $Self->_ValidateToken(
-            AccountName          => $AccountName,
-            Account              => $Account,
-            Token                => $BearerToken,
+            AccountName => $AccountName,
+            Account     => $Account,
+            Token       => $BearerToken,
             %Param,
         );
-use Data::Dumper;
-print STDERR Dumper($TokenResult);
+
         # if token not validated, try next token
         if ( !$TokenResult->{Success} ) {
             next ACCOUNTNAME;
@@ -149,20 +146,17 @@ print STDERR Dumper($TokenResult);
         }
 
         # report success!
-		return {
-			Success   => 1,
-			TokenData => $TokenResult->{TokenData},
-			UserData  => \%UserData,
-		};
-
-        # otherwise try next account
-        next ACCOUNTNAME;
+        return {
+            Success   => 1,
+            TokenData => $TokenResult->{TokenData},
+            UserData  => \%UserData,
+        };
     }
 
     return $Result;
 }
 
-# validate 
+# validate
 
 sub _ValidateToken {
     my ( $Self, %Param ) = @_;
@@ -180,13 +174,13 @@ sub _ValidateToken {
         }
     }
 
-    my $Account      = $Param{Account};
-    my $AccountName  = $Param{AccountName};
+    my $Account     = $Param{Account};
+    my $AccountName = $Param{AccountName};
 
     my $UserMappings = $Kernel::OM->Get('Kernel::System::OpenIDConnect::UserMappings');
-	my $OpenIDConfig = $UserMappings->GetOpenIDConfig(
-		AccountID => $AccountName,
-	);
+    my $OpenIDConfig = $UserMappings->GetOpenIDConfig(
+        AccountID => $AccountName,
+    );
 
     my $ClientSettings   = $OpenIDConfig->{ClientSettings};
     my $ExpectedAudience = $Account->{Audience} || $ClientSettings->{ClientID};
@@ -194,12 +188,12 @@ sub _ValidateToken {
     my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
 
     return $TokenObject->Validate(
-		Token                => $Param{Token},
-		OpenIDConfig         => $OpenIDConfig,
-		ExpectedAudience     => $ExpectedAudience,
-		AuthorizedParty      => $Account->{AuthorizedParty},
-        ExpectedScopes       => $Account->{Scope},
-	);
+        Token            => $Param{Token},
+        OpenIDConfig     => $OpenIDConfig,
+        ExpectedAudience => $ExpectedAudience,
+        AuthorizedParty  => $Account->{AuthorizedParty},
+        ExpectedScopes   => $Account->{Scope},
+    );
 }
 
 1;

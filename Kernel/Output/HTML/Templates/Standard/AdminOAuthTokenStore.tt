@@ -40,7 +40,7 @@
     <div class="SidebarColumn">
         <div class="WidgetSimple">
             <div class="Header">
-                <h2><b>[% Translate("About OIDC Functional Accounts") %]</b></h2>
+                <h2><b>[% Translate("About OIDC Functional Accounts") | html %]</b></h2>
             </div>
             <div class="Content FavouriteList">
                 <p>
@@ -223,7 +223,7 @@
                     </fieldset>
 
                     <div class="Field">
-                        <h2>[% Translate("Advanced Invoker Settings") %]</h2>
+                        <h2>[% Translate("Advanced Invoker Settings") | html %]</h2>
                     </div>
 
                     <fieldset class="TableLike">

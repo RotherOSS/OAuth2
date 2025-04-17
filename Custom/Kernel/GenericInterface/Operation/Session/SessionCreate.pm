@@ -103,27 +103,30 @@ sub Run {
     for my $Needed (qw( Password )) {
         if ( !$Param{Data}->{$Needed} ) {
 
-# Rother OSS /OAuth2
-#           return $Self->ReturnError(
-#               ErrorCode    => 'SessionCreate.MissingParameter',
-#               ErrorMessage => "SessionCreate: $Needed parameter is missing!",
-#           );
+            # Rother OSS /OAuth2
+            #           return $Self->ReturnError(
+            #               ErrorCode    => 'SessionCreate.MissingParameter',
+            #               ErrorMessage => "SessionCreate: $Needed parameter is missing!",
+            #           );
 
             if ( !$Param{Data}->{BearerToken} ) {
                 return $Self->ReturnError(
                     ErrorCode    => 'SessionCreate.MissingParameter',
                     ErrorMessage => "SessionCreate: $Needed parameter is missing!",
-                );                
+                );
             }
-# EO / OAuth2            
+
+            # EO / OAuth2
         }
     }
 
     my $SessionID = $Self->CreateSessionID(
         %Param,
-# Rother OSS /OAuth2
+
+        # Rother OSS /OAuth2
         DebuggerObject => $Self->{DebuggerObject}
-# EO / OAuth2            
+
+        # EO / OAuth2
     );
 
     if ( !$SessionID ) {

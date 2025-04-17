@@ -59,62 +59,37 @@ sub Run {
 
     my ( $Self, %Param ) = @_;
 
-use Data::Dumper;
-    open(my $FH,">","/opt/otobo/var/log/tokenupdater2.log");
-
-    print $FH "############################\n";
-    print $FH "TokenStorageUpdater2 has run!\n";
-    print $FH Dumper(\%Param);
-    print $FH "############################\n";
-
     my $MainObject = $Kernel::OM->Get('Kernel::System::Main');
-
-    print $FH "1############################\n";
 
     my $Log = "TokenStorageUpdater has been called with:\n";
 
     $Log .= $MainObject->Dump( \%Param );
-    print $FH "2############################\n";
 
     my $DateTimeObject = $Kernel::OM->Create(
         'Kernel::System::DateTime',
     );
 
-    print $FH "3############################\n";
-
     my $Success = $DateTimeObject->ToTimeZone(
         TimeZone => 'UTC'
     );
 
-    print $FH "4############################\n";
-
     my $Time = $DateTimeObject->Format( Format => '%Y-%m-%d %H:%M:%S' );
 
-    print $FH "5############################\n";
-
     $Log .= "at $Time.\n";
-
-    print $FH "at $Time.\n";
 
     my $Tokens;
     eval {
 
         $Tokens = $Self->RenewTokens(%Param);
     };
-    if ($@ ) {
+    if ($@) {
 
-        print $FH Dumper($@);
+        $Log .= $MainObject->Dump($@);
     }
 
-    print $FH "6############################\n";
-
-    if($Tokens) {
-        $Log .= $MainObject->Dump( $Tokens );
+    if ($Tokens) {
+        $Log .= $MainObject->Dump($Tokens);
     }
-
-    print $FH Dumper($Tokens);
-    print $FH "7############################\n";
-    close($FH);
 
     my $FileLocation = $MainObject->FileWrite(
         Directory => '/opt/otobo/var/log/',
@@ -125,15 +100,14 @@ use Data::Dumper;
     return 1;
 }
 
-
 sub RenewTokens {
 
     my ( $Self, %Param ) = @_;
 
     my $Interval = $Param{Interval};
 
-    my $TokenProvider      = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
-    my $TokenRepository    = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
+    my $TokenProvider   = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
+    my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 
     my $DateTimeObject = $Kernel::OM->Create(
         'Kernel::System::DateTime',

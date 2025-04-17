@@ -36,7 +36,7 @@ use namespace::autoclean;
 
 our @ObjectDependencies = (
     'Kernel::Config',
-    'Kernel::System::SysConfig',    
+    'Kernel::System::SysConfig',
     'Kernel::System::Cache',
     'Kernel::System::JSON',
     'Kernel::System::Log',
@@ -46,6 +46,7 @@ our @ObjectDependencies = (
 
 Kernel::System::OpenIDConnect::Configuration
 
+=for stopwords OIDC
 manage OIDC Configuration and Profiles
 
 =head1 SYNOPSIS
@@ -97,27 +98,26 @@ sub GetOAuthProfiles {
     my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
 
     my %Profiles;
-	my $Default = $ConfigObject->Get('AuthModule::OpenIDConnect::Config');
-    if( $Default ) {
+    my $Default = $ConfigObject->Get('AuthModule::OpenIDConnect::Config');
+    if ($Default) {
 
-		$Profiles{'AuthModule::OpenIDConnect::Config'} = $Default;
+        $Profiles{'AuthModule::OpenIDConnect::Config'} = $Default;
     }
 
-    my $SearchResult = $ConfigObject->Get('OpenIDConnect::OICDProvider' );
-    
-    foreach my $SettingName( keys %$SearchResult) {
+    my $SearchResult = $ConfigObject->Get('OpenIDConnect::OICDProvider');
 
-        my $Name = "OpenIDConnect::OICDProvider###$SettingName";
-        my %Setting = $SysConfigObject->SettingGet(Name => $Name);
-        if( $Setting{IsValid}) {
+    for my $SettingName ( keys %$SearchResult ) {
 
-			$Profiles{$Name} = $Setting{EffectiveValue};
+        my $Name    = "OpenIDConnect::OICDProvider###$SettingName";
+        my %Setting = $SysConfigObject->SettingGet( Name => $Name );
+        if ( $Setting{IsValid} ) {
+
+            $Profiles{$Name} = $Setting{EffectiveValue};
         }
     }
 
     return \%Profiles;
 }
-
 
 =head2 GetProviderData()
 
@@ -125,8 +125,8 @@ Returns the OpenId dynamic Provider Data for a named OAuth Functional accounts c
 
     my $OpenIDProviderData = $OIDCConfigurationObject->GetProviderData(
         OpenIDConfig => {
-			... from SysConfig
-		},
+            ... from SysConfig
+        },
     );
 
 =cut
@@ -151,14 +151,14 @@ sub GetProviderData {
 
     my $ProviderKey = 'ProviderData' . ( $OpenIDConfig->{ProviderSettings}{Name} // '' );
 
-    my $OpenIDProviderData; 
-	
-	if(!$Param{NoCache}) {
-		$OpenIDProviderData = $Kernel::OM->Get('Kernel::System::Cache')->Get(
-    	    Type => 'OpenIDConnect',
-        	Key  => $ProviderKey,
-    	);
-	}
+    my $OpenIDProviderData;
+
+    if ( !$Param{NoCache} ) {
+        $OpenIDProviderData = $Kernel::OM->Get('Kernel::System::Cache')->Get(
+            Type => 'OpenIDConnect',
+            Key  => $ProviderKey,
+        );
+    }
 
     # if nothing is cached, get the data
     if ( !$OpenIDProviderData ) {
@@ -180,8 +180,8 @@ This can be used to validate an 'iss' request parameter for incoming OAuth autho
 
     my $Issuer = $OIDCConfigurationObject->GetIssuer(
         OpenIDConfig => {
-			... from SysConfig
-		},
+            ... from SysConfig
+        },
     );
 
     this method returns a simple string.
@@ -216,8 +216,8 @@ Returns the token endpoint for this OpenIDConfig.
 
     my $Issuer = $OIDCConfigurationObject->GetTokenEndpoint(
         OpenIDConfig => {
-			... from SysConfig
-		},
+            ... from SysConfig
+        },
     );
 
     this method returns a simple string.
@@ -228,19 +228,18 @@ sub GetTokenEndpoint {
 
     my ( $Self, %Param ) = @_;
 
-	my $OpenIDConfig     = $Param{OpenIDConfig};
-	my $ClientSettings   = $OpenIDConfig->{ClientSettings};
-	my $ProviderSettings = $OpenIDConfig->{ProviderSettings};
+    my $OpenIDConfig     = $Param{OpenIDConfig};
+    my $ClientSettings   = $OpenIDConfig->{ClientSettings};
+    my $ProviderSettings = $OpenIDConfig->{ProviderSettings};
 
     my $OpenIDProviderData = $Self->GetProviderData(
-        OpenIDConfig  => $OpenIDConfig,
+        OpenIDConfig => $OpenIDConfig,
     );
 
     # fetch openid token endpoint
 
     return $OpenIDProviderData->{OpenIDConfiguration}->{token_endpoint};
 }
-
 
 =head2 GetAuthorizationEndpoint()
 
@@ -249,8 +248,8 @@ Returns the authorization (aka login) endpoint for this OpenIDConfig.
 
     my $Issuer = $OIDCConfigurationObject->GetAuthorizationEndpoint(
         OpenIDConfig => {
-			... from SysConfig
-		},
+            ... from SysConfig
+        },
     );
 
     this method returns a simple string.
@@ -261,25 +260,24 @@ sub GetAuthorizationEndpoint {
 
     my ( $Self, %Param ) = @_;
 
-	my $OpenIDConfig     = $Param{OpenIDConfig};
-	my $ClientSettings   = $OpenIDConfig->{ClientSettings};
-	my $ProviderSettings = $OpenIDConfig->{ProviderSettings};
+    my $OpenIDConfig     = $Param{OpenIDConfig};
+    my $ClientSettings   = $OpenIDConfig->{ClientSettings};
+    my $ProviderSettings = $OpenIDConfig->{ProviderSettings};
 
     my $OpenIDProviderData = $Self->GetProviderData(
-        OpenIDConfig  => $OpenIDConfig,
+        OpenIDConfig => $OpenIDConfig,
     );
 
     return $OpenIDProviderData->{OpenIDConfiguration}->{authorization_endpoint};
 }
 
-
 sub _ProviderDataGet {
 
     my ( $Self, %Param ) = @_;
 
-	my $OpenIDConfig     = $Param{OpenIDConfig};
-	my $ClientSettings   = $OpenIDConfig->{ClientSettings};
-	my $ProviderSettings = $OpenIDConfig->{ProviderSettings};
+    my $OpenIDConfig     = $Param{OpenIDConfig};
+    my $ClientSettings   = $OpenIDConfig->{ClientSettings};
+    my $ProviderSettings = $OpenIDConfig->{ProviderSettings};
 
     my $JSONObject = $Kernel::OM->Get('Kernel::System::JSON');
 
@@ -382,8 +380,5 @@ sub _ProviderDataGet {
 
     return $Return;
 }
-
-
-
 
 1;
