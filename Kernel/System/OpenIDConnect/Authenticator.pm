@@ -32,6 +32,7 @@ our @ObjectDependencies = (
     'Kernel::System::User',
     'Kernel::System::OpenIDConnect::Token',
     'Kernel::System::OpenIDConnect::UserMappings',
+    'Kernel::System::OpenIDConnect::UserImport',
 );
 
 =head1 NAME
@@ -142,7 +143,17 @@ sub Authenticate {
 
         # assert the user actually exists in database
         if ( !$UserData{UserID} ) {
-            next ACCOUNTNAME;
+
+            # try on-the-fly import
+            my $UserImportObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::UserImport');
+            my $Result           = $UserImportObject->ImportUser(
+                TokenData   => $TokenResult->{TokenData},
+                UserMapping => $Account,
+            );
+
+            if ( !$Result->{Success} ) {
+                next ACCOUNTNAME;
+            }
         }
 
         # report success!

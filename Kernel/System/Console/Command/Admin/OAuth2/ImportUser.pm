@@ -126,6 +126,14 @@ sub Configure {
         ValueRegex  => qr/.*/smx,
     );
 
+    $Self->AddOption(
+        Name        => 'dry-run',
+        Description => "Simulate actions, do not actually add user",
+        Required    => 0,
+        HasValue    => 1,
+        ValueRegex  => qr/1/smx,
+    );
+
     return;
 }
 
@@ -138,7 +146,12 @@ sub PreRun {
 sub Run {
     my ( $Self, %Param ) = @_;
 
-    $Self->Print("<yellow>Importing Functional Account...</yellow>\n");
+    $Self->Print("<green>Importing Functional Account...</green>\n");
+
+    if ( $Self->GetOption('dry-run') ) {
+
+        $Self->Print("<yellow>dry-run mode: not performing any actual changes.</yellow>\n");
+    }
 
     # gather parameter values
     my $OpenIDConfigName = $Self->GetOption('openid-config') || 'AuthModule::OpenIDConnect::Config';
@@ -208,11 +221,10 @@ sub Run {
     $Self->Print( encode_json($TokenData) . "\n" );
 
     # determine jwt clain to otobo UserLogin mapping
-    my $Identifier = $ConfigObject->Get('AuthModule::OpenIDConnect::UID');
-    my $UserLogin  = $TokenData->{$Identifier};
+    my $UserLogin = $TokenData->{$UID};
     if ( !$UserLogin ) {
 
-        $Self->PrintError("Token received but UID was not provided in '$Identifier'.");
+        $Self->PrintError("Token received but UID was not provided in '$UID'.");
         return $Self->ExitCodeError();
     }
 
@@ -247,7 +259,7 @@ sub Run {
 
         $UserData{UserFirstname} = $UserData{UserFirstname} || $TokenData->{azp}                || 'otobo';
         $UserData{UserLastname}  = $UserData{UserLastname}  || $TokenData->{preferred_username} || 'bot';
-        $UserData{UserEmail}     = $UserData{UserEmail}     || $TokenData->{email}              || 'systemuser@otobo.local';
+        $UserData{UserEmail}     = $TokenData->{email}      || $UserData{UserEmail}             || 'systemuser@otobo.local';
 
         if ( !%User ) {
 
@@ -257,14 +269,16 @@ sub Run {
                 $Self->Print( "    <yellow>$Key : " . $UserData{$Key} . "</yellow>\n" );
             }
 
-            $UserID = $UserObject->UserAdd(
-                UserFirstname => '-',
-                UserLastname  => '-',
-                %UserData,
-                UserLogin    => $UserLogin,
-                ValidID      => 1,
-                ChangeUserID => 1,
-            );
+            if ( !$Self->GetOption('dry-run') ) {
+                $UserID = $UserObject->UserAdd(
+                    UserFirstname => '-',
+                    UserLastname  => '-',
+                    %UserData,
+                    UserLogin    => $UserLogin,
+                    ValidID      => 1,
+                    ChangeUserID => 1,
+                );
+            }
         }
 
         else {
@@ -285,7 +299,7 @@ sub Run {
                 }
             }
 
-            if ($Update) {
+            if ( $Update && !$Self->GetOption('dry-run') ) {
                 $UserObject->UserUpdate(
                     %User,
                     %UserData,
@@ -297,13 +311,14 @@ sub Run {
 
     $UserID //= $User{UserID};
 
-    if ( !$UserID ) {
+    if ( !$UserID && $Self->GetOption('dry-run') != 1 ) {
 
         $Self->PrintError("No UserId for $UserLogin. Aborting.");
         return $Self->ExitCodeError();
     }
-
-    $Self->Print("<yellow>\nUserID: $UserID\n</yellow>\n");
+    if ($UserID) {
+        $Self->Print("<yellow>\nUserID: $UserID\n</yellow>\n");
+    }
 
     # successful return if no authorization has to be done
 
@@ -319,13 +334,16 @@ sub Run {
         # update user roles
         for my $RoleName ( keys %AllRoles ) {
 
-            $Self->Print("<yellow>  Add Role: $RoleName</yellow>\n");
-            $GroupObject->PermissionRoleUserAdd(
-                UID    => $UserID,
-                RID    => $AllRoles{$RoleName},
-                Active => $Roles{$RoleName} || 0,
-                UserID => 1,
-            );
+            $Self->Print("<yellow>  Check Role: $RoleName</yellow>\n");
+
+            if ( !$Self->GetOption('dry-run') ) {
+                $GroupObject->PermissionRoleUserAdd(
+                    UID    => $UserID,
+                    RID    => $AllRoles{$RoleName},
+                    Active => $Roles{$RoleName} || 0,
+                    UserID => 1,
+                );
+            }
         }
     }
 
