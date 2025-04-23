@@ -136,7 +136,7 @@ sub ProviderProcessRequest {
 
     my %QueryParams;
 
-    # Rpther OSS / OAuth2
+# Rother OSS / OAuth2
     # Authenthentication header
     my $AuthenticationHeader = $ParamObject->Header('Authorization');
 
@@ -179,7 +179,7 @@ sub ProviderProcessRequest {
         }
     }
 
-    # EO OAuth2
+# EO OAuth2
 
     if ($QueryParamsStr) {
 
@@ -746,7 +746,7 @@ sub RequesterPerformRequest {
             );
         }
 
-        # Rother OSS / OAuth2
+# Rother OSS / OAuth2
         # oauth
         elsif (
             $Config->{Authentication}->{AuthType} eq 'OAuth'
@@ -783,7 +783,7 @@ sub RequesterPerformRequest {
             $Headers{Authorization} = "Bearer $Token";
         }
 
-        # EO / Oauth2
+# EO / Oauth2
 
         # kerberos
         elsif (
