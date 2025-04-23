@@ -95,6 +95,14 @@ If your planning to use functional accounts (aka System Users) to authorize outg
 - optionally, a set of ``scope`` parameters to use. When using OIDC this likely will include 'openid'
 - optionally, a set of ``resource`` ids to use. 
 
+**Important**
+
+If you are using the 'authorization_code' flow, which will redirect your browser to the Provider login page to authenticate, the OIDC Provider will redirect you back to your Otobo instance when the authentication was successful.
+For this to work the 'redirect_uri' that points back to you Otobo instance must be an allowed redirect_uri configured for your OAuth2 OIDC application. The generated URL will be
+``http(s)://your-otobo.fqdn/otobo/index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth'``. 
+
+
+
 
 **Step II - Basic OpenID Connect Provider Configuration in Otobo**
 
@@ -316,7 +324,7 @@ Assuming you have configured at least one functional account for Invokers as per
 - Select 'POST' as value for **valid request commands**
 - Click **Save and Finish**
 
-At this point, Otobo should try to make an outgoing HTTP API call every time an article in a ticket gets updated, and automatically attach an OAuth2 Bearer Tokento the request in the Authorization HTTP header. 
+At this point, Otobo should try to make an outgoing HTTP API call every time an article in a ticket gets updated, and automatically attach an OAuth2 Bearer Token to the request in the Authorization HTTP header. 
 To try it out:
 
 - Select a ticket
@@ -360,8 +368,8 @@ Advanced User Import
 --------------------
 
 In case of problems with the automated User import for incoming webservice calls (Provider), there is a console command to manually import a specific User
-into the system. This console command can also be used for debugging OIDC/OAuth2 problems. The command comes with a '-dry-run' option that wull only simulate
-import, do the actual handshake with the OIDC provider, but not actually imports the user.
+into the system. This console command can also be used for debugging OIDC/OAuth2 problems. The command comes with a '-dry-run' option that will only simulate
+the import, it will do the actual handshake with the OIDC provider, but it will not actually import the user.
 
 
 ::
