@@ -95,6 +95,14 @@ If your planning to use functional accounts (aka System Users) to authorize outg
 - optionally, a set of ``scope`` parameters to use. When using OIDC this likely will include 'openid'
 - optionally, a set of ``resource`` ids to use. 
 
+**Important**
+
+If you are using the 'authorization_code' flow, which will redirect your browser to the Provider login page to authenticate, the OIDC Provider will redirect you back to your Otobo instance when the authentication was successful.
+For this to work the 'redirect_uri' that points back to you Otobo instance must be an allowed redirect_uri configured for your OAuth2 OIDC application. The generated URL will be
+``http(s)://your-otobo.fqdn/otobo/index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth'``. 
+
+
+
 
 **Step II - Basic OpenID Connect Provider Configuration in Otobo**
 
