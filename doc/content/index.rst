@@ -83,27 +83,28 @@ Basic Configuration (Both Provider and Invoker)
 
 **Step I - Prerequisites**
 
-Your system-administrator managing your OpenID Connect Provider settings should configure an OAuth2 Application with their relevant provider and give you the following configuration details:
+Your system-administrator should configure an OAuth2 Application with their relevant OIDC provider and give you the following configuration details:
 
 - the well-known provider metadata discovery url as described in the `openid spec <https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfigurationRequest>`__  Example: '\https://keycloak:8443/realms/master/.well-known/openid-configuration' 
-
 - ``client_id`` and ``client_secret`` parameters for your OAuth2 Application
-- the ``grant_type`` which will be one of: 'client_credentials' or 'password' or 'authorization_code'
 - the ``UID`` identifier of an OAuth2 JWT token claim that can be mapped to an Otobo UserLogin identifier. Usual values include 'sub', 'email', or 'uid'. Use 'sub' if in doubt.
-- if grant_type was 'password', you will also get a username/password credential pack for a dedicated 'functional account' system user
-- optionally, a set of ``scope`` parameters to use. 
-- optionally, a set of 'resource` ids to use.
+
+If your planning to use functional accounts (aka System Users) to authorize outgoing API calls triggered by Otobo:
+
+- the ``grant_type`` which will be one of: 'client_credentials' or 'password' or 'authorization_code'. if grant_type is 'password', you will also get username/password credentials
+- optionally, a set of ``scope`` parameters to use. When using OIDC this likely will include 'openid'
+- optionally, a set of ``resource`` ids to use. 
 
 
 **Step II - Basic OpenID Connect Provider Configuration in Otobo**
 
-In Otobo the basic OIDC Provider settings have to be configured. For OAuth2 API calls, these include the Client and the Provider settings,
+For OAuth2 API calls, these include the Client and the Provider settings,
 which are essentially the same settings that are also used for OIDC as login mechanism. 
+
+If you already using Otobo for OIDC based login, you should already have a valid OIDC configuration like from the example above and **you are all set**. 
 
 ClientSettings Example: https://github.com/RotherOSS/otobo/blob/rel-11_0/Kernel/Config/Defaults.pm#L530
 ProviderSettings Example: https://github.com/RotherOSS/otobo/blob/rel-11_0/Kernel/Config/Defaults.pm#L537
-
-If you already using Otobo for OIDC based login, you should already have a valid OIDC configuration like from the example above and **you are all set**. 
 
 Otherwise, in case you are not using OIDC for Login, but still want to use OIDC for API calls, or if you want to use a OIDC provider for API calls different from your default OIDC configuration used for login, you can now add settings for additional providers via the Otobo system configuration:
 
@@ -116,57 +117,6 @@ Usually there is no need to differ from the defaults for the other parameters, u
 
 .. image:: ../images/sysconf-oidc-profile.png
    :alt: OIDC Provider Profile
-
-
-Provider Prerequisite - User Import
------------------------------------------------
-
-Before enabling API for users identified by OAuth2 tokens, please make sure the user(s) behind the tokens actually exist in the Otobo system. The easiest way to assure this is the case is to simply log in with the
-user intended for API automation once via the Otobo UI.
-
-In cases where that is not possible or feasible, a Console Command is available so that administrators can import an OIDC backed user once via the command line:
-
-
-::
-
-   otobo@87e0d136371d:~$ bin/otobo.Console.pl Admin::OAuth2::ImportUser --help
-   
-   Import a Functional User Account from an OpenID Connect Provider.
-   
-   Usage:
-    otobo.Console.pl Admin::OAuth2::ImportUser --grant-type ...  [--openid-config ...] 
-    [--username ...] [--password ...] [--scope ...] [--resource ...] 
-    [--resource-param-name ...] [--token-type ...] [--user-map ...] 
-    [--role-map ...] [--uid ...]
-   
-   Options:
-    [--openid-config ...]          - The name of OpenID Config to use. Defaults to 
-                                     'AuthModule::OpenIDConnect::Config' for using the 
-                                     default OIDC login provider if this system uses 
-                                     OIDC for login purposes. Otherwise use one of 
-                                     'OpenIDConnect::UserMapping###Custom1' ... 
-                                     CustomN Keys. 
-    --grant-type ...               - Specify the OAuth2 grant-type (one of 
-                                     password|client_credentials).
-    [--username ...]               - Specify the OAuth2 username if grant-type is 'password'.
-    [--password ...]               - Specify the OAuth2 password if grant-type is 'password'.
-    [--scope ...]                  - Specify the OAuth2 scope(s) as a space separated list. 
-                                     optional.
-    [--resource ...]               - Specify the OAuth2 resource parameter as a 
-                                     space separated list. optional.
-    [--resource-param-name ...]    - Specify the OAuth2 resource parameter name, that is the 
-                                     name of the parameter itself. optional, defaults to 'resource'
-    [--token-type ...]             - Specify the OAuth2 token type, can be 'access_token' 
-                                     or 'id_token'. defaults to 'id_token'.
-    [--user-map ...]               - Specify the name of the UserMap system configuration 
-                                     setting. defaults to 'AuthModule::OpenIDConnect::UserMap'.
-    [--role-map ...]               - Specify the name of the RoleMap system configuration 
-                                     setting. defaults to 'AuthModule::OpenIDConnect::RoleMap'.
-    [--uid ...]                    - Specify the name of jwt token claim to be mapped to the 
-                                     Otobo UserLogin. Defaults to 'sub'
-    [--help|h]                     - Display help for this command.
-    [--no-ansi]                    - Do not perform ANSI terminal output coloring.
-   [--quiet]                      - Suppress informative output, only retain error messages.
 
 
 
@@ -186,12 +136,14 @@ Set the following values:
 - ``OpenIDConfig``: if your are using OIDC for login anyway and want to re-use that provider for API calls, just leave it to the default value of 'AuthModule::OpenIDConnect::Config'. Otherwise set it to one of the 'OpenIDConnect::OICDProvider###Custom1' you have enabled and configured.
 - ``UID``: the unique identifier of an OAuth2 JWT token claim that can be mapped to an Otobo UserLogin identifier. Usual values include 'sub', 'email', or 'uid'. Use 'sub' if in doubt. You should have received that value from your system administrator
 
-With these two configuration settings, OAuth2 token based API interaction should already be enabled. The other values are so that one can restrict which tokens are allowed to authenticate with the otobo API endpoints. 
-Any valid token from the configured provider will be accepted, provided the mapped user actually exists in the system.
+With these two configuration settings, OAuth2 token based API interaction should already be enabled. The other settings are so that one can restrict which tokens are allowed to authenticate with the otobo API endpoints. 
 
-To allow only certain tokens, restrict by these fields:
+Every valid Token needs to be mapped to a system user. If an API system user does not exist for an incoming webservice call, it will be created provided the Token 
+passes validation and any further restrictions.
 
-- ``UserLogin``: only accept tokens of this particular login. This must match the UserLogin value in the Otobo System (UserLogin attribute of the User entity). It should be the same as the value of the JWT claim that got configured earlier with the ``UID`` setting.
+To add restrictions which valid tokens are accepted for incoming webservice calls, restrict by these fields in the UserMapping system setting:
+
+- ``UserLogin``: only accept tokens of this particular login. This must match the UserLogin value in the Otobo System (UserLogin attribute of the User entity).
 
 - ``Scope``: a space separated list listing token's 'scope' claims that must be present in incoming tokens to be allowed
 
@@ -364,7 +316,8 @@ Assuming you have configured at least one functional account for Invokers as per
 - Select 'POST' as value for **valid request commands**
 - Click **Save and Finish**
 
-At this point, Otobo should try to make an outgoing HTTP API call every time an article in a ticket gets updated. To try it out:
+At this point, Otobo should try to make an outgoing HTTP API call every time an article in a ticket gets updated, and automatically attach an OAuth2 Bearer Tokento the request in the Authorization HTTP header. 
+To try it out:
 
 - Select a ticket
 - Add a note
@@ -400,6 +353,58 @@ For the ``Interval`` parameter set it to the time period between two scheduled t
 
 .. image:: ../images/tokenstore-cron.png
    :alt: Invoker Webservice Config
+
+
+
+Advanced User Import
+--------------------
+
+In case of problems with the automated User import for incoming webservice calls (Provider), there is a console command to manually import a specific User
+into the system. This console command can also be used for debugging OIDC/OAuth2 problems. The command comes with a '-dry-run' option that wull only simulate
+import, do the actual handshake with the OIDC provider, but not actually imports the user.
+
+
+::
+
+   otobo@87e0d136371d:~$ bin/otobo.Console.pl Admin::OAuth2::ImportUser --help
+   
+   Import a Functional User Account from an OpenID Connect Provider.
+   
+   Usage:
+    otobo.Console.pl Admin::OAuth2::ImportUser --grant-type ...  [--openid-config ...] 
+    [--username ...] [--password ...] [--scope ...] [--resource ...] 
+    [--resource-param-name ...] [--token-type ...] [--user-map ...] 
+    [--role-map ...] [--uid ...]
+   
+   Options:
+    [--openid-config ...]          - The name of OpenID Config to use. Defaults to 
+                                     'AuthModule::OpenIDConnect::Config' for using the 
+                                     default OIDC login provider if this system uses 
+                                     OIDC for login purposes. Otherwise use one of 
+                                     'OpenIDConnect::UserMapping###Custom1' ... 
+                                     CustomN Keys. 
+    --grant-type ...               - Specify the OAuth2 grant-type (one of 
+                                     password|client_credentials).
+    [--username ...]               - Specify the OAuth2 username if grant-type is 'password'.
+    [--password ...]               - Specify the OAuth2 password if grant-type is 'password'.
+    [--scope ...]                  - Specify the OAuth2 scope(s) as a space separated list. 
+                                     optional.
+    [--resource ...]               - Specify the OAuth2 resource parameter as a 
+                                     space separated list. optional.
+    [--resource-param-name ...]    - Specify the OAuth2 resource parameter name, that is the 
+                                     name of the parameter itself. optional, defaults to 'resource'
+    [--token-type ...]             - Specify the OAuth2 token type, can be 'access_token' 
+                                     or 'id_token'. defaults to 'id_token'.
+    [--user-map ...]               - Specify the name of the UserMap system configuration 
+                                     setting. defaults to 'AuthModule::OpenIDConnect::UserMap'.
+    [--role-map ...]               - Specify the name of the RoleMap system configuration 
+                                     setting. defaults to 'AuthModule::OpenIDConnect::RoleMap'.
+    [--uid ...]                    - Specify the name of jwt token claim to be mapped to the 
+                                     Otobo UserLogin. Defaults to 'sub'
+    [--help|h]                     - Display help for this command.
+    [--no-ansi]                    - Do not perform ANSI terminal output coloring.
+   [--quiet]                      - Suppress informative output, only retain error messages.
+
 
 
 About

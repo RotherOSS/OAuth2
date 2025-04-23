@@ -15,20 +15,31 @@
         <File Permission="660" Location="Kernel/Modules/AdminOAuthTokenStore.pm" />
         <File Permission="660" Location="Kernel/Config/Files/XML/OAuth2.xml" />
         <File Permission="660" Location="Kernel/Output/HTML/Templates/Standard/AdminOAuthTokenStore.tt" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/OAuth2/ImportUser.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/Authenticator.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/Configuration.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/FunctionalAccounts.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/OAuth2.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/Token.pm" />
         <File Permission="660" Location="Kernel/System/OpenIDConnect/TokenProvider.pm" />
         <File Permission="660" Location="Kernel/System/OpenIDConnect/TokenRepository.pm" />
         <File Permission="660" Location="Kernel/System/OpenIDConnect/TokenStoreUpdater.pm" />
-        <File Permission="660" Location="Kernel/System/OpenIDConnect/FunctionalAccounts.pm" />
         <File Permission="660" Location="Kernel/System/OpenIDConnect/UserMappings.pm" />
-        <File Permission="660" Location="Kernel/System/OpenIDConnect/Configuration.pm" />
-        <File Permission="660" Location="Kernel/System/OpenIDConnect/Token.pm" />
-        <File Permission="660" Location="Kernel/System/OpenIDConnect/Authenticator.pm" />
+        <File Permission="660" Location="Kernel/System/OpenIDConnect/UserImport.pm" />
         <File Permission="660" Location="Custom/Kernel/Modules/AdminGenericInterfaceTransportHTTPREST.pm" />
         <File Permission="660" Location="Custom/Kernel/Output/HTML/Templates/Standard/AdminGenericInterfaceTransportHTTPREST.tt" />
+        <File Permission="660" Location="Custom/Kernel/GenericInterface/Operation/Ticket/TicketUpdate.pm" />        
         <File Permission="660" Location="Custom/Kernel/GenericInterface/Operation/Session/SessionCreate.pm" />
         <File Permission="660" Location="Custom/Kernel/GenericInterface/Operation/Session/Common.pm" />
         <File Permission="660" Location="Custom/Kernel/GenericInterface/Transport/HTTP/REST.pm" />
         <File Permission="660" Location="Custom/Kernel/System/WebUserAgent.pm" />
+        <File Permission="660" Location="scripts/test/OAuthGrantTypes.t" />
+        <File Permission="660" Location="scripts/test/OAuthToken.t" />
+        <File Permission="660" Location="scripts/test/OAuthAuthUrl.t" />
+        <File Permission="660" Location="scripts/test/OAuthTokenCaching.t" />
+        <File Permission="660" Location="scripts/test/OAuthAuthenticator.t" />
+        <File Permission="660" Location="scripts/test/OAuthProviderMock.pm" />
+
         <!--
         <File Permission="660" Location="Custom/Kernel/System/OpenIDConnect.pm" />
         -->

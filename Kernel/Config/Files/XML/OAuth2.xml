@@ -110,18 +110,6 @@
                     <Item Key="Password" ValueType="Password" Translatable="0"></Item>
                 </Hash>
             </DefaultItem>
-            <Item Key="FunctionalAccountYY">
-                <Hash>
-                    <Item Key="OpenIDConfig" Translatable="0" ValueType="String">Auth::Login::OIDC</Item>
-                    <Item Key="GrantType" ValueRegex="^authorization_code|client_credentials|password" Translatable="0" ValueType="String" >client_credentials</Item>
-                    <Item Key="Scope" Translatable="0" ></Item>
-                    <Item Key="Resources" Translatable="0" ValueType="String" ></Item>
-                    <Item Key="ResourceParamName" ValueType="String" Translatable="0">resource</Item>
-                    <Item Key="Token" ValueType="String" Translatable="0">access_token</Item>
-                    <Item Key="Username" ValueType="String" Translatable="0"></Item>
-                    <Item Key="Password" ValueType="Password" Translatable="0"></Item>
-                </Hash>
-            </Item>
         </Hash>
     </Value>
 </Setting>
