@@ -140,18 +140,7 @@ sub ProviderProcessRequest {
     # Authenthentication header
     my $AuthenticationHeader = $ParamObject->Header('Authorization');
 
-    if ( lc($AuthenticationHeader) =~ /^basic / ) {
-
-        my $CredentialsBase64 = substr( $AuthenticationHeader, 6 );
-        $CredentialsBase64 =~ s/^\s+|\s+$//g;
-
-        my $Credentials = decode_base64($CredentialsBase64);
-        my ( $Username, $Password ) = split( /:/, $Credentials );
-
-        $QueryParams{Username} = $Username;
-        $QueryParams{Password} = $Password;
-    }
-    elsif ( lc($AuthenticationHeader) =~ /^bearer / ) {
+    if ( lc($AuthenticationHeader) =~ /^bearer / ) {
 
         my $Token = substr( $AuthenticationHeader, 7 );
         $Token =~ s/^\s+|\s+$//g;
@@ -176,6 +165,15 @@ sub ProviderProcessRequest {
             );
 
             $QueryParams{SessionID} = $NewSessionID;
+        }
+        else {
+
+            # report failure!
+            $Self->{DebuggerObject}->Debug(
+                Summary => 'Authorization Bearer Token present but invalid!',
+                Data    => $Token,
+            );
+
         }
     }
 

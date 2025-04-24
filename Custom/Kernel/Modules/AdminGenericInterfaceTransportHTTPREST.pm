@@ -111,13 +111,7 @@ sub Run {
     # ------------------------------------------------------------ #
 
     # Challenge token check for write action.
-    # Rother OSS / OAuth2
-    #   $LayoutObject->ChallengeTokenCheck();
-    if ( $Self->{Subaction} ne 'OAuth' ) {
-        $LayoutObject->ChallengeTokenCheck();
-    }
-
-    # EO OAuth2
+    $LayoutObject->ChallengeTokenCheck();
 
     # Check for WebserviceID.
     if ( !$WebserviceID ) {
