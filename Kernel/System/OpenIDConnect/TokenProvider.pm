@@ -581,8 +581,6 @@ sub EmptyCache {
 
     my $AccountName = $Param{AccountName};
 
-    print STDERR "EmptyCache: $AccountName\n";
-
     my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
 
     for my $TokenType (qw/access_token id_token refresh_token/) {

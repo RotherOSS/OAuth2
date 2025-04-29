@@ -332,8 +332,6 @@ sub PrepareTestSysConfig {
     my $ResourceParamName = $Param{ResourceParamName} || 'resource';
     my $TokenType         = $Param{Token}             || 'access_token';
 
-    print STDERR "TOKENTYPE: $TokenType\n";
-
     $DBObject->Do(
         SQL => "INSERT INTO oidc_functional_accounts
                 (name, oidc_profile_id,grant_type,scopes,resources,
