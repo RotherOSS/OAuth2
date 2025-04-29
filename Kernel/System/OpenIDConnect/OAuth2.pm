@@ -36,12 +36,12 @@ use namespace::autoclean;
 
 our @ObjectDependencies = (
     'Kernel::Config',
-    'Kernel::System::DateTime',
-    'Kernel::System::Cache',
-    'Kernel::System::JSON',
+    'Kernel::Language',
     'Kernel::System::Log',
     'Kernel::System::Main',
-    'Kernel::Language',
+    'Kernel::System::JSON',
+    'Kernel::System::Cache',
+    'Kernel::System::DateTime',
     'Kernel::System::OpenIDConnect::Token',
 );
 
@@ -311,7 +311,7 @@ sub GetAuthURL {
         Value => \%Param,
     );
 
-# TODO: endsession_endpoint in provider info
+# TODO: endsession_endpoint in provider info ?
 # my $LogoutURL = "https://keycloak:8443/realms/master/protocol/openid-connect/logout?client_id=otobo&post_logout_redirect_uri=";
 # $LogoutURL .= uri_escape_utf8($RedirectURL);
 # https://auth-server/auth/realms/{realm-name}/protocol/openid-connect/logout?redirect_uri=https://auth-server/auth/realms/{realm-name}/protocol/openid-connect/auth?client_id=client_id&redirect_uri

@@ -31,9 +31,9 @@ use namespace::autoclean;
 
 our @ObjectDependencies = (
     'Kernel::Config',
-    'Kernel::System::DateTime',
-    'Kernel::System::Cache',
     'Kernel::System::Log',
+    'Kernel::System::Cache',
+    'Kernel::System::DateTime',
     'Kernel::System::OpenIDConnect::Configuration',
 );
 

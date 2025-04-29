@@ -27,21 +27,19 @@ use Kernel::System::VariableCheck qw(:all);
 
 use namespace::autoclean;
 
-#use parent qw(Kernel::System::OpenIDConnect);
-
 our @ObjectDependencies = (
     'Kernel::Config',
     'Kernel::Language',
-    'Kernel::System::DateTime',
-    'Kernel::System::Cache',
-    'Kernel::System::JSON',
     'Kernel::System::Log',
     'Kernel::System::Main',
-    'Kernel::System::OpenIDConnect::Configuration',
-    'Kernel::System::OpenIDConnect::FunctionalAccounts',
-    'Kernel::System::OpenIDConnect::TokenRepository',
+    'Kernel::System::JSON',
+    'Kernel::System::Cache',
+    'Kernel::System::DateTime',
     'Kernel::System::OpenIDConnect::Token',
     'Kernel::System::OpenIDConnect::OAuth2',
+    'Kernel::System::OpenIDConnect::Configuration',
+    'Kernel::System::OpenIDConnect::TokenRepository',
+    'Kernel::System::OpenIDConnect::FunctionalAccounts',
 );
 
 =head1 NAME
@@ -50,7 +48,8 @@ Kernel::System::OpenIDConnect::TokenProvider - methods for OpenIDConnect::TokenP
 
 =head1 SYNOPSIS
 
-Functional account functions for OpenID Connect
+High level interface for Invoker and outgoing calls to fetch a valid access_token
+(or id_token) to pass along.
 
 create an object
 
@@ -216,10 +215,10 @@ sub Fetch {
 =head2 sub FetchToken()
 
     Called internaly when password or client_credential grant are configured.
-    Also calleD internaly when refreshing via refresh_token.
+    Also called internaly when refreshing via refresh_token.
 
-    Callled from client code when completing the authorization_code browser flow,
-    passing the received Code parameter.
+    Callled directly from client code when completing the authorization_code 
+    browser flow, passing the received Code parameter.
 
     my $TokenResult = $TokenProviderObject->FetchToken(
         AccountName  => '<SomeAccountName>',
@@ -292,10 +291,6 @@ sub FetchToken {
     my $TokenType = $Account->{TokenType} || 'access_token';
 
     my $OpenIDConfig = $Account->{OIDCProfile};
-
-    #    my $OpenIDConfig = $FunctionalAccountsObject->GetOpenIDConfig(
-    #        AccountName => $AccountName,
-    #    );
 
     # fetch the token
     my $Result = $Self->FetchTokenFromConfig(
@@ -402,7 +397,7 @@ Used internally by FetchToken() above, but also from
 Kernel::System::Console::Command::Admin::OAuth2::ImportUser.pm
 
 returns the JSON response decoded as a Perl data structure,
-any further validation is supposed to happen upstream.
+any further validation is supposed to happen by the caller.
 
 
     my $Result = $TokenProviderObject->FetchTokenFromConfig(

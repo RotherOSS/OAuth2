@@ -85,11 +85,11 @@ sub new {
 =head2 GetOAuthProfiles()
 
 Returns a list of the Name of the OpenID Connect Profiles
-used for outgoing calls (Invoker) from database
+used for *outgoing* calls (Invoker) from database
 with their OAuth2 Provider and Client Settings.
 
 These 'Profiles' mirror the data structure used for the
-OpenIDConnect Auth Module.
+OpenIDConnect Auth Module used by Authenticator.
 
     my $Profiles = $OIDCConfigurationObject->GetOAuthProfiles();
 
@@ -102,30 +102,6 @@ sub GetOAuthProfiles {
     my $ProfileRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::ProfileRepository');
 
     return $ProfileRepository->GetList();
-
-    # my $ConfigObject    = $Kernel::OM->Get('Kernel::Config');
-    # my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
-
-    # my %Profiles;
-    # my $Default = $ConfigObject->Get('AuthModule::OpenIDConnect::Config');
-    # if ($Default) {
-
-    #     $Profiles{'AuthModule::OpenIDConnect::Config'} = $Default;
-    # }
-
-    # my $SearchResult = $ConfigObject->Get('OpenIDConnect::OICDProvider');
-
-    # for my $SettingName ( keys %$SearchResult ) {
-
-    #     my $Name    = "OpenIDConnect::OICDProvider###$SettingName";
-    #     my %Setting = $SysConfigObject->SettingGet( Name => $Name );
-    #     if ( $Setting{IsValid} ) {
-
-    #         $Profiles{$Name} = $Setting{EffectiveValue};
-    #     }
-    # }
-
-    # return \%Profiles;
 }
 
 =head2 GetProviderData()

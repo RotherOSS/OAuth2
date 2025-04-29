@@ -39,11 +39,11 @@ our @ObjectDependencies = (
 
 =head1 NAME
 
-Kernel::System::OpenIDConnect::FunctionalAccountRepository - DB backend for OIDC Profiles for Invokers (outgoing calls)
+Kernel::System::OpenIDConnect::FunctionalAccountRepository - DB backend for OIDC Functional Account for Invokers (outgoing calls)
 
 =head1 SYNOPSIS
 
-Profiles DB abstraction for OpenID Connect
+Functiona Accounts DB abstraction for OpenID Connect
 
 create an object
 
@@ -66,19 +66,26 @@ sub new {
 
 =head2 GetList()
 
-returns [{
-   AccountID => database id,
-   Name => $Name,
-   OIDCProfileID,
-   GrantType,
-   Scope,
-   Resources,
-   ResourceParamName,
-   TokenType,
-   Valid
-}, ...
+Returns a list of OIDC Functional Accounts. Usage:
 
-];
+    my $List = $FunctionalAccountRepositoryObject->GetList();
+
+    where
+
+    my $List = [
+        {
+            AccountID => database id,
+            Name => $Name,
+            OIDCProfileID,
+            GrantType,
+            Scope,
+            Resources,
+            ResourceParamName,
+            TokenType,
+            Valid
+        }, 
+        ...
+    ];
 
 =cut
 
@@ -94,9 +101,6 @@ sub GetList {
                     scopes, resources, resource_param_name, token_type,
                     username, passwd
                     FROM oidc_functional_accounts ",
-
-        #           Bind  => [ \$TokenID ],
-        #           Limit => 1
     );
 
     my @Result;
@@ -129,6 +133,28 @@ sub GetList {
     return \@Result;
 }
 
+=head2 Get()
+
+Returns a specific OIDC Functional Account by name. Usage:
+
+    my $Profile = $FunctionalAccountRepositoryObject->Get( Name => '<FunctionalAccountName>' );
+
+    where
+
+    my $Profile = {
+        AccountID => database id,
+        Name => $Name,
+        OIDCProfileID,
+        GrantType,
+        Scope,
+        Resources,
+        ResourceParamName,
+        TokenType,
+        Valid
+    };
+
+=cut
+
 sub Get {
 
     my ( $Self, %Param ) = @_;
@@ -155,8 +181,6 @@ sub Get {
                     token_type, username, passwd
                     FROM oidc_functional_accounts WHERE name = ? ",
         Bind => [ \$Name ],
-
-        #            Limit => 1
     );
 
     if (
@@ -164,7 +188,7 @@ sub Get {
             $ID,       $Valid,     $Name, $OIDCProfileID, $GrantType,
             $Scope,    $Resources, $ResourceParamName, $TokenType,
             $Username, $Password
-        ) = $DBObject->FetchrowArray
+        ) = $DBObject->FetchrowArray()
         )
     {
 
@@ -187,6 +211,28 @@ sub Get {
 
     return;
 }
+
+=head2 GetByID()
+
+Returns a specific OIDC Functional Account by AccountID. Usage:
+
+    my $Profile = $FunctionalAccountRepositoryObject->Get( AccountID => <FunctionalAccountID> );
+
+    where
+
+    my $Profile = {
+        AccountID => database id,
+        Name => $Name,
+        OIDCProfileID,
+        GrantType,
+        Scope,
+        Resources,
+        ResourceParamName,
+        TokenType,
+        Valid
+    };
+
+=cut
 
 sub GetByID {
 
@@ -249,7 +295,11 @@ sub GetByID {
 
 =head2 Exists()
 
+    Checks whether a named Functional Account exists.
+
     my $Exists = $FunctionalAccountRepositoryObject->Exists( Name => $Name );
+
+    returns a boolean
 
 =cut
 
@@ -287,6 +337,10 @@ sub Exists {
 }
 
 =head2 Add()
+
+    Insert a new Functional Account into DB.
+
+    Note you need to give the OIDCProfileID as parameter.
 
     my $Success = $FunctionalAccountRepositoryObject->Add(
 
@@ -366,6 +420,30 @@ sub Add {
     return $InsertSuccess;
 }
 
+=head2 Add()
+
+    Update a Functional Account in the DB.
+
+    Note you need to give the OIDCProfileID as parameter.
+
+    my $Success = $FunctionalAccountRepositoryObject->Add(
+
+        Name => $Name,
+        OIDCProfileID,
+        GrantType,
+        Scope,
+        Resources,
+        ResourceParamName,
+        TokenType,
+        Valid,
+        UserID,
+        Username, # optional, grant_type password only
+        Password, # optional, grant_type password only
+    );
+
+=cut
+
+
 sub Update {
     my ( $Self, %Param ) = @_;
 
@@ -425,6 +503,8 @@ sub Update {
 }
 
 =head2 Delete()
+
+    Delete a Functional Account from DB.
 
     my $Success = $FunctionalAccountRepositoryObject->Delete( Name => $Name );
 

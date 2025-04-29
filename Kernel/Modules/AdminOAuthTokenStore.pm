@@ -551,8 +551,12 @@ sub Run {
 
         $HasToken = $HasToken ? 'Yes' : 'No';
 
+use Data::Dumper;
+print STDERR Dumper($Account);
+
         my $AccountData = {
             AccountName => $AccountName,
+            ProfileName => $Account->{OIDCProfile}->{ProviderSettings}->{Name},
             Flow        => $GrantType,
             TokenID     => $Token->{TokenID},
             Token       => $Token->{Token},

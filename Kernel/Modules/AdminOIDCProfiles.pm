@@ -266,6 +266,18 @@ sub Run {
                 Priority => 'Success'
             );
         }
+        else {
+            $Output .= $LayoutObject->Notify(
+                Info     => $LanguageObject->Translate( "Profile %s could not be deleted - do you have any Functional Accounts referencing this Profile?", $ProfileName ),
+                Priority => 'Error',
+                Link     => $ConfigObject->Get('HttpType')
+                    . '://'
+                    . $ConfigObject->Get('FQDN')
+                    . '/'
+                    . $ConfigObject->Get('ScriptAlias')
+                    . 'index.pl?Action=AdminOAuthTokenStore',
+            );
+        }
     }
 
     # ------------------------------------------------------------ #

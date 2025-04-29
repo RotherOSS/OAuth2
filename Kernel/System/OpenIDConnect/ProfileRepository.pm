@@ -33,8 +33,6 @@ our @ObjectDependencies = (
     'Kernel::System::Log',
     'Kernel::System::YAML',
     'Kernel::System::DateTime',
-
-    #    'Kernel::System::OpenIDConnect::Token',
 );
 
 =head1 NAME
@@ -72,7 +70,10 @@ return a List of Profiles
 
 my $ArrayRef = $ProfileRepositoryObject->GetList();
 
-returns {
+returns 
+
+my $ArrayRef = [
+{
    ProfileID => database id,
     ClientSettings => {
       ClientSecret => '',
@@ -99,7 +100,9 @@ returns {
         RandTTL    => 60 * 5, # valid time period for state and nonce (roughly the time a user can take to authenticate) - default: 300 s
         Leeway     => 2,      # leeway for small time differences between the OTOBO server and the OpenID provider - default: 2 s
     },
-};
+},
+...
+];
 
 =cut
 
@@ -111,11 +114,9 @@ sub GetList {
     my $YAMLObject = $Kernel::OM->Get('Kernel::System::YAML');
 
     $DBObject->Prepare(
-        SQL => "SELECT id, valid_id, name, client_id, client_secret, redirect_uri, openid_config, ttl, ssl_options, misc
-                      FROM oidc_profiles ",
-
-        #            Bind  => [ \$TokenID ],
-        #            Limit => 1
+        SQL => "SELECT id, valid_id, name, client_id, client_secret, 
+                    redirect_uri, openid_config, ttl, ssl_options, misc
+                FROM oidc_profiles ",
     );
 
     my @Result;
@@ -144,6 +145,21 @@ sub GetList {
 
     return \@Result;
 }
+
+
+=head2 Get()
+
+    Return an OIDC Profile from DB ny Name or ProfileID
+
+    my $Profile = $ProfileRepositoryObject->Get( Name => $Name );
+
+    or
+
+    my $Profile = $ProfileRepositoryObject->Get( ProfileID => $ID );
+
+    see GetList() above for response formant (single entity).
+
+=cut
 
 # by Name or ProfileID
 
@@ -224,6 +240,8 @@ sub Get {
 
 =head2 Exists()
 
+    Checks whether a named OIDC Profile already exists.
+
     my $Exists = $ProfileRepositoryObject->Exists( Name => $Name );
 
 =cut
@@ -263,9 +281,11 @@ sub Exists {
 
 =head2 Add()
 
+    Insert a new OIDC Profile record into DB.
+
     my $Success = $ProfileRepositoryObject->Add(
 
-        Name => '<Unique Name>', # todo or with ID ?
+        Name => '<Unique Name>', 
         ClientSettings => {
             ClientSecret => '',
             ClientID => '',
@@ -346,6 +366,42 @@ sub Add {
     return $InsertSuccess;
 }
 
+=head2 Update()
+
+    Update an existing OIDC Profile record in DB.
+
+    my $Success = $ProfileRepositoryObject->Update(
+
+        Name => '<Unique Name>', 
+        ClientSettings => {
+            ClientSecret => '',
+            ClientID => '',
+            RedirectURI => '',
+        },
+        ProviderSettings => {
+            OpenIDConfiguration => 'https://keycloak:8080/auth/realms/MyRealm/.well-known/openid-configuration',
+            TTL                 => 60 * 30,      # optional: time period the extracted openid-configuration is cached
+            SSLOptions          => {             # if special ssl options are needed; SSLVerifyHostname => 0 and SSLVerifyMode => 0 are also possible but should only be used for testing purposes
+                SSLCertificate => 'SSL_cert_file',     # client certificate
+                SSLKey         => 'SSL_key_file',      # client cert key
+                SSLPassword    => 'SSL_passwd_cb',     # password for client cert key
+                SSLCAFile      => 'SSL_ca_file',       # CA certificate
+                SSLCADir       => 'SSL_ca_path',       # CA cert directory
+                SSLVerifyHostname => 0,
+                SSLVerifyMode => 0
+            }
+        },
+        Misc => {
+                    UseNonce   => 1,      # add a nonce to request and token (this is primarily important for the implicit flow where it is enabled by default)
+                    RandLength => 22,     # length for state and nonce random strings - default: 22
+                    RandTTL    => 60 * 5, # valid time period for state and nonce (roughly the time a user can take to authenticate) - default: 300 s
+                    Leeway     => 2,      # leeway for small time differences between the OTOBO server and the OpenID provier - default: 2 s
+        },
+        UserID => $UserID
+    );
+
+=cut
+
 sub Update {
     my ( $Self, %Param ) = @_;
 
@@ -398,6 +454,11 @@ sub Update {
 
 =head2 Delete()
 
+    Removes an named OIDC Profile record from DB.
+
+    This will error out early if there are any references to this Profile
+    from Functional Accounts. The Profile will *not* be deleted in that case.
+
     my $Success = $ProfileRepositoryObject->Delete( Name => $Name );
 
 =cut
@@ -419,6 +480,21 @@ sub Delete {
     }
 
     my $Name = $Param{Name};
+
+    $DBObject->Prepare(
+        SQL  => "SELECT count(op.id) 
+                 FROM oidc_profiles op 
+                 LEFT JOIN oidc_functional_accounts ofa 
+                 ON op.id = ofa.oidc_profile_id 
+                 WHERE op.name = ? ",
+        Bind => [ \$Name ],
+    );
+
+    my ($COUNT) = $DBObject->FetchrowArray();
+
+    if($COUNT > 0) {
+        return;
+    }    
 
     my $SQL  = "DELETE FROM oidc_profiles WHERE name = ? ";
     my $Bind = [ \$Name, ];

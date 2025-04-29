@@ -64,11 +64,13 @@ sub new {
 
 =head2 Save()
 
+    Persist a Token in DB
+
     my $Success = $TokenRepositoryObject->Save(
         AccountID  => <FunctionalAccountID>,    # FunctionalAccount id
         TokenType  => 'refresh',                # access_token|id_token|refresh_token
-        Token      => '<Token>',                     # as received from token endpoint
-        ExpiresAt  => '<seconds epoch>',         # expires at UNIX epoch timestamp
+        Token      => '<Token>',                # as received from token endpoint
+        ExpiresAt  => '<seconds epoch>',        # expires at UNIX epoch timestamp. can be null for offline_access tokens
     );
 
 =cut
@@ -109,6 +111,8 @@ sub Save {
 }
 
 =head2 Delete()
+
+    Delete a Token record in DB.
 
     my $Success = $TokenRepositoryObject->Delete(
         AccountID   => <FunctionalAccountID>,
@@ -215,6 +219,8 @@ sub Delete {
 
 =head2 Cleanup()
 
+    This purges any expired Tokens from DB.
+
     my $Success = $TokenRepositoryObject->Cleanup();
 
 =cut
@@ -247,6 +253,8 @@ sub Cleanup {
 }
 
 =head2 Get()
+
+    Retrive a Token record from DB.
 
     my $TokenData = $TokenRepositoryObject->Get(
         AccountID  => <FunctionalAccountID>,
@@ -410,7 +418,6 @@ sub List {
 
     if ($ExpiresAfter) {
 
-#        $SQL .= "AND expires_at IS NOT NULL AND expires_at != 0 AND expires_at < ? ";
         $SQL .= "AND expires_at IS NULL OR expires_at = 0 OR expires_at < ? ";
         push @$Bind, \$ExpiresAfter;
     }
@@ -437,45 +444,6 @@ sub List {
     return \@Result;
 }
 
-=head2 Lookup()
-
-    Get a hashref of Tokens for Display.
-
-    my $Tokens = $TokenRepositoryObject->Lookup(
-        ExpiresAfter => Unix epoch timestamp, # optional
-        TokenType    => 'refresh_token',      # optional, defaults to 'refresh_token'
-    );
-
-    where:
-
-    my $Tokens = {
-        'FunctionalAccount1' = {
-            TokenID    => 1,
-            AccountID => <FunctionalAccoungtID>,
-            TokenType  => 'refresh_token',
-            Token      => <TokenData>,
-            ExpiresAt  => UNIX epoch timestamp,
-        },
-        ...
-    ];
-
-=cut
-
-sub Lookup {
-
-    my ( $Self, %Param ) = @_;
-
-    # Get List of refreshable Tokens from DB
-    my $GenericInterfaceTokens = $Self->List(%Param);
-
-    # Build a lookup index
-    my %GenericInterfaceTokenLookup = ();
-    for my $GenericInterfaceToken (@$GenericInterfaceTokens) {
-        $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountName} } = $GenericInterfaceToken;
-    }
-
-    return \%GenericInterfaceTokenLookup;
-}
 
 =head2 ValidateTokenType()
 
