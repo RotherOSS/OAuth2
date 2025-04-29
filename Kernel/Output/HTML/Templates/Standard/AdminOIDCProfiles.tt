@@ -112,7 +112,7 @@
                                 [% Translate( "Provider" ) | html %]
                                 </a>
                             </td>
-                            <td>[% Data.Valid | html %]</td>
+                            <td>[% Translate(Data.Valid) | html %]</td>
                         </tr>
 [% RenderBlockEnd("OverviewResultRow") %]
                         <tr class="FilterMessage Hidden">
@@ -143,8 +143,9 @@
                         [% IF Data.HasDefault %]
                             <div class="Field">
                                 <p>
-                                    <b>Note:</b>
-                                    Since you are using OIDC as Authentication module, these values have been pre-populated with the OIDC Provider Configuration used for Login.</p>
+                                    <b>[% Translate("Note") | html %]:</b>
+                                    [% Translate("Since you are using OIDC as Authentication module, these values have been pre-populated with the OIDC Provider Configuration used for Login.") | html %]
+                                </p>
                             </div>
                         [% END %]
 
@@ -244,7 +245,7 @@
                                 <div class="Field" id="SSLPasswordField">
                                     <input type="text" name="SSLPassword" id="SSLPassword" value="[% Data.SSLPassword | html %]" class="W50pc" maxlength="2048"/>
                                     <p class="FieldExplanation">
-                                        [% Translate("SSL password.'. ") | html %]
+                                        [% Translate("The SSL password.") | html %]
                                     </p>
                                 </div>
                                 <div class="Clear"></div>
@@ -262,7 +263,7 @@
                                 <div class="Field" id="SSLCADirField">
                                     <input type="text" name="SSLCADir" id="SSLCADir" value="[% Data.SSLCADir | html %]" class="W50pc" maxlength="2048"/>
                                     <p class="FieldExplanation">
-                                        [% Translate("SSL Certificate Authority directory path. ") | html %]
+                                        [% Translate("SSL Certificate Authority directory path.") | html %]
                                     </p>
                                 </div>
                                 <div class="Clear"></div>
@@ -276,7 +277,7 @@
                                 </div>
                                 <div class="Clear"></div>
 
-                                <label class="Mandatory" for="SSLVerifyMode"><span class="Marker">*</span> [% Translate("SSL Verify Hostname") | html %]:</label>
+                                <label class="Mandatory" for="SSLVerifyMode"><span class="Marker">*</span> [% Translate("SSL Verify Mode") | html %]:</label>
                                 <div class="Field" id="SSLVerifyModeField">
                                     [% Data.SSLVerifyModeOption %]
                                     <p class="FieldExplanation">
@@ -318,7 +319,7 @@
                             <div class="Field" id="RandTTLField">
                                 <input type="text" name="RandTTL" id="RandTTL" value="[% Data.RandTTL | html %]" class="W50pc" maxlength="10"/>
                                 <p class="FieldExplanation">
-                                    [% Translate("Time-to-live for state and nonce in seconds. Default is '300Ä (5 min).") | html %]
+                                    [% Translate("Time-to-live for state and nonce in seconds. Default is '300' (5 min).") | html %]
                                 </p>
                             </div>
                             <div class="Clear"></div>

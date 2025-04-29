@@ -47,7 +47,7 @@
             <Column Name="id" Required="true" PrimaryKey="true" AutoIncrement="true" Type="BIGINT" />
             <Column Name="name" Required="true" Size="256" Type="VARCHAR" />
             <Column Name="client_id" Required="true" Size="1024" Type="VARCHAR" />
-            <Column Name="client_Secret" Required="true" Size="2048" Type="VARCHAR" />
+            <Column Name="client_secret" Required="true" Size="2048" Type="VARCHAR" />
             <Column Name="redirect_uri" Required="true" Size="4096" Type="VARCHAR" />
             <Column Name="openid_config" Required="true" Size="4096" Type="VARCHAR" />
             <Column Name="ssl_options" Required="true" Size="2048" Type="VARCHAR" />

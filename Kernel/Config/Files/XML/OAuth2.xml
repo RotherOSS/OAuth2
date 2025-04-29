@@ -64,9 +64,9 @@
                     </Array>
                 </Item>
                 <Item Key="Module">Kernel::Output::HTML::NavBar::ModuleAdmin</Item>
-                <Item Key="Name" Translatable="1">OAuth Token Management</Item>
+                <Item Key="Name" Translatable="1">OAuth Functional Accounts</Item>
                 <Item Key="Block">Administration</Item>
-                <Item Key="Description" Translatable="1">View and refresh OAUth Tokens.</Item>
+                <Item Key="Description" Translatable="1">Functional Account and Token Management.</Item>
                 <Item Key="IconBig">fa-circle-o</Item>
                 <Item Key="IconSmall"></Item>
             </Hash>
