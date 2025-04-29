@@ -41,6 +41,8 @@ our @ObjectDependencies = (
 
 Kernel::System::OpenIDConnect::FunctionalAccountRepository - DB backend for OIDC Functional Account for Invokers (outgoing calls)
 
+=for stopwords OIDC
+
 =head1 SYNOPSIS
 
 Functiona Accounts DB abstraction for OpenID Connect
@@ -83,7 +85,7 @@ Returns a list of OIDC Functional Accounts. Usage:
             ResourceParamName,
             TokenType,
             Valid
-        }, 
+        },
         ...
     ];
 
@@ -216,7 +218,7 @@ sub Get {
 
 Returns a specific OIDC Functional Account by AccountID. Usage:
 
-    my $Profile = $FunctionalAccountRepositoryObject->Get( AccountID => <FunctionalAccountID> );
+    my $Profile = $FunctionalAccountRepositoryObject->GetByID( AccountID => <FunctionalAccountID> );
 
     where
 
@@ -420,13 +422,13 @@ sub Add {
     return $InsertSuccess;
 }
 
-=head2 Add()
+=head2 Update()
 
     Update a Functional Account in the DB.
 
     Note you need to give the OIDCProfileID as parameter.
 
-    my $Success = $FunctionalAccountRepositoryObject->Add(
+    my $Success = $FunctionalAccountRepositoryObject->Update(
 
         Name => $Name,
         OIDCProfileID,
@@ -442,7 +444,6 @@ sub Add {
     );
 
 =cut
-
 
 sub Update {
     my ( $Self, %Param ) = @_;

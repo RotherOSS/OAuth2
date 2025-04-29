@@ -444,7 +444,6 @@ sub List {
     return \@Result;
 }
 
-
 =head2 ValidateTokenType()
 
     Validate TokenType value.

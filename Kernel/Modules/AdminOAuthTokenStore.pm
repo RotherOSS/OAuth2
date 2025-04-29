@@ -497,7 +497,7 @@ sub Run {
     # Get List of refreshable Tokens from DB
     my $GenericInterfaceTokens = $TokenRepository->List();
 
-    # Build a lookup index as we map Tokens to their 
+    # Build a lookup index as we map Tokens to their
     # configured Functional Accounts
     my %GenericInterfaceTokenLookup = ();
 
@@ -550,9 +550,6 @@ sub Run {
         }
 
         $HasToken = $HasToken ? 'Yes' : 'No';
-
-use Data::Dumper;
-print STDERR Dumper($Account);
 
         my $AccountData = {
             AccountName => $AccountName,

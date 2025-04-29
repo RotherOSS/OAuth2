@@ -37,14 +37,14 @@ sub new {
 sub Run {
     my ( $Self, %Param ) = @_;
 
-    my $ConfigObject       = $Kernel::OM->Get('Kernel::Config');
-    my $LanguageObject     = $Kernel::OM->Get('Kernel::Language');
-    my $LogObject          = $Kernel::OM->Get('Kernel::System::Log');
-    my $CacheObject        = $Kernel::OM->Get('Kernel::System::Cache');
-    my $ParamObject        = $Kernel::OM->Get('Kernel::System::Web::Request');
-    my $ProfileRepository  = $Kernel::OM->Get('Kernel::System::OpenIDConnect::ProfileRepository');
-    my $Configuration      = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
-    my $LayoutObject       = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
+    my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
+    my $LanguageObject    = $Kernel::OM->Get('Kernel::Language');
+    my $LogObject         = $Kernel::OM->Get('Kernel::System::Log');
+    my $CacheObject       = $Kernel::OM->Get('Kernel::System::Cache');
+    my $ParamObject       = $Kernel::OM->Get('Kernel::System::Web::Request');
+    my $ProfileRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::ProfileRepository');
+    my $Configuration     = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+    my $LayoutObject      = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
 
     my %Errors = ();
 
@@ -459,7 +459,7 @@ sub _GetDefaults {
     }
 
     $Defaults = {
-        ClientID     => $OpenIDConfig->{ClientSettings}->{ClientID},
+        ClientID => $OpenIDConfig->{ClientSettings}->{ClientID},
 
         # would be convinient, but we do not do it for security purposes
         # ClientSecret => $OpenIDConfig->{ClientSettings}->{ClientSecret},

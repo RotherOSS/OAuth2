@@ -117,7 +117,7 @@ sub GetAccounts {
     my ( $Self, %Param ) = @_;
 
     my $FunctionalAccountRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccountRepository');
-    my $ProfileRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::ProfileRepository');
+    my $ProfileRepository           = $Kernel::OM->Get('Kernel::System::OpenIDConnect::ProfileRepository');
 
     my $Valid = $Param{Valid};
 
@@ -126,9 +126,9 @@ sub GetAccounts {
     my @Result;
 
     for my $Account (@$Accounts) {
-        if ( (!defined $Valid) || ($Account->{Valid} == $Valid) ) {
+        if ( ( !defined $Valid ) || ( $Account->{Valid} == $Valid ) ) {
 
-            my $OIDCProfile       = $ProfileRepository->Get( ProfileID => $Account->{OIDCProfileID} );
+            my $OIDCProfile = $ProfileRepository->Get( ProfileID => $Account->{OIDCProfileID} );
 
             $Account->{OIDCProfile} = $OIDCProfile;
 
@@ -296,7 +296,6 @@ sub DeleteAccount {
     return $FunctionalAccountRepository->Delete( Name => $Name );
 }
 
-
 =head2 GetProviderData()
 
 Returns the OpenId dynamic Provider Data for a Functional account for Invokers
@@ -348,7 +347,6 @@ sub GetIssuer {
     return $OpenIDProviderData->{OpenIDConfiguration}->{issuer};
 }
 
-
 =head2 GetTokenEndpoint()
 
 Returns the token endpoint for this Functional Account.
@@ -370,7 +368,6 @@ sub GetTokenEndpoint {
     return $OpenIDProviderData->{OpenIDConfiguration}->{token_endpoint};
 }
 
-
 =head2 GetAuthorizationEndpoint()
 
 Returns the authorization (login) endpoint for this Functional Account.
@@ -391,7 +388,6 @@ sub GetAuthorizationEndpoint {
 
     return $OpenIDProviderData->{OpenIDConfiguration}->{authorization_endpoint};
 }
-
 
 =head2 ClearCache()
 

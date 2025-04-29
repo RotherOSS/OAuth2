@@ -49,7 +49,7 @@
                 <br>
                 <br>
                 <p>
-                [% IF Data.AllItemsCount != 0 %]                    
+                [% IF Data.AllItemsCount != 0 %]
                     [% Translate("You can connect OIDC Profiles with a OIDC Functional Account") | html %]
                     <a href="?Action=AdminOAuthTokenStore">[% Translate("here") | html %]</a>.
                 [% END %]
@@ -143,7 +143,7 @@
                         [% IF Data.HasDefault %]
                             <div class="Field">
                                 <p>
-                                    <b>Note:</b> 
+                                    <b>Note:</b>
                                     Since you are using OIDC as Authentication module, these values have been pre-populated with the OIDC Provider Configuration used for Login.</p>
                             </div>
                         [% END %]
@@ -218,7 +218,7 @@
                     <details name="details">
                         <summary>
                                 [% Translate("SSL Options (Optional)") | html %]
-                        </summary>                    
+                        </summary>
 
                             <fieldset class="TableLike">
 
@@ -269,7 +269,7 @@
 
                                 <label class="Mandatory" for="SSLVerifyHostname"><span class="Marker">*</span> [% Translate("SSL Verify Hostname") | html %]:</label>
                                 <div class="Field" id="SSLVerifyHostnameField">
-                                    [% Data.SSLVerifyHostnameOption %]                        
+                                    [% Data.SSLVerifyHostnameOption %]
                                     <p class="FieldExplanation">
                                         [% Translate("Enable or disable SSL hostname verification. Only disable for debugging purposes!") | html %]
                                     </p>

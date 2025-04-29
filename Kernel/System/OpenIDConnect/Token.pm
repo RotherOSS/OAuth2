@@ -166,7 +166,7 @@ sub TimeLeft {
     }
 
     if ( !$TokenData->{exp} ) {
-        return 600; # offline_token has not expiry
+        return 600;    # offline_token has not expiry
     }
 
     # time window

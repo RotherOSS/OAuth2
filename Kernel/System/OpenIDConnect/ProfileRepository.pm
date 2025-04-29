@@ -70,7 +70,7 @@ return a List of Profiles
 
 my $ArrayRef = $ProfileRepositoryObject->GetList();
 
-returns 
+returns
 
 my $ArrayRef = [
 {
@@ -114,7 +114,7 @@ sub GetList {
     my $YAMLObject = $Kernel::OM->Get('Kernel::System::YAML');
 
     $DBObject->Prepare(
-        SQL => "SELECT id, valid_id, name, client_id, client_secret, 
+        SQL => "SELECT id, valid_id, name, client_id, client_secret,
                     redirect_uri, openid_config, ttl, ssl_options, misc
                 FROM oidc_profiles ",
     );
@@ -145,7 +145,6 @@ sub GetList {
 
     return \@Result;
 }
-
 
 =head2 Get()
 
@@ -285,7 +284,7 @@ sub Exists {
 
     my $Success = $ProfileRepositoryObject->Add(
 
-        Name => '<Unique Name>', 
+        Name => '<Unique Name>',
         ClientSettings => {
             ClientSecret => '',
             ClientID => '',
@@ -372,7 +371,7 @@ sub Add {
 
     my $Success = $ProfileRepositoryObject->Update(
 
-        Name => '<Unique Name>', 
+        Name => '<Unique Name>',
         ClientSettings => {
             ClientSecret => '',
             ClientID => '',
@@ -482,19 +481,19 @@ sub Delete {
     my $Name = $Param{Name};
 
     $DBObject->Prepare(
-        SQL  => "SELECT count(op.id) 
-                 FROM oidc_profiles op 
-                 LEFT JOIN oidc_functional_accounts ofa 
-                 ON op.id = ofa.oidc_profile_id 
+        SQL => "SELECT count(op.id)
+                 FROM oidc_profiles op
+                 LEFT JOIN oidc_functional_accounts ofa
+                 ON op.id = ofa.oidc_profile_id
                  WHERE op.name = ? ",
         Bind => [ \$Name ],
     );
 
     my ($COUNT) = $DBObject->FetchrowArray();
 
-    if($COUNT > 0) {
+    if ( $COUNT > 0 ) {
         return;
-    }    
+    }
 
     my $SQL  = "DELETE FROM oidc_profiles WHERE name = ? ";
     my $Bind = [ \$Name, ];

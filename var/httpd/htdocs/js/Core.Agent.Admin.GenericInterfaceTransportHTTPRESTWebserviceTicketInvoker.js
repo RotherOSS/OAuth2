@@ -281,9 +281,9 @@ Core.Agent.Admin.GenericInterfaceTransportHTTPRESTWebserviceTicketInvoker = (fun
                 $('.KerberosField').find('#KerberosUser').each(function(){
                     $(this).removeClass('Validate_Required');
                 });
-// Rother OSS / OAuth2                
+// Rother OSS / OAuth2
                 $('.OAuthAuthField').addClass('Hidden');
-// EO / OAuth2                
+// EO / OAuth2
             }
            else if ($(this).val() === 'Kerberos') {
                 $('.KerberosField').removeClass('Hidden');
@@ -294,7 +294,7 @@ Core.Agent.Admin.GenericInterfaceTransportHTTPRESTWebserviceTicketInvoker = (fun
                 $('.BasicAuthField').find('#BasicAuthUser').each(function(){
                     $(this).removeClass('Validate_Required');
                 });
-// Rother OSS / OAuth2                
+// Rother OSS / OAuth2
                 $('.OAuthAuthField').addClass('Hidden');
             }
             else if ($(this).val() === 'OAuth') {
@@ -309,7 +309,7 @@ Core.Agent.Admin.GenericInterfaceTransportHTTPRESTWebserviceTicketInvoker = (fun
                     $(this).removeClass('Validate_Required');
                 });
                 Core.UI.InputFields.InitSelect( $('#OAuthAccountName') );
-// EO / OAuth2                
+// EO / OAuth2
             }
             else {
                 $('.BasicAuthField').addClass('Hidden');
@@ -320,9 +320,9 @@ Core.Agent.Admin.GenericInterfaceTransportHTTPRESTWebserviceTicketInvoker = (fun
                 $('.KerberosField').find('#KerberosUser').each(function(){
                     $(this).removeClass('Validate_Required');
                 });
-// Rother OSS / OAuth2                
+// Rother OSS / OAuth2
                 $('.OAuthAuthField').addClass('Hidden');
-// EO / OAuth2                
+// EO / OAuth2
             }
         });
 

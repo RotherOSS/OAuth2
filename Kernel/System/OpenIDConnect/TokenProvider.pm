@@ -217,7 +217,7 @@ sub Fetch {
     Called internaly when password or client_credential grant are configured.
     Also called internaly when refreshing via refresh_token.
 
-    Callled directly from client code when completing the authorization_code 
+    Callled directly from client code when completing the authorization_code
     browser flow, passing the received Code parameter.
 
     my $TokenResult = $TokenProviderObject->FetchToken(
@@ -670,7 +670,7 @@ sub _PopulateCache {
     my $AccountName = $Param{AccountName};
     my $TokenType   = $Param{TokenType};
     my $Token       = $Param{Token};
-    my $ExpiresAt   = $Param{ExpiresAt} || 600; # 10 mins
+    my $ExpiresAt   = $Param{ExpiresAt} || 600;    # 10 mins
 
     my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
     my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
