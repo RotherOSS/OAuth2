@@ -232,6 +232,8 @@ Example:
         Login             => '<login_hint>',                      # optional
         Prompt            => '<prompt=login>',                    # optional, forces login
         Nonce             => '<nonce>',                           # optional
+        RandLength        => <length for random state and nonces> # optional
+        RandTTL           => <timeout for login purposes>         # optional
 
         RedirectURL => 'https://your.otobo.url/otobo/index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth'
 
@@ -259,7 +261,7 @@ sub GetAuthURL {
 
     # Create a random string to prevent cross-site requests.
     my $RandomString = $Kernel::OM->Get('Kernel::System::Main')->GenerateRandomString(
-        Length => 22    #$OAuthConfig->{StateNonceLength} || 22,
+        Length => $Param{RandLength} || 22
     );
 
     my $TokenType         = $Param{TokenType}         || 'access_token';
@@ -304,7 +306,7 @@ sub GetAuthURL {
     # Save all parameters to use after successful authorization.
     $Kernel::OM->Get('Kernel::System::Cache')->Set(
         Type  => 'TokenProvider',
-        TTL   => 60 * 15,                                # TODO make configurable
+        TTL   => $Param{RandTTL} || 60 * 15,
         Key   => "TokenProvider::OAuth2State::$State",
         Value => \%Param,
     );
@@ -408,7 +410,7 @@ sub _SendRequest {
     if ( $DecodedContent->{error} ) {
         return {
             Success => 0,
-            Error   => "Error: " . $DecodedContent->{erro} . ". Description: " . $DecodedContent->{error_description},
+            Error   => "Error: " . $DecodedContent->{error} . ". Description: " . $DecodedContent->{error_description},
         };
     }
 

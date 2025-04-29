@@ -73,6 +73,69 @@
         </Value>
     </Setting>
 
+
+
+    <Setting Name="Frontend::Module###AdminOIDCProfiles" Required="0" Valid="1">
+        <Description Translatable="1">Frontend module registration for the agent interface.</Description>
+        <Navigation>Frontend::Admin::ModuleRegistration</Navigation>
+        <Value>
+            <Item ValueType="FrontendRegistration">
+                <Hash>
+                    <Item Key="GroupRo">
+                        <Array>
+                        </Array>
+                    </Item>
+                    <Item Key="Group">
+                        <Array>
+                            <Item>admin</Item>
+                        </Array>
+                    </Item>
+                    <Item Key="Description">Admin</Item>
+                    <Item Key="Title" Translatable="1">OIDC Profiles</Item>
+                    <Item Key="NavBarName">Admin</Item>
+                </Hash>
+            </Item>
+        </Value>
+    </Setting>
+
+    <Setting Name="Frontend::Navigation###AdminOIDCProfiles###001-Framework" Required="0" Valid="0">
+        <Description Translatable="1">Main menu item registration.</Description>
+        <Navigation>Frontend::Admin::ModuleRegistration::MainMenu</Navigation>
+        <Value>
+            <Array>
+                <DefaultItem ValueType="FrontendNavigation">
+                    <Hash>
+                    </Hash>
+                </DefaultItem>
+            </Array>
+        </Value>
+    </Setting>
+
+
+    <Setting Name="Frontend::NavigationModule###AdminOIDCProfiles" Required="0" Valid="1">
+        <Description Translatable="1">Admin area navigation for the agent interface.</Description>
+        <Navigation>Frontend::Admin::ModuleRegistration::AdminOverview</Navigation>
+        <Value>
+            <Hash>
+                <Item Key="Group">
+                    <Array>
+                        <Item>admin</Item>
+                    </Array>
+                </Item>
+                <Item Key="GroupRo">
+                    <Array>
+                    </Array>
+                </Item>
+                <Item Key="Module">Kernel::Output::HTML::NavBar::ModuleAdmin</Item>
+                <Item Key="Name" Translatable="1">OIDC Profile Management</Item>
+                <Item Key="Block">Administration</Item>
+                <Item Key="Description" Translatable="1">Manage OpendID Connect OAuth2 Profiles.</Item>
+                <Item Key="IconBig">fa-circle-o</Item>
+                <Item Key="IconSmall"></Item>
+            </Hash>
+        </Value>
+    </Setting>
+
      <Setting Name="Daemon::SchedulerCronTaskManager::Task###TokenStoreUpdater" Required="0" Valid="1" ConfigLevel="100">
          <Description Translatable="1">Executes a custom command or module. Note: if module is used, function is required.</Description>
          <Navigation>Daemon::SchedulerCronTaskManager::Task</Navigation>
@@ -92,188 +155,5 @@
              </Hash>
          </Value>
      </Setting>
-
- <Setting Name="OpenIDConnect::FunctionalAccounts" Required="0" Valid="1" Invisible="1">
-        <Description Translatable="1">OAuth2 OpenID Connect FunctionalAccount Config for outgoing calls.</Description>
-        <Navigation>Core::Auth::OpenIDConnect</Navigation>
-        <Value>
-        <Hash>
-            <DefaultItem Key="FunctionalAccountXX">
-                <Hash>
-                    <Item Key="OpenIDConfig" Translatable="0" ValueType="String">Auth::Login::OIDC</Item>
-                    <Item Key="GrantType" ValueRegex="^authorization_code|client_credentials|password" Translatable="0" ValueType="String" >client_credentials</Item>
-                    <Item Key="Scope" Translatable="0" ></Item>
-                    <Item Key="Resources" Translatable="0" ValueType="String" ></Item>
-                    <Item Key="ResourceParamName" ValueType="String" Translatable="0">resource</Item>
-                    <Item Key="Token" ValueType="String" Translatable="0">access_token</Item>
-                    <Item Key="Username" ValueType="String" Translatable="0"></Item>
-                    <Item Key="Password" ValueType="Password" Translatable="0"></Item>
-                </Hash>
-            </DefaultItem>
-        </Hash>
-    </Value>
-</Setting>
-
- <Setting Name="OpenIDConnect::UserMapping###Custom1" Required="0" Valid="0">
-        <Description Translatable="1">OAuth2 OpenID Connect User Login mapping for incoming webservice calls.</Description>
-        <Navigation>Core::Auth::OpenIDConnect</Navigation>
-        <Value>
-        <Hash>
-            <Item Key="OpenIDConfig" Translatable="0" ValueType="String">AuthModule::OpenIDConnect::Config</Item>
-            <Item Key="UID">sub</Item>
-            <Item Key="UserLogin"></Item>
-            <Item Key="Scope"></Item>
-            <Item Key="Audience"></Item>
-            <Item Key="AuthorizedParty"></Item>
-        </Hash>
-    </Value>
-</Setting>
-
- <Setting Name="OpenIDConnect::UserMapping###Custom2" Required="0" Valid="0">
-        <Description Translatable="1">OAuth2 OpenID Connect User Login mapping for incoming webservice calls.</Description>
-        <Navigation>Core::Auth::OpenIDConnect</Navigation>
-        <Value>
-        <Hash>
-            <Item Key="OpenIDConfig" Translatable="0" ValueType="String">OpenIDConnect::OICDProvider###Custom1</Item>
-            <Item Key="UID">sub</Item>
-            <Item Key="UserLogin"></Item>
-            <Item Key="Scope"></Item>
-            <Item Key="Audience"></Item>
-            <Item Key="AuthorizedParty"></Item>
-        </Hash>
-    </Value>
-</Setting>
-
- <Setting Name="OpenIDConnect::UserMapping###Custom3" Required="0" Valid="0">
-        <Description Translatable="1">OAuth2 OpenID Connect User Login mapping for incoming webservice calls.</Description>
-        <Navigation>Core::Auth::OpenIDConnect</Navigation>
-        <Value>
-        <Hash>
-            <Item Key="OpenIDConfig" Translatable="0" ValueType="String">OpenIDConnect::OICDProvider###Custom2</Item>
-            <Item Key="UID">sub</Item>
-            <Item Key="UserLogin"></Item>
-            <Item Key="Scope"></Item>
-            <Item Key="Audience"></Item>
-            <Item Key="AuthorizedParty"></Item>
-        </Hash>
-    </Value>
-</Setting>
-
- <Setting Name="OpenIDConnect::UserMapping###Custom4" Required="0" Valid="0">
-        <Description Translatable="1">OAuth2 OpenID Connect User Login mapping for incoming webservice calls.</Description>
-        <Navigation>Core::Auth::OpenIDConnect</Navigation>
-        <Value>
-        <Hash>
-            <Item Key="OpenIDConfig" Translatable="0" ValueType="String">OpenIDConnect::OICDProvider###Custom3</Item>
-            <Item Key="UID">sub</Item>
-            <Item Key="UserLogin"></Item>
-            <Item Key="Scope"></Item>
-            <Item Key="Audience"></Item>
-            <Item Key="AuthorizedParty"></Item>
-        </Hash>
-    </Value>
-</Setting>
-
- <Setting Name="OpenIDConnect::OICDProvider###Custom1" Required="0" Valid="0">
-        <Description Translatable="1">OAuth2 OpenID Connect Client Profile. Provide at least your OAuth2 Client settings (client_id, client_secret), as
-        well as your OIDC Provider's the well-known metadata discovery url (eg https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration)</Description>
-        <Navigation>Core::Auth::OpenIDConnect</Navigation>
-        <Value>
-            <Hash>
-                <Item Key="ClientSettings">
-                    <Hash>
-                        <Item Key="ClientID" ValueType="String">&lt;your_oauth_client_id&gt;</Item>
-                        <Item Key="ClientSecret" ValueType="Password">&lt;your_oauth_client_secret&gt;</Item>
-                    </Hash>
-                </Item>
-                <Item Key="ProviderSettings">
-                    <Hash>
-                        <Item Key="Name" ValueType="String">OIDCInternal1</Item>
-                        <Item Key="OpenIDConfiguration" ValueType="String">&lt;your 'well-known' OIDC Provider metadata url.</Item>
-                        <Item Key="TTL" ValueType="String">60 * 30</Item>
-                        <Item Key="SSLOptions">
-                            <Hash>
-                                <Item Key="SSLCertificate" ValueType="String"></Item>
-                                <Item Key="SSLKey" ValueType="String"></Item>
-                                <Item Key="SSLPassword" ValueType="String"></Item>
-                                <Item Key="SSLCAFile" ValueType="String"></Item>
-                                <Item Key="SSLCADir" ValueType="String"></Item>
-                                <Item Key="SSLVerifyHostname" ValueType="Checkbox">1</Item>
-                                <Item Key="SSLVerifyMode" ValueType="Checkbox">1</Item>
-                            </Hash>
-                        </Item>
-                    </Hash>
-                </Item>
-            </Hash>
-        </Value>
- </Setting>
-
- <Setting Name="OpenIDConnect::OICDProvider###Custom2" Required="0" Valid="0">
-        <Description Translatable="1">OAuth2 OpenID Connect Client Profile. Provide at least your OAuth2 Client settings (client_id, client_secret), as
-        well as your OIDC Provider's the well-known metadata discovery url (eg https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration)</Description>
-        <Navigation>Core::Auth::OpenIDConnect</Navigation>
-        <Value>
-            <Hash>
-                <Item Key="ClientSettings">
-                    <Hash>
-                        <Item Key="ClientID" ValueType="String">&lt;your_oauth_client_id&gt;</Item>
-                        <Item Key="ClientSecret" ValueType="Password">&lt;your_oauth_client_secret&gt;</Item>
-                    </Hash>
-                </Item>
-                <Item Key="ProviderSettings">
-                    <Hash>
-                        <Item Key="Name" ValueType="String">OIDCInternal2</Item>
-                        <Item Key="OpenIDConfiguration" ValueType="String">&lt;your 'well-known' OIDC Provider metadata url.</Item>
-                        <Item Key="TTL" ValueType="String">60 * 30</Item>
-                        <Item Key="SSLOptions">
-                            <Hash>
-                                <Item Key="SSLCertificate" ValueType="String"></Item>
-                                <Item Key="SSLKey" ValueType="String"></Item>
-                                <Item Key="SSLPassword" ValueType="String"></Item>
-                                <Item Key="SSLCAFile" ValueType="String"></Item>
-                                <Item Key="SSLCADir" ValueType="String"></Item>
-                                <Item Key="SSLVerifyHostname" ValueType="Checkbox">1</Item>
-                                <Item Key="SSLVerifyMode" ValueType="Checkbox">1</Item>
-                            </Hash>
-                        </Item>
-                    </Hash>
-                </Item>
-            </Hash>
-        </Value>
- </Setting>
-
- <Setting Name="OpenIDConnect::OICDProvider###Custom3" Required="0" Valid="0">
-        <Description Translatable="1">OAuth2 OpenID Connect Client Profile. Provide at least your OAuth2 Client settings (client_id, client_secret), as
-        well as your OIDC Provider's the well-known metadata discovery url (eg https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration)</Description>
-        <Navigation>Core::Auth::OpenIDConnect</Navigation>
-        <Value>
-            <Hash>
-                <Item Key="ClientSettings">
-                    <Hash>
-                        <Item Key="ClientID" ValueType="String">&lt;your_oauth_client_id&gt;</Item>
-                        <Item Key="ClientSecret" ValueType="Password">&lt;your_oauth_client_secret&gt;</Item>
-                    </Hash>
-                </Item>
-                <Item Key="ProviderSettings">
-                    <Hash>
-                        <Item Key="Name" ValueType="String">OIDCInternal3</Item>
-                        <Item Key="OpenIDConfiguration" ValueType="String">&lt;your 'well-known' OIDC Provider metadata url.</Item>
-                        <Item Key="TTL" ValueType="String">60 * 30</Item>
-                        <Item Key="SSLOptions">
-                            <Hash>
-                                <Item Key="SSLCertificate" ValueType="String"></Item>
-                                <Item Key="SSLKey" ValueType="String"></Item>
-                                <Item Key="SSLPassword" ValueType="String"></Item>
-                                <Item Key="SSLCAFile" ValueType="String"></Item>
-                                <Item Key="SSLCADir" ValueType="String"></Item>
-                                <Item Key="SSLVerifyHostname" ValueType="Checkbox">1</Item>
-                                <Item Key="SSLVerifyMode" ValueType="Checkbox">1</Item>
-                            </Hash>
-                        </Item>
-                    </Hash>
-                </Item>
-            </Hash>
-        </Value>
- </Setting>
 
 </otobo_config>

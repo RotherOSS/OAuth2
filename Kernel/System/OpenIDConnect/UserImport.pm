@@ -67,7 +67,9 @@ sub new {
 Import an User into Otobo based on valid OIDC Token
 
     my $Success = $UserImportObject->ImportUser(
-        Token => $Token,
+        Token => $Token,                        # Token with user details to map
+        OpenIDConfigName => $OpenIDConfigName,  # OpenIDConfigName to lookup OIDC Auth Module from Config.pm
+                                                # often 'AuthModule::OpenIDConnect::Config'
     );
 
 =cut
@@ -76,19 +78,16 @@ sub ImportUser {
 
     my ( $Self, %Param ) = @_;
 
-    my $TokenData   = $Param{TokenData};
-    my $UserMapping = $Param{UserMapping};
+    my $TokenData        = $Param{TokenData};
+    my $OpenIDConfigName = $Param{OpenIDConfigName};
 
-    my $UID          = $UserMapping->{UID} || 'sub';
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
     # check if there is a specific User and RoleMap for this OIDC config,
     # otherwise see if there is a default one
-    my $OpenIDConfigName = $UserMapping->{OpenIDConfig};
-    my $UserMapKey       = $OpenIDConfigName =~ s/::Config$/::UserMap/;
-    my $RoleMapKey       = $OpenIDConfigName =~ s/::Config$/::RoleMap/;
-    my $UserMap          = $ConfigObject->Get($UserMapKey) || $ConfigObject->Get('AuthModule::OpenIDConnect::UserMap');
-    my $RoleMap          = $ConfigObject->Get($RoleMapKey) || $ConfigObject->Get('AuthModule::OpenIDConnect::RoleMap');
+    my $UID     = $ConfigObject->Get( $OpenIDConfigName . '::UID' )     || 'sub';
+    my $UserMap = $ConfigObject->Get( $OpenIDConfigName . '::UserMap' ) || $ConfigObject->Get('AuthModule::OpenIDConnect::UserMap');
+    my $RoleMap = $ConfigObject->Get( $OpenIDConfigName . '::RoleMap' ) || $ConfigObject->Get('AuthModule::OpenIDConnect::RoleMap');
 
     # determine jwt clain to otobo UserLogin mapping
     my $UserLogin = $TokenData->{$UID};

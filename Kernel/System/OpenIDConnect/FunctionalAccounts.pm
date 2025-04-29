@@ -33,6 +33,9 @@ our @ObjectDependencies = (
     'Kernel::System::Cache',
     'Kernel::System::Log',
     'Kernel::System::OpenIDConnect::Configuration',
+    'Kernel::System::OpenIDConnect::ProfileRepository',
+    'Kernel::System::OpenIDConnect::FunctionalAccountRepository',
+    'Kernel::System::OpenIDConnect::TokenRepository',
 );
 
 =head1 NAME
@@ -71,21 +74,51 @@ sub new {
 
 Returns the OAuth Functional accounts configured in SysConfig.
 
-    my $Accounts = $FunctionalAccountsObject->GetAccounts();
+    my $Accounts = $FunctionalAccountsObject->GetAccounts(
+        Valid => 1 # optional
+    );
 
+    returns [
+        {
+            AccountID => database id,
+            Name => $Name,
+            OIDCProfileID,
+            OpenIDConfig,
+            GrantType,
+            Scope,
+            Resources,
+            ResourceParamName,
+            TokenType,
+            Valid
+        }, ...
+    ];
 =cut
 
 sub GetAccounts {
 
     my ( $Self, %Param ) = @_;
 
-    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
+    my $FunctionalAccountRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccountRepository');
 
-    my $OAuthAccounts = $ConfigObject->Get('OpenIDConnect::FunctionalAccounts');
-    if ( !IsHashRefWithData($OAuthAccounts) ) {
-        return {};
+    #    my $ProfileRepositoryObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::ProfileRepository');
+
+    my $Valid = $Param{Valid};
+
+    my $Accounts = $FunctionalAccountRepository->GetList();
+
+    if ( !defined $Valid ) {
+        return $Accounts;
     }
-    return $OAuthAccounts;
+
+    my @Result;
+
+    for my $Account (@$Accounts) {
+        if ( $Account->{Valid} == $Valid ) {
+            push @Result, $Account;
+        }
+    }
+
+    return \@Result;
 }
 
 =head2 GetAccount()
@@ -93,8 +126,39 @@ sub GetAccounts {
 Returns a named OAuth Functional accounts configured in SysConfig.
 
     my $Account = $FunctionalAccountsObject->GetAccount(
-        AccountID  => '<SomeAccountName>',
+        Name  => '<SomeAccountName>',
     );
+
+    returns
+    {
+        AccountID => $ID,
+        Valid => $Valid,
+        Name => $Name,
+        OIDCProfileID => $OIDCProfileID,
+        OIDCProfile => {
+            ProfileID => $ID,
+            UID => $UID,
+            Valid => $Valid,
+            ClientSettings => {
+
+                ClientID  => $ClientID,
+                ClientSecret => $ClientSecret,
+                RedirectURI => $RedirectURI,
+            },
+            ProviderSettings => {
+                OpenIDConfiguration => $OpenIDConfig,
+                TTL => $TTL,
+                Name => $Name,
+                SSLOptions => $YAMLObject->Load( Data => $SSLOptions || {} ),
+            },
+            Misc => $YAMLObject->Load( Data => $Misc || {} ),
+        },
+        GrantType => $GrantType,
+        Scope => $Scope,
+        Resources => $Resources,
+        ResourceParamName => $ResourceParamName,
+        TokenType => $TokenType,
+    };
 
 =cut
 
@@ -102,7 +166,7 @@ sub GetAccount {
 
     my ( $Self, %Param ) = @_;
 
-    for my $Needed (qw/AccountID/) {
+    for my $Needed (qw/Name/) {
         if ( !$Param{$Needed} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
@@ -113,11 +177,16 @@ sub GetAccount {
         }
     }
 
-    my $OAuthAccounts = $Self->GetAccounts();
+    my $FunctionalAccountRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccountRepository');
 
-    return unless IsHashRefWithData($OAuthAccounts);
+    my $Account = $FunctionalAccountRepository->Get( Name => $Param{Name} );
+    return if !$Account;
 
-    return $OAuthAccounts->{ $Param{AccountID} };
+    my $ProfileRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::ProfileRepository');
+    my $OIDCProfile       = $ProfileRepository->Get( ProfileID => $Account->{OIDCProfileID} );
+
+    $Account->{OIDCProfile} = $OIDCProfile;
+    return $Account;
 }
 
 =head2 SaveAccount()
@@ -125,8 +194,8 @@ sub GetAccount {
 Persists Account in SysConfig.
 
     my $Success = $FunctionalAccountsObject->SaveAccount(
-        AccountID            => '<SomeAccountName>',
-        OpenIDConfig      => $Param{ProviderName},
+        Name              => '<SomeAccountName>',
+        OIDCProfileID     => $Param{ProviderName},
         GrantType         => $Param{GrantType},
         Scope             => $Param{InvokerScopes},
         Resources         => $Param{Resources},
@@ -134,6 +203,7 @@ Persists Account in SysConfig.
         Token             => $Param{TokenType},
         Username          => $Param{Username},
         Password          => $Param{Password},
+        Valid             => 1,
         UserID            => # userid making changes
     );
 
@@ -143,7 +213,7 @@ sub SaveAccount {
 
     my ( $Self, %Param ) = @_;
 
-    for my $Needed (qw/AccountID UserID/) {
+    for my $Needed (qw/Name OIDCProfileID GrantType UserID/) {
         if ( !$Param{$Needed} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
@@ -154,37 +224,18 @@ sub SaveAccount {
         }
     }
 
-    my $AccountID    = $Param{AccountID};
-    my $OIDCAccounts = $Self->GetAccounts();
+    my $Name = $Param{Name};
 
-    $OIDCAccounts->{$AccountID} = {
-        OpenIDConfig      => $Param{ProviderName},
-        GrantType         => $Param{GrantType},
-        Scope             => $Param{InvokerScopes},
-        Resources         => $Param{Resources},
-        ResourceParamName => $Param{ResourceParam},
-        Token             => $Param{TokenType},
-        Username          => $Param{Username},
-        Password          => $Param{Password},
-    };
+    my $FunctionalAccountRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccountRepository');
 
-    my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
+    my $Exists = $FunctionalAccountRepository->Exists( Name => $Name );
+    if ($Exists) {
 
-    my $Success = $SysConfigObject->SettingsSet(
-        UserID   => $Param{UserID},
-        Comments => "Functional Account " . $AccountID . " created",
-        Settings => [
-            {
-                Name           => 'OpenIDConnect::FunctionalAccounts',
-                EffectiveValue => $OIDCAccounts,
-                IsValid        => 1,
-                NoValidation   => 1,
-            },
-        ],
-    );
-
-    sleep(1);
-    return $Success;
+        return $FunctionalAccountRepository->Update(%Param);
+    }
+    else {
+        return $FunctionalAccountRepository->Add(%Param);
+    }
 }
 
 =head2 DeleteAccount()
@@ -192,7 +243,7 @@ sub SaveAccount {
 Returns a named OAuth Functional accounts configured in SysConfig.
 
     my $Account = $FunctionalAccountsObject->DeleteAccount(
-        AccountID  => '<SomeAccountName>',
+        Name  => '<SomeAccountName>',
         UserID     => # UserID making changes
     );
 
@@ -202,7 +253,7 @@ sub DeleteAccount {
 
     my ( $Self, %Param ) = @_;
 
-    for my $Needed (qw/AccountID UserID/) {
+    for my $Needed (qw/Name UserID/) {
         if ( !$Param{$Needed} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
@@ -213,62 +264,47 @@ sub DeleteAccount {
         }
     }
 
-    my $AccountID = $Param{AccountID};
+    my $Name = $Param{Name};
 
-    my $OIDCAccounts = $Self->GetAccounts();
-    if ( exists $OIDCAccounts->{$AccountID} ) {
+    my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 
-        delete $OIDCAccounts->{$AccountID};
-
-        my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
-
-        my $Success = $SysConfigObject->SettingsSet(
-            UserID   => $Param{UserID},
-            Comments => "Functional Account " . $AccountID . " deleted.",
-            Settings => [
-                {
-                    Name           => "OpenIDConnect::FunctionalAccounts",
-                    EffectiveValue => $OIDCAccounts,
-                    IsValid        => 1,
-                    NoValidation   => 1,
-                },
-            ],
-        );
-        sleep(1);
-        return $Success;
-    }
-
-    return;
-}
-
-=head2 GetOpenIDConfig()
-
-Returns the OpenIdCOnfig for a named OAuth Functional accounts configured in SysConfig.
-
-    my $OpenIDConfig = $FunctionalAccountsObject->GetOpenIDConfig(
-        AccountID  => '<SomeAccountName>',
+    $TokenRepository->Delete(
+        AccountName => $Name,
     );
 
-=cut
+    my $FunctionalAccountRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccountRepository');
 
-sub GetOpenIDConfig {
-
-    my ( $Self, %Param ) = @_;
-
-    my $Account = $Self->GetAccount(%Param);
-    return unless IsHashRefWithData($Account);
-
-    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
-    my $Result       = $ConfigObject->Get( $Account->{OpenIDConfig} );
-    return $Result;
+    return $FunctionalAccountRepository->Delete( Name => $Name );
 }
+
+# =head2 GetOpenIDConfig()
+
+# Returns the OpenIdCOnfig for a named OAuth Functional accounts configured in SysConfig.
+
+#     my $OpenIDConfig = $FunctionalAccountsObject->GetOpenIDConfig(
+#         Name  => '<SomeAccountName>',
+#     );
+
+# =cut
+
+# sub GetOpenIDConfig {
+
+#     my ( $Self, %Param ) = @_;
+
+#     my $Account = $Self->GetAccount(%Param);
+#     return unless IsHashRefWithData($Account);
+
+#     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
+#     my $Result       = $ConfigObject->Get( $Account->{OpenIDConfig} );
+#     return $Result;
+# }
 
 =head2 GetProviderData()
 
 Returns the OpenId dynamic Provider Data for a named OAuth Functional accounts configured in SysConfig.
 
     my $OpenIDProviderData = $FunctionalAccountsObject->GetProviderData(
-        AccountID  => '<SomeAccountName>',
+        Name  => '<SomeAccountName>',
     );
 
 =cut
@@ -277,12 +313,16 @@ sub GetProviderData {
 
     my ( $Self, %Param ) = @_;
 
-    my $OpenIDConfig = $Self->GetOpenIDConfig(%Param);
-    return unless IsHashRefWithData($OpenIDConfig);
+    my $Account = $Self->GetAccount(%Param);
+
+    my $OIDCProfile = $Account->{OIDCProfile};
+
+    #    my $OpenIDConfig = $Self->GetOpenIDConfig(%Param);
+    #   return unless IsHashRefWithData($OpenIDConfig);
 
     my $OIDCConfiguration  = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
     my $OpenIDProviderData = $OIDCConfiguration->GetProviderData(
-        OpenIDConfig => $OpenIDConfig
+        OpenIDConfig => $OIDCProfile
     );
 
     return $OpenIDProviderData;
@@ -296,7 +336,7 @@ Returns the OpenId dynamic Provider Issuer value for a named OAuth Functional ac
 This can be used to validate an 'iss' request parameter for incoming OAuth authorization_code callbacks.
 
     my $Issuer = $FunctionalAccountsObject->GetIssuer(
-        AccountID  => '<SomeAccountName>',
+        Name  => '<SomeAccountName>',
     );
 
     this method returns a simple string.
@@ -319,7 +359,7 @@ sub GetIssuer {
 Returns the token endpoint for this Functional Account.
 
     my $Issuer = $FunctionalAccountsObject->GetTokenEndpoint(
-        AccountID  => '<SomeAccountName>',
+        Name  => '<SomeAccountName>',
      );
 
     this method returns a simple string.
@@ -341,7 +381,7 @@ sub GetTokenEndpoint {
 Returns the authorization (login) endpoint for this Functional Account.
 
     my $Issuer = $FunctionalAccountsObject->GetAuthorizationEndpoint(
-        AccountID  => '<SomeAccountName>',
+        Name  => '<SomeAccountName>',
      );
 
     this method returns a simple string.
@@ -362,7 +402,7 @@ sub GetAuthorizationEndpoint {
 Clears the cached OIDC Provideer data for this functional account
 
     $FunctionalAccountsObject->ClearCache(
-        AccountID  => '<SomeAccountName>',
+        Name  => '<SomeAccountName>',
      );
 
 =cut
@@ -371,9 +411,13 @@ sub ClearCache {
 
     my ( $Self, %Param ) = @_;
 
-    my $OpenIDConfig = $Self->GetOpenIDConfig(%Param);
+    my $Account = $Self->GetAccount(%Param);
 
-    my $ProviderKey = 'ProviderData' . ( $OpenIDConfig->{ProviderSettings}->{Name} // '' );
+    my $OIDCProfile = $Account->{OIDCProfile};
+
+    #    my $OpenIDConfig = $Self->GetOpenIDConfig(%Param);
+
+    my $ProviderKey = 'ProviderData' . ( $OIDCProfile->{ProviderSettings}->{Name} // '' );
 
     $Kernel::OM->Get('Kernel::System::Cache')->Delete(
         Type => 'OpenIDConnect',

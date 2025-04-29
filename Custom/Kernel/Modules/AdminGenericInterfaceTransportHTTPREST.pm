@@ -198,7 +198,7 @@ sub Run {
                 $TransportConfig->{Authentication}->{$ParamName} = $GetParam->{$ParamName};
             }
 
-            my $Token = $TokenProvider->Fetch( AccountID => $GetParam->{OAuthAccountName} );
+            my $Token = $TokenProvider->Fetch( AccountName => $GetParam->{OAuthAccountName} );
 
             if ( !$Token->{Success} ) {
                 $Output .= $LayoutObject->Notify(
@@ -570,9 +570,9 @@ sub _ShowEdit {
 
         my @OAuthAccountNames;
         my $OAuthAccounts = $FunctionalAccounts->GetAccounts();
-        if ( IsHashRefWithData($OAuthAccounts) ) {
 
-            @OAuthAccountNames = keys %$OAuthAccounts;
+        for my $Account (@$OAuthAccounts) {
+            push @OAuthAccountNames, $Account->{Name};
         }
 
         # EO / OAuth2

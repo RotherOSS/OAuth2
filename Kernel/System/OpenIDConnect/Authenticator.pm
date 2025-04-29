@@ -28,10 +28,10 @@ use Kernel::System::VariableCheck qw(:all);
 use namespace::autoclean;
 
 our @ObjectDependencies = (
+    'Kernel::Config',
     'Kernel::System::Log',
     'Kernel::System::User',
     'Kernel::System::OpenIDConnect::Token',
-    'Kernel::System::OpenIDConnect::UserMappings',
     'Kernel::System::OpenIDConnect::UserImport',
 );
 
@@ -45,7 +45,7 @@ authenticate incoming OIDC OAuth2 Tokens
 
 =head1 SYNOPSIS
 
-authenticate incoming OIDC OAuth2 Tokens
+authenticate incoming OIDC OAuth2 Tokens based on the Otobo AuthModules
 
 create an object
 
@@ -90,48 +90,49 @@ sub Authenticate {
 
     my $Result = { Success => 0 };
 
-    # get all configured OAuth Accounts for API access
-    my $UserMappings = $Kernel::OM->Get('Kernel::System::OpenIDConnect::UserMappings');
-    my $Accounts     = $UserMappings->GetUserMappings();
+    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
-    if ( !IsHashRefWithData($Accounts) ) {
-        return $Result;
-    }
+    # load auth modules
+    COUNT:
+    for my $Count ( '', 1 .. 10 ) {
 
-    # loop though accounts and try to authenticate
-    ACCOUNTNAME:
-    for my $AccountName ( keys %$Accounts ) {
+        my $GenericModule = $ConfigObject->Get("AuthModule$Count");
 
-        # get functional account data
-        my $Account = $Accounts->{$AccountName};
+        next COUNT if !$GenericModule;
+
+        $GenericModule =~ s/^Kernel::System::Auth:://;
+        my $OpenIDConfig = $ConfigObject->Get( "AuthModule::" . $GenericModule . '::Config' );
+
+        next COUNT if !IsHashRefWithData($OpenIDConfig);
 
         # validate the token
         my $TokenResult = $Self->_ValidateToken(
-            AccountName => $AccountName,
-            Account     => $Account,
-            Token       => $BearerToken,
+            AccountName  => $GenericModule,
+            OpenIDConfig => $OpenIDConfig,
+            Token        => $BearerToken,
+            ConfigObject => $ConfigObject,
             %Param,
         );
 
         # if token not validated, try next token
         if ( !$TokenResult->{Success} ) {
-            next ACCOUNTNAME;
+            next COUNT;
         }
 
-        # IDKey is the name of the claim we match agains the otobo user login, typically 'sub'
-        my $IDKey = $Account->{UID} || 'sub';
-
         # lookup the UserLogin from the Token data
+        my $IDKey = $ConfigObject->Get( "AuthModule::" . $GenericModule . "::UID" ) || 'sub';
         my $UserLogin = $TokenResult->{TokenData}->{$IDKey};
 
         if ( !IsStringWithData($UserLogin) ) {
-            next ACCOUNTNAME;
+            next COUNT;
         }
 
         # see if the user login matches the expected login
-        if ( $Account->{UserLogin} ) {
-            if ( $Account->{UserLogin} ne $UserLogin ) {
-                next ACCOUNTNAME;
+        my $WebserviceRestrictions = $ConfigObject->Get( $GenericModule . '::Webservice::Restrictions' ) || {};
+
+        if ( IsHashRefWithData($WebserviceRestrictions) && $WebserviceRestrictions->{UserLogin} ) {
+            if ( $WebserviceRestrictions->{UserLogin} ne $UserLogin ) {
+                next COUNT;
             }
         }
 
@@ -147,12 +148,12 @@ sub Authenticate {
             # try on-the-fly import
             my $UserImportObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::UserImport');
             my $Result           = $UserImportObject->ImportUser(
-                TokenData   => $TokenResult->{TokenData},
-                UserMapping => $Account,
+                TokenData        => $TokenResult->{TokenData},
+                OpenIDConfigName => $GenericModule,
             );
 
             if ( !$Result->{Success} ) {
-                next ACCOUNTNAME;
+                next COUNT;
             }
         }
 
@@ -174,7 +175,7 @@ sub _ValidateToken {
 
     my $Return = { Success => 0 };
 
-    for my $Needed (qw/Token Account AccountName/) {
+    for my $Needed (qw/Token OpenIDConfig AccountName/) {
         if ( !$Param{$Needed} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
@@ -185,16 +186,16 @@ sub _ValidateToken {
         }
     }
 
-    my $Account     = $Param{Account};
-    my $AccountName = $Param{AccountName};
+    my $OpenIDConfig   = $Param{OpenIDConfig};
+    my $AccountName    = $Param{AccountName};
+    my $ConfigObject   = $Param{ConfigObject};
+    my $ClientSettings = $OpenIDConfig->{ClientSettings};
 
-    my $UserMappings = $Kernel::OM->Get('Kernel::System::OpenIDConnect::UserMappings');
-    my $OpenIDConfig = $UserMappings->GetOpenIDConfig(
-        AccountID => $AccountName,
-    );
+    my $WebserviceRestrictions = $ConfigObject->Get( $AccountName . '::Webservice::Restrictions' ) || {};
 
-    my $ClientSettings   = $OpenIDConfig->{ClientSettings};
-    my $ExpectedAudience = $Account->{Audience} || $ClientSettings->{ClientID};
+    my $ExpectedAudience = $WebserviceRestrictions->{Audience} // $ClientSettings->{ClientID};
+    my $AuthorizedParty  = $WebserviceRestrictions->{AuthorizedParty};
+    my $ExpectedScopes   = $WebserviceRestrictions->{Scope};
 
     my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
 
@@ -202,8 +203,8 @@ sub _ValidateToken {
         Token            => $Param{Token},
         OpenIDConfig     => $OpenIDConfig,
         ExpectedAudience => $ExpectedAudience,
-        AuthorizedParty  => $Account->{AuthorizedParty},
-        ExpectedScopes   => $Account->{Scope},
+        AuthorizedParty  => $AuthorizedParty,
+        ExpectedScopes   => $ExpectedScopes,
     );
 }
 

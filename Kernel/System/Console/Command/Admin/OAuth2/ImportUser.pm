@@ -41,7 +41,7 @@ sub Configure {
     $Self->AddOption(
         Name        => 'openid-config',
         Description =>
-            "The name of OpenID Config to use. Defaults to 'AuthModule::OpenIDConnect::Config' for using the default OIDC login provider if this system uses OIDC for login purposes. Otherwise use one of 'OpenIDConnect::UserMapping###Custom1' ... CustomN Keys. ",
+            "The name of OpenID Config to use. Defaults to 'AuthModule::OpenIDConnect' for using the default OIDC login provider if this system uses OIDC for login purposes. Otherwise use one of 'OpenIDConnect::UserMapping###Custom1' ... CustomN Keys. ",
         Required   => 0,
         HasValue   => 1,
         ValueRegex => qr/.*/smx,
@@ -130,8 +130,8 @@ sub Configure {
         Name        => 'dry-run',
         Description => "Simulate actions, do not actually add user",
         Required    => 0,
-        HasValue    => 1,
-        ValueRegex  => qr/1/smx,
+        HasValue    => 0,
+        ValueRegex  => qr//smx,
     );
 
     return;
@@ -154,18 +154,11 @@ sub Run {
     }
 
     # gather parameter values
-    my $OpenIDConfigName = $Self->GetOption('openid-config') || 'AuthModule::OpenIDConnect::Config';
+    my $OpenIDProfileName = $Self->GetOption('openid-config') || 'AuthModule::OpenIDConnect';
+    my $OpenIDConfigName  = $OpenIDProfileName . '::Config';
 
-    my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
-    my $ConfigObject            = $Kernel::OM->Get('Kernel::Config');
-
-    my $Profiles = $OIDCConfigurationObject->GetOAuthProfiles();
-
-    if ( !exists $Profiles->{$OpenIDConfigName} ) {
-
-        $Self->PrintError('OpenIDConfig not found!');
-        return $Self->ExitCodeError();
-    }
+    #    my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
     my $OpenIDConfig = $ConfigObject->Get($OpenIDConfigName);
     if ( !IsHashRefWithData($OpenIDConfig) ) {
@@ -185,8 +178,8 @@ sub Run {
 
     my $TokenType = $Self->GetOption('token-type') || 'id_token';
     my $UID       = $Self->GetOption('uid')        || 'sub';
-    my $UserMap   = $ConfigObject->Get( $Self->GetOption('user-map') || 'AuthModule::OpenIDConnect::UserMap' );
-    my $RoleMap   = $ConfigObject->Get( $Self->GetOption('role-map') || 'AuthModule::OpenIDConnect::RoleMap' );
+    my $UserMap   = $ConfigObject->Get( $Self->GetOption('user-map') || $OpenIDProfileName . '::UserMap' );
+    my $RoleMap   = $ConfigObject->Get( $Self->GetOption('role-map') || $OpenIDProfileName . '::RoleMap' );
 
     # now use TokenProvider to do the Token fetching for us
     my $TokenProvider = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');

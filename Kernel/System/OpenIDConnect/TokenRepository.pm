@@ -65,10 +65,10 @@ sub new {
 =head2 Save()
 
     my $Success = $TokenRepositoryObject->Save(
-        AccountID  => 'FunctionalAccount1',     # FunctionalAccountName|mail_account.id|users.id
+        AccountID  => <FunctionalAccountID>,    # FunctionalAccount id
         TokenType  => 'refresh',                # access_token|id_token|refresh_token
-        Token => '<Token>',                     # as received from token endpoint
-        ExpiresAt => '<seconds epoch>',         # expires at UNIX epoch timestamp
+        Token      => '<Token>',                     # as received from token endpoint
+        ExpiresAt  => '<seconds epoch>',         # expires at UNIX epoch timestamp
     );
 
 =cut
@@ -78,7 +78,7 @@ sub Save {
 
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
 
-    for my $Needed (qw/AccountID TokenType Token ExpiresAt/) {
+    for my $Needed (qw/AccountID TokenType Token/) {
         if ( !$Param{$Needed} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
@@ -101,7 +101,7 @@ sub Save {
     my $ExpiresAt = $Param{ExpiresAt};
 
     my $InsertSuccess = $DBObject->Do(
-        SQL  => "INSERT INTO token_storage (account_id, token_type, token, expires_at) VALUES (?, ?, ?, ?)",
+        SQL  => "INSERT INTO oauth2_token_storage (oidc_functional_account_id, token_type, token, expires_at) VALUES (?, ?, ?, ?)",
         Bind => [ \$AccountID, \$TokenType, \$Token, \$ExpiresAt ],
     );
 
@@ -111,7 +111,14 @@ sub Save {
 =head2 Delete()
 
     my $Success = $TokenRepositoryObject->Delete(
-        AccountID   => 'FunctionalAccount1',
+        AccountID   => <FunctionalAccountID>,
+        TokenType   => 'refresh',              # optional
+    );
+
+    or
+
+    my $Success = $TokenRepositoryObject->Delete(
+        AccountName => <FunctionalAccountID>,
         TokenType   => 'refresh',              # optional
     );
 
@@ -133,11 +140,42 @@ sub Delete {
         my $TokenID = $Param{TokenID};
 
         my $DeleteSuccess = $DBObject->Do(
-            SQL  => "DELETE FROM token_store WHERE id = ?",
+            SQL  => "DELETE FROM oauth2_token_storage WHERE id = ?",
             Bind => [ \$TokenID ],
         );
 
         return $DeleteSuccess;
+    }
+
+    if ( $Param{AccountName} ) {
+
+        my $AccountName = $Param{AccountName};
+
+        $DBObject->Prepare(
+            SQL   => "SELECT id FROM oidc_functional_accounts WHERE name = ?  ",
+            Bind  => [ \$AccountName ],
+            Limit => 1
+        );
+
+        if ( my ($AccountID) = $DBObject->FetchrowArray ) {
+
+            my $SQL  = "DELETE FROM oauth2_token_storage WHERE oidc_functional_account_id = ? ";
+            my $Bind = [ \$AccountID ];
+
+            my $TokenType = $Param{TokenType};
+            if ($TokenType) {
+                $SQL .= " AND token_type = ? ";
+                push @$Bind, \$TokenType;
+            }
+
+            my $DeleteSuccess = $DBObject->Do(
+                SQL  => $SQL,
+                Bind => $Bind,
+            );
+
+            return $DeleteSuccess;
+        }
+        return;
     }
 
     for my $Needed (qw/AccountID/) {
@@ -159,7 +197,7 @@ sub Delete {
 
     my $AccountID = $Param{AccountID};
 
-    my $SQL  = "DELETE FROM token_storage WHERE account_id = ? ";
+    my $SQL  = "DELETE FROM oauth2_token_storage WHERE oidc_functional_account_id = ? ";
     my $Bind = [ \$AccountID, ];
 
     if ($TokenType) {
@@ -197,7 +235,7 @@ sub Cleanup {
 
     my $Epoch = $DateTimeObject->ToEpoch();
 
-    my $SQL  = "DELETE FROM token_storage WHERE expires_at < ? ";
+    my $SQL  = "DELETE FROM oauth2_token_storage WHERE expires_at < ? ";
     my $Bind = [ \$Epoch ];
 
     my $DeleteSuccess = $DBObject->Do(
@@ -211,8 +249,15 @@ sub Cleanup {
 =head2 Get()
 
     my $TokenData = $TokenRepositoryObject->Get(
-        AccountID  => 'FunctionalAccount1',
+        AccountID  => <FunctionalAccountID>,
         TokenType  => 'refresh',
+    );
+
+    or
+
+    my $TokenData = $TokenRepositoryObject->Get(
+        AccountName  => <FunctionalAccountID>,
+        TokenType    => 'refresh',
     );
 
     or
@@ -245,9 +290,33 @@ sub Get {
         my $TokenID = $Param{TokenID};
 
         $DBObject->Prepare(
-            SQL => "SELECT id, account_id, token_type, token, expires_at
-                      FROM token_storage WHERE id = ?  ",
+            SQL => "SELECT id, oidc_functional_account_id, token_type, token, expires_at
+                      FROM oauth2_token_storage WHERE id = ?  ",
             Bind  => [ \$TokenID ],
+            Limit => 1
+        );
+    }
+    elsif ( $Param{AccountName} ) {
+
+        my $AccountName = $Param{AccountName};
+        my $TokenType   = $Param{TokenType};
+
+        my $SQL = "SELECT ots.id, ots.oidc_functional_account_id, ots.token_type, ots.token, ots.expires_at
+                    FROM oauth2_token_storage ots
+                    LEFT JOIN oidc_functional_accounts ofa
+                    ON ots.oidc_functional_account_id = ofa.id
+                    WHERE ofa.name = ?  ";
+
+        my $Bind = [ \$AccountName ];
+
+        if ($TokenType) {
+            $SQL .= " AND ots.token_type = ? ";
+            push @$Bind, \$TokenType;
+        }
+
+        $DBObject->Prepare(
+            SQL   => $SQL,
+            Bind  => $Bind,
             Limit => 1
         );
     }
@@ -272,9 +341,9 @@ sub Get {
         my $TokenType = $Param{TokenType};
 
         $DBObject->Prepare(
-            SQL => "SELECT id, account_id, token_type, token, expires_at
-                      FROM token_storage
-                      WHERE account_id = ? AND token_type = ? ",
+            SQL => "SELECT id, oidc_functional_account_id, token_type, token, expires_at
+                      FROM oauth2_token_storage
+                      WHERE oidc_functional_account_id = ? AND token_type = ? ",
             Bind  => [ \$AccountID, \$TokenType ],
             Limit => 1
         );
@@ -313,7 +382,7 @@ sub Get {
     my $Tokens = [
         {
             TokenID    => 1,
-            AccountID  => 'FunctionalAccoungt1',
+            AccountID  => <FunctionalAccoungtID>,
             TokenType  => 'refresh_token',
             Token      => <TokenData>,
             ExpiresAt  => UNIX epoch timestamp,
@@ -334,18 +403,19 @@ sub List {
     my $ExpiresAfter = $Param{ExpiresAfter};
     my $TokenType    = $Param{TokenType} || 'refresh_token';
 
-    my $SQL  = "SELECT id, account_id, token_type, token, expires_at FROM token_storage ";
+    my $SQL  = "SELECT id, oidc_functional_account_id, token_type, token, expires_at FROM oauth2_token_storage ";
     my $Bind = [ \$TokenType ];
 
     $SQL .= "WHERE token_type = ? ";
 
     if ($ExpiresAfter) {
 
-        $SQL .= "AND expires_at IS NOT NULL AND expires_at != 0 AND expires_at < ? ";
+#        $SQL .= "AND expires_at IS NOT NULL AND expires_at != 0 AND expires_at < ? ";
+        $SQL .= "AND expires_at IS NULL OR expires_at = 0 OR expires_at < ? ";
         push @$Bind, \$ExpiresAfter;
     }
 
-    $SQL .= "ORDER BY account_id, expires_at ";
+    $SQL .= "ORDER BY oidc_functional_account_id, expires_at ";
 
     $DBObject->Prepare(
         SQL  => $SQL,
@@ -381,7 +451,7 @@ sub List {
     my $Tokens = {
         'FunctionalAccount1' = {
             TokenID    => 1,
-            AccountID  => 'FunctionalAccoungt1',
+            AccountID => <FunctionalAccoungtID>,
             TokenType  => 'refresh_token',
             Token      => <TokenData>,
             ExpiresAt  => UNIX epoch timestamp,
@@ -401,7 +471,7 @@ sub Lookup {
     # Build a lookup index
     my %GenericInterfaceTokenLookup = ();
     for my $GenericInterfaceToken (@$GenericInterfaceTokens) {
-        $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID} } = $GenericInterfaceToken;
+        $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountName} } = $GenericInterfaceToken;
     }
 
     return \%GenericInterfaceTokenLookup;

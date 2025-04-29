@@ -39,6 +39,10 @@ my $CurrentTime = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
 my $MainObject = $Kernel::OM->Get('Kernel::System::Main');
 $MainObject->Require("$Bin/OAuthProviderMock");
 
+my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
+$DBObject->Connect();
+$DBObject->BeginWork();
+
 #################################################################
 # main test
 #################################################################
@@ -55,159 +59,176 @@ my $TokenObject       = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token')
 # the OpenIDConfig we will use. This would normally come from SysConfig
 my $OpenIDConfig = OAuthProviderMock::GetTestOpenIDConfig();
 
-# make sure cache is clean for testing
-$OIDCConfiguration->GetProviderData(
-    OpenIDConfig => $OpenIDConfig,
-    NoCache      => 1,
-);
-Cleanup();
+eval {
 
-#################################################################
-# Fetch a Token from token_endpoint and validate it
-#################################################################
+    # make sure cache is clean for testing
+    $OIDCConfiguration->GetProviderData(
+        OpenIDConfig => $OpenIDConfig,
+        NoCache      => 1,
+    );
+    Cleanup();
 
-# patch sysconfig just for this process / request
-PrepareTestSysConfig();
+    #################################################################
+    # Fetch a Token from token_endpoint and validate it
+    #################################################################
 
-# use TokenProvider to fetch a Token for the configured unit test account
+    # patch sysconfig just for this process / request
+    PrepareTestSysConfig(
+        Resources => 'some_api',
 
-# 1) fetch a fresh token
-my $Result = $TokenProvider->Fetch(
-    AccountID => '_UnitTest1',
-);
+        #        GrantType => 'password',
+        #        Username => 'test'
+    );
 
-ok( $Result->{Success},                 "Result is Success" );
-ok( $Result->{Origin} eq 'fresh_token', 'Origin is fresh_token.' );
+    # use TokenProvider to fetch a Token for the configured unit test account
 
-my $Token = $Result->{Token};
+    # 1) fetch a fresh token
+    my $Result = $TokenProvider->Fetch(
+        AccountName => '_UnitTest1',
+    );
 
-# validate it, one last time
-$Result = $TokenObject->Validate(
-    Token        => $Token,
-    OpenIDConfig => $OpenIDConfig,
-);
-ok( $Result->{Success}, "Result is Success" );
+    ok( $Result->{Success},                 "Result is Success" );
+    ok( $Result->{Origin} eq 'fresh_token', 'Origin is fresh_token.' );
 
-# 2) fetch again, now comes from cache
-$Result = $TokenProvider->Fetch(
-    AccountID => '_UnitTest1',
-);
+    my $Token = $Result->{Token};
 
-ok( $Result->{Success},           "Result is Success" );
-ok( $Result->{Origin} eq 'cache', 'Origin is cache' );
+    # validate it, one last time
+    $Result = $TokenObject->Validate(
+        Token        => $Token,
+        OpenIDConfig => $OpenIDConfig,
+    );
+    ok( $Result->{Success}, "Result is Success" );
 
-# 3) clean cache, now comes from DB
-CleanupCache();
+    # 2) fetch again, now comes from cache
+    $Result = $TokenProvider->Fetch(
+        AccountName => '_UnitTest1',
+    );
 
-$Result = $TokenProvider->Fetch(
-    AccountID => '_UnitTest1',
-);
+    ok( $Result->{Success},           "Result is Success" );
+    ok( $Result->{Origin} eq 'cache', 'Origin is cache' );
 
-ok( $Result->{Success},        "Result is Success" );
-ok( $Result->{Origin} eq 'db', 'Origin is db.' );
+    # 3) clean cache, now comes from DB
+    CleanupCache();
 
-# 3) clean cache and DB, now using refresh_token
-CleanupCache();
-$TokenRepository->Delete(
-    AccountID => '_UnitTest1',
-    TokenType => 'access_token',
-);
+    $Result = $TokenProvider->Fetch(
+        AccountName => '_UnitTest1',
+    );
 
-$Result = $TokenProvider->Fetch(
-    AccountID => '_UnitTest1',
-);
+    ok( $Result->{Success},        "Result is Success" );
+    ok( $Result->{Origin} eq 'db', 'Origin is db.' );
 
-ok( $Result->{Success},                   "Result is Success" );
-ok( $Result->{Origin} eq 'refresh_token', 'Origin is refresh_token' );
+    # 3) clean cache and DB, now using refresh_token
+    CleanupCache();
+    my $DeleteSuccess = $TokenRepository->Delete(
+        AccountName => '_UnitTest1',
+        TokenType   => 'access_token',
+    );
+    ok( $DeleteSuccess, 'DELETE FAILED' );
 
-# 4) clean cache,DB and refresh_token -
+    $Result = $TokenProvider->Fetch(
+        AccountName => '_UnitTest1',
+    );
 
-Cleanup();
-$Result = $TokenProvider->Fetch(
-    AccountID => '_UnitTest1',
-);
+    ok( $Result->{Success},                   "Result is Success" );
+    ok( $Result->{Origin} eq 'refresh_token', 'Origin is refresh_token' );
 
-ok( $Result->{Success},                 "Result is Success" );
-ok( $Result->{Origin} eq 'fresh_token', 'Origin is fresh_token' );
+    # 4) clean cache,DB and refresh_token -
 
-#################################################################
-# invalid credentials
-#################################################################
+    Cleanup();
+    $Result = $TokenProvider->Fetch(
+        AccountName => '_UnitTest1',
+    );
 
-Cleanup();
-$OpenIDConfig->{ClientSettings}->{ClientSecret} = 'murks';
-PrepareTestSysConfig();
+    ok( $Result->{Success},                 "Result is Success" );
+    ok( $Result->{Origin} eq 'fresh_token', 'Origin is fresh_token' );
 
-$Result = $TokenProvider->Fetch(
-    AccountID => '_UnitTest1',
-);
+    #################################################################
+    # invalid credentials
+    #################################################################
 
-ok( !$Result->{Success} );
+    Cleanup();
+    $OpenIDConfig->{ClientSettings}->{ClientSecret} = 'murks';
+    PrepareTestSysConfig(
+        Resources => 'some_api',
+    );
 
-#################################################################
-# Test 4) - Assert on the spied Log of our fake server
-# here we can assert that parameters have been passed as
-# expected to the token_endpoint
-#################################################################
+    $Result = $TokenProvider->Fetch(
+        AccountName => '_UnitTest1',
+    );
 
-OAuthProviderMock::AssertHttpCallLog(
-    Expected => [
-        {
-            "endpoint" => "openid",
-            "content"  => ""
-        },
-        {
-            "endpoint" => "jwks",
-            "content"  => ""
-        },
-        {
-            "endpoint" => "token",
-            "content"  => "grant_type=client_credentials&resource=some_api&scope=openid"
-        },
-        {
-            "endpoint" => "openid",
-            "content"  => ""
-        },
-        {
-            "endpoint" => "jwks",
-            "content"  => ""
-        },
-        {
-            "content"  => "grant_type=refresh_token&refresh_token=",
-            "endpoint" => "token",
-            operator   => 'match'
-        },
-        {
-            "endpoint" => "openid",
-            "content"  => ""
-        },
-        {
-            "endpoint" => "jwks",
-            "content"  => ""
-        },
-        {
-            "endpoint" => "token",
-            "content"  => "grant_type=client_credentials&resource=some_api&scope=openid"
-        },
-        {
-            "endpoint" => "openid",
-            "content"  => ""
-        },
-        {
-            "endpoint" => "jwks",
-            "content"  => ""
-        },
-        {
-            "content"  => "grant_type=client_credentials&resource=some_api&scope=openid",
-            "endpoint" => "token"
-        },
-    ]
-);
+    ok( !$Result->{Success} );
+
+    #################################################################
+    # Test 4) - Assert on the spied Log of our fake server
+    # here we can assert that parameters have been passed as
+    # expected to the token_endpoint
+    #################################################################
+
+    OAuthProviderMock::AssertHttpCallLog(
+        Expected => [
+            {
+                "endpoint" => "openid",
+                "content"  => ""
+            },
+            {
+                "endpoint" => "jwks",
+                "content"  => ""
+            },
+            {
+                "endpoint" => "token",
+                "content"  => "grant_type=client_credentials&resource=some_api&scope=openid"
+            },
+            {
+                "endpoint" => "openid",
+                "content"  => ""
+            },
+            {
+                "endpoint" => "jwks",
+                "content"  => ""
+            },
+            {
+                "content"  => "grant_type=refresh_token&refresh_token=",
+                "endpoint" => "token",
+                operator   => 'match'
+            },
+            {
+                "endpoint" => "openid",
+                "content"  => ""
+            },
+            {
+                "endpoint" => "jwks",
+                "content"  => ""
+            },
+            {
+                "endpoint" => "token",
+                "content"  => "grant_type=client_credentials&resource=some_api&scope=openid"
+            },
+            {
+                "endpoint" => "openid",
+                "content"  => ""
+            },
+            {
+                "endpoint" => "jwks",
+                "content"  => ""
+            },
+            {
+                "content"  => "grant_type=client_credentials&resource=some_api&scope=openid",
+                "endpoint" => "token"
+            },
+        ]
+    );
+};
+if ($@) {
+    print STDERR "$@\n";
+    ok( 0, "should not htow." );
+}
 
 # over and out
 done_testing;
 
 Cleanup();
+
+$DBObject->Rollback();
 
 # tear down fake server
 kill( 'TERM', $OAuthProviderMock::ChildPID );
@@ -217,29 +238,84 @@ waitpid( $OAuthProviderMock::ChildPID, 0 );
 
 sub PrepareTestSysConfig {
 
-    # configure an OIDC Profile for the unit test
-    $ConfigObject->Set(
-        Key   => 'OpenIDConnect::OICDProvider::_UnitTest1',
-        Value => $OpenIDConfig,
+    my %Param = @_;
+
+    # create profile
+
+    my $YAMLObject = $Kernel::OM->Get('Kernel::System::YAML');
+
+    my $Valid = 1;
+
+    $DBObject->Prepare(
+        SQL => "SELECT id FROM oidc_functional_accounts WHERE name = '_UnitTest1' ",
+
+        #            Bind  => [ \$OpenIDConfig->{ProviderSettings}->{Name} ],
+        #            Limit => 1
     );
 
-    # configure a functional account that uses above config
-    $ConfigObject->Set(
-        Key   => 'OpenIDConnect::FunctionalAccounts',
-        Value => {
-            '_UnitTest1' => {
+    my ($ID) = $DBObject->FetchrowArray();
 
-                OpenIDConfig      => 'OpenIDConnect::OICDProvider::_UnitTest1',
-                GrantType         => 'client_credentials',
-                Scope             => 'openid',
-                Resources         => 'some_api',
-                ResourceParamName => 'resource',
-                Token             => 'access_token',
+    if ($ID) {
+        $DBObject->Do( SQL => "DELETE FROM oauth2_token_storage WHERE oidc_functional_account_id = " . $ID );
+    }
+    $DBObject->Do( SQL => "DELETE FROM oidc_functional_accounts WHERE name = '_UnitTest1' " );
+    $DBObject->Do( SQL => "DELETE FROM oidc_profiles WHERE name = '" . $OpenIDConfig->{ProviderSettings}->{Name} . "'" );
 
-                # Username        => $Param{Username},
-                # Password        => $Param{Password},
-            }
-        },
+    $DBObject->Do(
+        SQL => "INSERT INTO oidc_profiles
+                ( name,client_id,client_Secret,redirect_uri,openid_config,
+                ssl_options,misc,ttl,valid_id,
+                create_time,create_by,change_time,change_by )
+                VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
+        Bind => [
+            \$OpenIDConfig->{ProviderSettings}->{Name},
+            \$OpenIDConfig->{ClientSettings}->{ClientID},
+            \$OpenIDConfig->{ClientSettings}->{ClientSecret},
+            \$OpenIDConfig->{ClientSettings}->{RedirectURI} // '',
+            \$OpenIDConfig->{ProviderSettings}->{OpenIDConfiguration},
+            \$YAMLObject->Dump( Data => $OpenIDConfig->{ProviderSettings}->{SSLOptions} ),
+            \$YAMLObject->Dump( Data => $OpenIDConfig->{Misc} // {} ),
+            \$OpenIDConfig->{ProviderSettings}->{TTL},
+            \$Valid,
+        ],
+    );
+
+    $DBObject->Prepare(
+        SQL  => "SELECT id FROM oidc_profiles WHERE name = ? ",
+        Bind => [ \$OpenIDConfig->{ProviderSettings}->{Name} ],
+
+        #            Limit => 1
+    );
+
+    ($ID) = $DBObject->FetchrowArray();
+
+    # create functional account
+
+    my $GrantType         = $Param{GrantType}         || 'client_credentials';
+    my $Scope             = $Param{Scope}             || 'openid';
+    my $Resources         = $Param{Resources}         || '';
+    my $ResourceParamName = $Param{ResourceParamName} || 'resource';
+    my $TokenType         = $Param{Token}             || 'access_token';
+
+    print STDERR "TOKENTYPE: $TokenType\n";
+
+    $DBObject->Do(
+        SQL => "INSERT INTO oidc_functional_accounts
+                (name, oidc_profile_id,grant_type,scopes,resources,
+                resource_param_name,username,passwd, token_type, valid_id,
+                create_time,create_by,change_time,change_by )
+                VALUES ( '_UnitTest1', ?, ?, ?, ?, ?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
+        Bind => [
+            \$ID,
+            \$GrantType,
+            \$Scope,
+            \$Resources,
+            \$ResourceParamName,
+            \$Param{Username},
+            \$Param{Password},
+            \$TokenType,
+            \$Valid,
+        ],
     );
 
     return;
@@ -249,7 +325,7 @@ sub Cleanup {
 
     # cleanup cache and db
     $TokenRepository->Delete(
-        AccountID => '_UnitTest1',
+        AccountName => '_UnitTest1',
     );
 
     CleanupCache();
@@ -260,7 +336,7 @@ sub Cleanup {
 sub CleanupCache {
 
     $TokenProvider->EmptyCache(
-        AccountID => '_UnitTest1',
+        AccountName => '_UnitTest1',
     );
 
     return;

@@ -49,7 +49,13 @@
                 <br>
                 <br>
                 <p>
-                    [% Translate("You can test your Configuration with a click on the 'Refresh' Button, which will try to fetch or refresh a new Token.") | html %]
+                    [% Translate("You can test your Configuration with a click on the 'Renew' Button, which will try to fetch or refresh a new Token.") | html %]
+                </p>
+                <br>
+                <br>
+                <p>
+                    [% Translate("You can create OIDC Profiles to connect to your OIDC Functional Account") | html %]
+                    <a href="?Action=AdminOIDCProfiles">[% Translate("here") | html %]</a>.
                 </p>
                 <br>
                 <br>
@@ -80,7 +86,14 @@
         <div class="WidgetSimple">
 [% RenderBlockStart("OverviewHeader") %]
             <div class="Header">
-                <h2>[% Translate("OAuth2 Token backed Accounts") | html %] ([% Data.AllItemsCount | html %] [% Translate("total") | html %])</h2>
+                <h2>[% Translate("OIDC Functional Accounts and their active OAuth2 Tokens") | html %] ([% Data.AllItemsCount | html %] [% Translate("total") | html %])</h2>
+                [% IF Data.HasProfiles == 0 %]
+                <br>
+                <p>Since you do not have any OIDC Provider profiles configured, you cannot add an OAuth2 Functional Account. Xou have to first configure 
+                at least one OIDC Provider profile 
+                    <a href="?Action=AdminOIDCProfiles">here</a>.
+                </p>
+                [% END %]
             </div>
 [% RenderBlockEnd("OverviewHeader") %]
 [% RenderBlockStart("NoTokensDefined") %]
@@ -97,13 +110,13 @@
                             <th>[% Translate("Flow") | html %]</th>
                             <th>[% Translate("Has Token?") | html %]</th>
                             <th>[% Translate("Refresh Token Expires") | html %]</th>
-                            <th>[% Translate("Renew Token") | html %]</th>
+                            <th>[% Translate("Renew Token(s)") | html %]</th>
                         </tr>
                     </thead>
                     <tbody>
 [% RenderBlockStart("OverviewResultRow") %]
                         <tr>
-                            <td><a class="AsBlock" href="[% Env("Baselink") %]Action=[% Env("Action") %];Subaction=Edit;AccountName=[% Data.AccountID | uri %]">[% Data.AccountID | html %]</a></td>
+                            <td><a class="AsBlock" href="[% Env("Baselink") %]Action=[% Env("Action") %];Subaction=Edit;AccountName=[% Data.AccountName | uri %]">[% Data.AccountName | html %]</a></td>
                             <td class='[% Data.NeedToken | uri %]'>[% Data.Flow | html %]</td>
                             <td class='[% Data.NeedToken | uri %]'>[% Translate( Data.HasToken ) | html %]</td>
                             <td token="[% Data.Token | uri %]" class='[% Data.CopyToken | uri %]'>[% Data.ExpiresAt | html %]</td>
@@ -113,9 +126,9 @@
                                         <div class="Field" style="margin-left:0px;">
                                             <input type="hidden" name="Action" value="[% Env("Action") | uri %]"/>
                                             <input type="hidden" name="Subaction" value="Refresh"/>
-                                            <input type="hidden" name="AccountID" value="[% Data.AccountID | uri %]">
+                                            <input type="hidden" name="AccountName" value="[% Data.AccountName | uri %]">
                                             [% IF Data.IsInvoker %]
-                                            <button class="CallForAction Primary" id="Submit[% Data.AccountID | uri %]" type="submit" value="[% Translate("Refresh") | html %]"><span>[% Translate("Refresh") | html %]</span></button>
+                                            <button class="CallForAction Primary" id="Submit[% Data.AccountName | uri %]" type="submit" value="[% Translate("Renew") | html %]"><span>[% Translate("Renew") | html %]</span></button>
                                             [% END %]
                                         </div>
                                     </fieldset>
@@ -170,7 +183,7 @@
                         </div>
                         <div class="Clear"></div>
 
-                        <label class="Mandatory" for="ProviderName"><span class="Marker">*</span> [% Translate("OIDC Profile") | html %]:</label>
+                        <label class="Mandatory" for="ProviderID"><span class="Marker">*</span> [% Translate("OIDC Profile") | html %]:</label>
                         <div class="Field">
                             [% Data.ProviderNames %]
                             <p class="FieldExplanation">

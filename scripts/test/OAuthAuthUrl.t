@@ -38,10 +38,15 @@ use Kernel::System::UnitTest::RegisterOM;    # set up $Kernel::OM
 my $MainObject = $Kernel::OM->Get('Kernel::System::Main');
 $MainObject->Require("$Bin/OAuthProviderMock");
 
+my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
+$DBObject->Connect();
+
 my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
 my $TokenProvider     = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
 my $TokenRepository   = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 my $OIDCConfiguration = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+
+$DBObject->BeginWork();
 
 my $BaseURL     = 'http://localhost:2007/realms/master/protocol/openid-connect/auth';
 my $RedirectURI = 'https://your.otobo.url/otobo/index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth';
@@ -86,30 +91,39 @@ my $TestCases = [
 
 my $OpenIDConfig = OAuthProviderMock::GetTestOpenIDConfig();
 
-for my $TestCase (@$TestCases) {
+eval {
 
-    PrepareTestSysConfig( $TestCase->{Config}->%* );
+    for my $TestCase (@$TestCases) {
 
-    my $RandomString = $Kernel::OM->Get('Kernel::System::Main')->GenerateRandomString(
-        Length => 22
-    );
+        PrepareTestSysConfig( $TestCase->{Config}->%* );
 
-    my $Expected = $BaseURL . $TestCase->{Expectation};
-    $Expected .= $RandomString;
-    $Expected .= '&redirect_uri=';
-    $Expected .= uri_escape_utf8($RedirectURI);
+        my $RandomString = $Kernel::OM->Get('Kernel::System::Main')->GenerateRandomString(
+            Length => 22
+        );
 
-    my $AuthURL = $TokenProvider->GetAuthURL(
-        AccountID   => '_UnitTest1',
-        RedirectURI => $RedirectURI,
-        State       => $RandomString,
-        Login       => $TestCase->{Config}->{Login},
-        Prompt      => $TestCase->{Config}->{Prompt},
-    );
+        my $Expected = $BaseURL . $TestCase->{Expectation};
+        $Expected .= $RandomString;
+        $Expected .= '&redirect_uri=';
+        $Expected .= uri_escape_utf8($RedirectURI);
 
-    ok( $AuthURL eq $Expected, "$AuthURL eq $Expected" );
+        my $AuthURL = $TokenProvider->GetAuthURL(
+            AccountName => '_UnitTest1',
+            RedirectURI => $RedirectURI,
+            State       => $RandomString,
+            Login       => $TestCase->{Config}->{Login},
+            Prompt      => $TestCase->{Config}->{Prompt},
+        );
 
+        ok( $AuthURL eq $Expected, "$AuthURL eq $Expected" );
+
+    }
+};
+if ($@) {
+    print STDERR $@ . "\n";
+    ok( 0, 'should not throw' );
 }
+
+$DBObject->Rollback();
 
 done_testing;
 
@@ -123,29 +137,95 @@ sub PrepareTestSysConfig {
 
     my %Param = @_;
 
-    # configure an OIDC Profile for the unit test
-    $ConfigObject->Set(
-        Key   => 'OpenIDConnect::OICDProvider::_UnitTest1',
-        Value => $OpenIDConfig,
+    # create profile
+
+    my $YAMLObject = $Kernel::OM->Get('Kernel::System::YAML');
+
+    my $Valid = 1;
+
+    $DBObject->Do( SQL => "DELETE FROM oidc_functional_accounts WHERE name = '_UnitTest1' " );
+    $DBObject->Do( SQL => "DELETE FROM oidc_profiles WHERE name = '" . $OpenIDConfig->{ProviderSettings}->{Name} . "'" );
+
+    $DBObject->Do(
+        SQL => "INSERT INTO oidc_profiles
+                ( name,client_id,client_Secret,redirect_uri,openid_config,
+                ssl_options,misc,ttl,valid_id,
+                create_time,create_by,change_time,change_by )
+                VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
+        Bind => [
+            \$OpenIDConfig->{ProviderSettings}->{Name},
+            \$OpenIDConfig->{ClientSettings}->{ClientID},
+            \$OpenIDConfig->{ClientSettings}->{ClientSecret},
+            \$OpenIDConfig->{ClientSettings}->{RedirectURI} // '',
+            \$OpenIDConfig->{ProviderSettings}->{OpenIDConfiguration},
+            \$YAMLObject->Dump( Data => $OpenIDConfig->{ProviderSettings}->{SSLOptions} ),
+            \$YAMLObject->Dump( Data => $OpenIDConfig->{Misc} // {} ),
+            \$OpenIDConfig->{ProviderSettings}->{TTL},
+            \$Valid,
+        ],
     );
 
-    # configure a functional account that uses above config
-    $ConfigObject->Set(
-        Key   => 'OpenIDConnect::FunctionalAccounts',
-        Value => {
-            '_UnitTest1' => {
+    $DBObject->Prepare(
+        SQL  => "SELECT id FROM oidc_profiles WHERE name = ? ",
+        Bind => [ \$OpenIDConfig->{ProviderSettings}->{Name} ],
 
-                OpenIDConfig      => 'OpenIDConnect::OICDProvider::_UnitTest1',
-                GrantType         => $Param{GrantType}         || 'authorization_code',
-                Scope             => $Param{Scope}             || 'openid',
-                Resources         => $Param{Resources}         || '',
-                ResourceParamName => $Param{ResourceParamName} || 'resource',
-                Token             => $Param{Token}             || 'access_token',
-                Username          => $Param{Username},
-                Password          => $Param{Password},
-            }
-        },
+        #            Limit => 1
     );
+
+    my ($ID) = $DBObject->FetchrowArray();
+
+    # create functional account
+
+    my $GrantType         = $Param{GrantType}         || 'authorization_code';
+    my $Scope             = $Param{Scope}             || 'openid';
+    my $Resources         = $Param{Resources}         || '';
+    my $ResourceParamName = $Param{ResourceParamName} || 'resource';
+    my $TokenType         = $Param{Token}             || 'access_token';
+
+    print STDERR "TOKENTYPE: $TokenType\n";
+
+    $DBObject->Do(
+        SQL => "INSERT INTO oidc_functional_accounts
+                (name, oidc_profile_id,grant_type,scopes,resources,
+                resource_param_name,username,passwd, token_type, valid_id,
+                create_time,create_by,change_time,change_by )
+                VALUES ( '_UnitTest1', ?, ?, ?, ?, ?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
+        Bind => [
+            \$ID,
+            \$GrantType,
+            \$Scope,
+            \$Resources,
+            \$ResourceParamName,
+            \$Param{Username},
+            \$Param{Password},
+            \$TokenType,
+            \$Valid,
+        ],
+    );
+
+    # # configure an OIDC Profile for the unit test
+    # $ConfigObject->Set(
+    #     Key   => 'OpenIDConnect::OICDProvider::_UnitTest1',
+    #     Value => $OpenIDConfig,
+    # );
+
+    # # configure a functional account that uses above config
+    # $ConfigObject->Set(
+    #     Key   => 'OpenIDConnect::FunctionalAccounts',
+    #     Value => {
+    #         '_UnitTest1' => {
+
+    #             OpenIDConfig      => 'OpenIDConnect::OICDProvider::_UnitTest1',
+    #             GrantType         => $Param{GrantType}         || 'authorization_code',
+    #             Scope             => $Param{Scope}             || 'openid',
+    #             Resources         => $Param{Resources}         || '',
+    #             ResourceParamName => $Param{ResourceParamName} || 'resource',
+    #             Token             => $Param{Token}             || 'access_token',
+    #             Username          => $Param{Username},
+    #             Password          => $Param{Password},
+    #         }
+    #     },
+    # );
 
     return;
 }

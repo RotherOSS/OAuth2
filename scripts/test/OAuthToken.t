@@ -39,7 +39,7 @@ my $CurrentTime = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
 my $MainObject = $Kernel::OM->Get('Kernel::System::Main');
 $MainObject->Require("$Bin/OAuthProviderMock");
 
-$OAuthProviderMock::KidID || $OAuthProviderMock::PrivateKey || 0;      # prevent warnings
+$OAuthProviderMock::KidID || $OAuthProviderMock::PrivateKey || 0;    # prevent warnings
 
 #################################################################
 # main test
@@ -60,6 +60,9 @@ $OIDCConfiguration->GetProviderData(
     OpenIDConfig => $OpenIDConfig,
     NoCache      => 1,
 );
+my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
+$DBObject->Connect();
+$DBObject->BeginWork();
 
 #################################################################
 # create a JWT to test, sign using our private RSA key from above
@@ -155,6 +158,8 @@ OAuthProviderMock::AssertHttpCallLog(
 # over and out
 done_testing;
 
+$DBObject->Rollback();
+
 # tear down fake server
 kill( 'TERM', $OAuthProviderMock::ChildPID );
 waitpid( $OAuthProviderMock::ChildPID, 0 );
@@ -163,30 +168,30 @@ waitpid( $OAuthProviderMock::ChildPID, 0 );
 
 sub PrepareTestSysConfig {
 
-    # configure an OIDC Profile for the unit test
-    $ConfigObject->Set(
-        Key   => 'OpenIDConnect::OICDProvider::_UnitTest1',
-        Value => $OpenIDConfig,
-    );
+    # # configure an OIDC Profile for the unit test
+    # $ConfigObject->Set(
+    #     Key   => 'OpenIDConnect::OICDProvider::_UnitTest1',
+    #     Value => $OpenIDConfig,
+    # );
 
-    # configure a functional account that uses above config
-    $ConfigObject->Set(
-        Key   => 'OpenIDConnect::FunctionalAccounts',
-        Value => {
-            '_UnitTest1' => {
+    # # configure a functional account that uses above config
+    # $ConfigObject->Set(
+    #     Key   => 'OpenIDConnect::FunctionalAccounts',
+    #     Value => {
+    #         '_UnitTest1' => {
 
-                OpenIDConfig      => 'OpenIDConnect::OICDProvider::_UnitTest1',
-                GrantType         => 'client_credentials',
-                Scope             => 'openid email',
-                Resources         => 'some_api',
-                ResourceParamName => 'resource',
-                Token             => 'access_token',
+    #             OpenIDConfig      => 'OpenIDConnect::OICDProvider::_UnitTest1',
+    #             GrantType         => 'client_credentials',
+    #             Scope             => 'openid email',
+    #             Resources         => 'some_api',
+    #             ResourceParamName => 'resource',
+    #             Token             => 'access_token',
 
-                # Username        => $Param{Username},
-                # Password        => $Param{Password},
-            }
-        },
-    );
+    #             # Username        => $Param{Username},
+    #             # Password        => $Param{Password},
+    #         }
+    #     },
+    # );
 
     return;
 }

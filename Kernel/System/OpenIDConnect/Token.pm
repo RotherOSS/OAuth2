@@ -166,11 +166,7 @@ sub TimeLeft {
     }
 
     if ( !$TokenData->{exp} ) {
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'error',
-            Message  => "No expiration time found in provided token!",
-        );
-        return;
+        return 600; # offline_token has not expiry
     }
 
     # time window
@@ -220,6 +216,7 @@ sub Validate {
     my $ExpectedAudience = $Param{ExpectedAudience};
     my $AuthorizedParty  = $Param{AuthorizedParty};
     my $ExpectedScopes   = $Param{ExpectedScopes};
+    my $Leeway           = $Param{Leeway} // $OpenIDConfig->{Misc}->{Leeway} || 2;
 
     my $TokenData = $Self->DecodeToken(%Param);
 
@@ -303,8 +300,6 @@ sub Validate {
     }
 
     my $CurrentTime = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
-    my $Leeway      = int( $Param{Leeway} // 2 );
-
     if ( $TokenData->{iat} - $Leeway > $CurrentTime ) {
 
         return {

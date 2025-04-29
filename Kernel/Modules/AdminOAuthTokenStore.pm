@@ -38,16 +38,21 @@ sub Run {
     my ( $Self, %Param ) = @_;
 
     my $ConfigObject       = $Kernel::OM->Get('Kernel::Config');
-    my $CacheObject        = $Kernel::OM->Get('Kernel::System::Cache');
-    my $LayoutObject       = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
-    my $ParamObject        = $Kernel::OM->Get('Kernel::System::Web::Request');
+    my $LanguageObject     = $Kernel::OM->Get('Kernel::Language');
     my $LogObject          = $Kernel::OM->Get('Kernel::System::Log');
+    my $CacheObject        = $Kernel::OM->Get('Kernel::System::Cache');
+    my $ParamObject        = $Kernel::OM->Get('Kernel::System::Web::Request');
     my $TokenRepository    = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
     my $TokenProvider      = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
     my $FunctionalAccounts = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
-    my $LanguageObject     = $Kernel::OM->Get('Kernel::Language');
+    my $Configuration      = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+    my $LayoutObject       = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
 
     my %Errors = ();
+
+    my $Profiles = $Configuration->GetOAuthProfiles();
+
+    my $HasProfiles = scalar @$Profiles;
 
     my $Output = $LayoutObject->Header();
     $Output .= $LayoutObject->NavigationBar();
@@ -61,7 +66,7 @@ sub Run {
 
         $GetParam{AccountName}   = $ParamObject->GetParam( Param => 'AccountName' );
         $GetParam{GrantType}     = 'client_credentials';
-        $GetParam{InvokerScopes} = 'openid';
+        $GetParam{InvokerScopes} = 'openid offline_access';
         $GetParam{TokenType}     = 'access_token';
 
         my $Output = $LayoutObject->Header();
@@ -86,7 +91,7 @@ sub Run {
         my %GetParam = ();
         $GetParam{AccountName} = $ParamObject->GetParam( Param => 'AccountName' );
 
-        my $Account = $FunctionalAccounts->GetAccount( AccountID => $GetParam{AccountName} );
+        my $Account = $FunctionalAccounts->GetAccount( Name => $GetParam{AccountName} );
 
         $GetParam{ProviderName} = $Account->{OpenIDConfig};
 
@@ -140,7 +145,7 @@ sub Run {
             $Errors{AccountNameServerError} = $LanguageObject->Translate('Account Name is missing!');
         }
 
-        $GetParam{ProviderName}  = $ParamObject->GetParam( Param => 'ProviderName' );
+        $GetParam{ProviderID}    = $ParamObject->GetParam( Param => 'ProviderID' );
         $GetParam{GrantType}     = $ParamObject->GetParam( Param => 'GrantType' );
         $GetParam{Username}      = $ParamObject->GetParam( Param => 'Username' );
         $GetParam{Password}      = $ParamObject->GetParam( Param => 'Password' );
@@ -159,9 +164,13 @@ sub Run {
         }
 
         # prevent duplicate account names
-        my $OIDCAccounts = $FunctionalAccounts->GetAccounts();
-        if ( $Self->{Subaction} eq 'AddInvokerAction' && exists $OIDCAccounts->{ $GetParam{AccountName} } ) {
-            $Errors{AccountNameServerError} = $LanguageObject->Translate('Account Name is taken!');
+        if ( $Self->{Subaction} eq 'AddInvokerAction' ) {
+
+            my $ExistingAccount = $FunctionalAccounts->GetAccount( Name => $GetParam{AccountName} );
+
+            if ($ExistingAccount) {
+                $Errors{AccountNameServerError} = $LanguageObject->Translate('Account Name is taken!');
+            }
         }
 
         # return if we have form validate errors
@@ -189,17 +198,19 @@ sub Run {
 
         # clean cache and database
         $TokenRepository->Delete(
-            AccountID => $GetParam{AccountName},
+            AccountName => $GetParam{AccountName},
         );
 
         $TokenProvider->EmptyCache(
-            AccountID => $GetParam{AccountName}
+            AccountName => $GetParam{AccountName}
         );
 
-        # actually persist the data in sysconf
+        # actually persist the data in DB
         my $Success = $FunctionalAccounts->SaveAccount(
-            AccountID => $GetParam{AccountName},
-            UserID    => $Self->{UserID},
+            Name          => $GetParam{AccountName},
+            UserID        => $Self->{UserID},
+            OIDCProfileID => $GetParam{ProviderID},
+            Scope         => $GetParam{InvokerScopes},
             %GetParam,
         );
 
@@ -216,7 +227,7 @@ sub Run {
             # for authorization_code redirect the browser
             my $AuthURL = $TokenProvider->GetAuthURL(
                 %GetParam,
-                AccountID   => $GetParam{AccountName},
+                AccountName => $GetParam{AccountName},
                 Prompt      => 1,
                 Subaction   => $Self->{Subaction},
                 RedirectURI => $ConfigObject->Get('HttpType')
@@ -234,7 +245,7 @@ sub Run {
                 );
             }
             else {
-                # oh boy, we cannot event generate a valid redirect url. invalid usser config
+                # oh boy, we cannot event generate a valid redirect url. invalid usser config!
                 $Output .= $LayoutObject->Notify(
                     Error    => $LanguageObject->Translate('Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD Configuration!'),
                     Priority => 'Error'
@@ -264,9 +275,9 @@ sub Run {
         else {
 
             # just fetch the token
-            my $TokenResult = $TokenProvider->Fetch( AccountID => $GetParam{AccountName} );
+            my $TokenResult = $TokenProvider->Fetch( AccountName => $GetParam{AccountName} );
 
-            # oh girl, fetch token failen, invalid user config
+            # oh girl, fetch token failed, invalid user config!
             if ( !$TokenResult->{Success} ) {
                 $Output .= $LayoutObject->Notify(
                     Error    => $TokenResult->{Error},
@@ -305,8 +316,8 @@ sub Run {
         my $AccountName = $ParamObject->GetParam( Param => 'AccountName' ) || '';
 
         my $Success = $FunctionalAccounts->DeleteAccount(
-            AccountID => $AccountName,
-            UserID    => $Self->{UserID},
+            Name   => $AccountName,
+            UserID => $Self->{UserID},
         );
 
         if ($Success) {
@@ -325,9 +336,9 @@ sub Run {
         # challenge token check for write action
         $LayoutObject->ChallengeTokenCheck();
 
-        my $AccountID = $ParamObject->GetParam( Param => 'AccountID' ) || '';
+        my $AccountName = $ParamObject->GetParam( Param => 'AccountName' ) || '';
 
-        my $Account = $FunctionalAccounts->GetAccount( AccountID => $AccountID );
+        my $Account = $FunctionalAccounts->GetAccount( Name => $AccountName );
 
         if ( IsHashRefWithData($Account) )
         {
@@ -339,7 +350,7 @@ sub Run {
             if ( $GrantType eq 'authorization_code' ) {
 
                 my $AuthURL = $TokenProvider->GetAuthURL(
-                    AccountID   => $AccountID,
+                    AccountName => $AccountName,
                     Prompt      => 1,
                     Subaction   => 'Refresh',
                     RedirectURI => $ConfigObject->Get('HttpType')
@@ -360,19 +371,19 @@ sub Run {
             # we can just fetch an new token right now
             else {
 
-                my $TokenResult = $TokenProvider->Fetch( AccountID => $AccountID );
+                my $TokenResult = $TokenProvider->Fetch( AccountName => $AccountName );
 
                 if ( $TokenResult->{Success} ) {
 
                     $Output .= $LayoutObject->Notify(
-                        Info     => $LanguageObject->Translate( "Token %s updated!", $AccountID ),
+                        Info     => $LanguageObject->Translate( "Token %s updated!", $AccountName ),
                         Priority => 'Success'
                     );
                 }
                 else {
 
                     $TokenRepository->Delete(
-                        AccountID => $AccountID,
+                        AccountName => $AccountName,
                     );
 
                     $Output .= $LayoutObject->Notify(
@@ -408,38 +419,38 @@ sub Run {
                 $LayoutObject->Footer();
         }
 
-        my $AccountID   = $CachedState->{AccountID};
+        my $AccountName = $CachedState->{AccountName};
         my $RedirectURL = $CachedState->{RedirectURL};
         my $Subaction   = $CachedState->{Subaction};
 
-        my $Account = $FunctionalAccounts->GetAccount( AccountID => $AccountID );
+        my $Account = $FunctionalAccounts->GetAccount( Name => $AccountName );
 
         if ( !IsHashRefWithData($Account) )
         {
             return join '',
                 $LayoutObject->Header( Title => 'Error' ),
                 $LayoutObject->Warning(
-                    Message => $LanguageObject->Translate( "Invalid Account %s for Token!", $AccountID )
+                    Message => $LanguageObject->Translate( "Invalid Account %s for Token!", $AccountName )
                 ),
                 $LayoutObject->Footer();
         }
 
         # validate the issuer
         my $ProviderIssuer = $FunctionalAccounts->GetIssuer(
-            AccountID => $AccountID,
+            Name => $AccountName,
         );
 
         if ( $Issuer ne $ProviderIssuer ) {
             return join '',
                 $LayoutObject->Header( Title => 'Error' ),
                 $LayoutObject->Warning(
-                    Message => $LanguageObject->Translate( "Invalid Issuer %s for Token %s!", $Issuer, $AccountID )
+                    Message => $LanguageObject->Translate( "Invalid Issuer %s for Token %s!", $Issuer, $AccountName )
                 ),
                 $LayoutObject->Footer();
         }
 
         my $TokenResult = $TokenProvider->FetchToken(
-            AccountID   => $AccountID,
+            AccountName => $AccountName,
             Code        => $Code,
             RedirectURL => $RedirectURL,
         );
@@ -447,32 +458,22 @@ sub Run {
         if ( $TokenResult->{Success} ) {
 
             $Output .= $LayoutObject->Notify(
-                Info     => $LanguageObject->Translate( "Token %s updated!", $AccountID ),
+                Info     => $LanguageObject->Translate( "Token %s updated!", $AccountName ),
                 Priority => 'Success'
             );
 
         }
         else {
+            $Self->_EditInvoker(
+                %$CachedState,
+                TokenError => $TokenResult->{Error},
+                Action     => 'EditInvoker',
+            );
 
-            if ( $Subaction eq 'Refresh' ) {
-                $Output .= $LayoutObject->Notify(
-                    Error    => $TokenResult->{Error},
-                    Priority => 'Error'
-                );
-            }
-            else {
-
-                $Self->_EditInvoker(
-                    %$CachedState,
-                    TokenError => '',              #$TokenResult->{Error}    ,
-                    Action     => 'EditInvoker',
-                );
-
-                $Output .= $LayoutObject->Notify(
-                    Info     => $LanguageObject->Translate("Error fetching initial Token for $AccountID!"),
-                    Priority => 'Error'
-                );
-            }
+            $Output .= $LayoutObject->Notify(
+                Info     => $LanguageObject->Translate("Error fetching initial Token for $AccountName!"),
+                Priority => 'Error'
+            );
         }
     }
 
@@ -482,15 +483,22 @@ sub Run {
 
     $LayoutObject->Block(
         Name => 'Overview',
-        Data => \%Param,
+        Data => {
+            HasProfiles => $HasProfiles,
+            %Param,
+        }
     );
 
-    $LayoutObject->Block( Name => 'ActionAddInvoker' );
+    if ($HasProfiles) {
+
+        $LayoutObject->Block( Name => 'ActionAddInvoker' );
+    }
 
     # Get List of refreshable Tokens from DB
     my $GenericInterfaceTokens = $TokenRepository->List();
 
-    # Build a lookup index
+    # Build a lookup index as we map Tokens to their 
+    # configured Functional Accounts
     my %GenericInterfaceTokenLookup = ();
 
     for my $GenericInterfaceToken (@$GenericInterfaceTokens) {
@@ -504,17 +512,14 @@ sub Run {
     # Get OAuth Invoker accounts from Config
     my $InvokerAccounts = $FunctionalAccounts->GetAccounts();
 
-    # Sort keys for display
-    my @OInvokerAccountKeys = keys %$InvokerAccounts;
-    @OInvokerAccountKeys = sort @OInvokerAccountKeys;
-
     OAUTHACCOUNT:
-    for my $AccountName (@OInvokerAccountKeys) {
+    for my $Account (@$InvokerAccounts) {
 
-        my $Account = $InvokerAccounts->{$AccountName};
+        my $AccountName = $Account->{Name};
+        my $AccountID   = $Account->{AccountID};
 
-        my $GrantType = $InvokerAccounts->{$AccountName}->{GrantType};
-        my $HasToken  = exists $GenericInterfaceTokenLookup{$AccountName};
+        my $GrantType = $Account->{GrantType};
+        my $HasToken  = exists $GenericInterfaceTokenLookup{$AccountID};
         my $CopyToken = $HasToken ? 'CopyToken' : '';
         if ( !$HasToken ) {
 
@@ -525,7 +530,7 @@ sub Run {
             }
         }
 
-        my $Token = $GenericInterfaceTokenLookup{$AccountName};
+        my $Token = $GenericInterfaceTokenLookup{$AccountID};
         my $Time  = "";
 
         if ( $Token->{ExpiresAt} ) {
@@ -547,15 +552,15 @@ sub Run {
         $HasToken = $HasToken ? 'Yes' : 'No';
 
         my $AccountData = {
-            AccountID => $AccountName,
-            Flow      => $GrantType,
-            TokenID   => $Token->{TokenID},
-            Token     => $Token->{Token},
-            HasToken  => $HasToken,
-            CopyToken => $CopyToken,
-            NeedToken => $GrantType eq 'authorization_code' && !$HasToken ? 'Error' : '',
-            ExpiresAt => $Time,
-            IsInvoker => 1,
+            AccountName => $AccountName,
+            Flow        => $GrantType,
+            TokenID     => $Token->{TokenID},
+            Token       => $Token->{Token},
+            HasToken    => $HasToken,
+            CopyToken   => $CopyToken,
+            NeedToken   => $GrantType eq 'authorization_code' && !$HasToken ? 'Error' : '',
+            ExpiresAt   => $Time,
+            IsInvoker   => 1,
         };
 
         push @AccountsForDisplay, $AccountData;
@@ -567,6 +572,7 @@ sub Run {
         Name => 'OverviewHeader',
         Data => {
             AllItemsCount => $ListSize,
+            HasProfiles   => $HasProfiles,
             %Errors,
         },
     );
@@ -608,16 +614,14 @@ sub Run {
 sub _EditInvoker {
     my ( $Self, %Param ) = @_;
 
-    my $LayoutObject = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
-
+    my $LayoutObject      = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
     my $OIDCConfiguration = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
     my $OIDCProfiles      = $OIDCConfiguration->GetOAuthProfiles();
 
     my %Profiles;
-    for my $ProfileName ( keys %$OIDCProfiles ) {
+    for my $Profile (@$OIDCProfiles) {
 
-        my $Profile = $OIDCProfiles->{$ProfileName};
-        $Profiles{$ProfileName} = $Profile->{ProviderSettings}->{Name};
+        $Profiles{ $Profile->{ProfileID} } = $Profile->{ProviderSettings}->{Name};
     }
 
     $LayoutObject->Block(
@@ -627,9 +631,9 @@ sub _EditInvoker {
 
     $Param{ProviderNames} = $LayoutObject->BuildSelection(
         Data          => \%Profiles,
-        Name          => 'ProviderName',
+        Name          => 'ProviderID',
         Class         => 'Modernize',
-        SelectedValue => $Param{ProviderName},
+        SelectedValue => $Param{ProviderID},
     );
 
     $Param{GrantTypes} = $LayoutObject->BuildSelection(

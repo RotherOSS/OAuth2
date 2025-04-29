@@ -1,6 +1,8 @@
 
 
+############################################################
 # test CreateSession with curl and a bearer token
+############################################################
 
 # 1) get token: 
 
@@ -13,3 +15,10 @@ curl -v -X POST 'http://localhost/otobo/nph-genericinterface.pl/Webservice/Test/
 # 3) get ticket: 
 
 curl -v -X GET 'http://localhost/otobo/nph-genericinterface.pl/Webservice/Test/GetTicket/1?SessionID=<SessionID from 2) above>' | jq
+
+
+############################################################
+# test SendArticle
+############################################################
+
+TOKEN=$(curl -s -k -d 'client_id=restapi' -d 'client_secret=lrGTGsWK5hU8w622Y5PHH3xIIVetMiIS' -d 'username=test1@example.com' -d 'password=test' -d 'grant_type=password' -d 'scope=openid' 'https://localhost:8443/realms/master/protocol/openid-connect/token' | jq -r '.access_token') && curl -v -X POST 'http://localhost/otobo/nph-genericinterface.pl/Webservice/Test/TicketUpdate' -H "Content-Type:application/json" -H "Authorization: Bearer $TOKEN" -d '{ "TicketID" : 1, "Article" : { "To" : "mike@knitbits.de", "Subject" : "I love Otobo", "Body" : "Hello From Otobo!", "ContentType" : "text/plain", "SendEmail" : 1  } }'

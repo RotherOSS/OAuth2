@@ -54,122 +54,129 @@ my $Authenticator     = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Authent
 # the OpenIDConfig we will use. This would normally come from SysConfig
 my $OpenIDConfig = OAuthProviderMock::GetTestOpenIDConfig();
 
-# make sure cache is clean for testing
-$OIDCConfiguration->GetProviderData(
-    OpenIDConfig => $OpenIDConfig,
-    NoCache      => 1,
-);
+eval {
 
-PrepareTestSysConfig();
+    # make sure cache is clean for testing
+    $OIDCConfiguration->GetProviderData(
+        OpenIDConfig => $OpenIDConfig,
+        NoCache      => 1,
+    );
 
-#################################################################
-# 1) Simple JWT
-#################################################################
+    PrepareTestSysConfig();
 
-my $Token = encode_jwt(
-    payload       => OAuthProviderMock::Payload(),
-    alg           => 'RS256',
-    key           => $OAuthProviderMock::PrivateKey,
-    extra_headers => { kid => $OAuthProviderMock::KidID },
-);
+    #################################################################
+    # 1) Simple JWT
+    #################################################################
 
-# now validate this token, which will talk to our fake authorization server
-# and fetch the public key to validate the signature
+    my $Token = encode_jwt(
+        payload       => OAuthProviderMock::Payload(),
+        alg           => 'RS256',
+        key           => $OAuthProviderMock::PrivateKey,
+        extra_headers => { kid => $OAuthProviderMock::KidID },
+    );
 
-my $Result = $Authenticator->Authenticate(
-    Token => $Token,
-);
+    # now validate this token, which will talk to our fake authorization server
+    # and fetch the public key to validate the signature
 
-ok( $Result->{Success}, 'Authenticated' );
+    my $Result = $Authenticator->Authenticate(
+        Token => $Token,
+    );
 
-#################################################################
-# 2) Simple JWT with dedicated scopes
-#################################################################
+    ok( $Result->{Success}, 'Authenticated' );
 
-PrepareTestSysConfig(
-    Scope => 'openid superduper',
-);
+    #################################################################
+    # 2) Simple JWT with dedicated scopes
+    #################################################################
 
-$Token = encode_jwt(
-    payload       => OAuthProviderMock::Payload( Scope => 'openid superduper' ),
-    alg           => 'RS256',
-    key           => $OAuthProviderMock::PrivateKey,
-    extra_headers => { kid => $OAuthProviderMock::KidID },
-);
+    PrepareTestSysConfig(
+        Scope => 'openid superduper',
+    );
 
-# now validate this token, which will talk to our fake authorization server
-# and fetch the public key to validate the signature
+    $Token = encode_jwt(
+        payload       => OAuthProviderMock::Payload( Scope => 'openid superduper' ),
+        alg           => 'RS256',
+        key           => $OAuthProviderMock::PrivateKey,
+        extra_headers => { kid => $OAuthProviderMock::KidID },
+    );
 
-$Result = $Authenticator->Authenticate(
-    Token => $Token,
-);
+    # now validate this token, which will talk to our fake authorization server
+    # and fetch the public key to validate the signature
 
-ok( $Result->{Success}, 'Authenticated' );
+    $Result = $Authenticator->Authenticate(
+        Token => $Token,
+    );
 
-#################################################################
-# 3) Simple JWT with dedicated audience check
-#################################################################
+    ok( $Result->{Success}, 'Authenticated' );
 
-PrepareTestSysConfig(
-    Audience => 'otobo',
-);
+    #################################################################
+    # 3) Simple JWT with dedicated audience check
+    #################################################################
 
-$Token = encode_jwt(
-    payload       => OAuthProviderMock::Payload( Audience => [ 'otobo', 'mammamia' ] ),
-    alg           => 'RS256',
-    key           => $OAuthProviderMock::PrivateKey,
-    extra_headers => { kid => $OAuthProviderMock::KidID },
-);
+    PrepareTestSysConfig(
+        Audience => 'otobo',
+    );
 
-# now validate this token, which will talk to our fake authorization server
-# and fetch the public key to validate the signature
+    $Token = encode_jwt(
+        payload       => OAuthProviderMock::Payload( Audience => [ 'otobo', 'mammamia' ] ),
+        alg           => 'RS256',
+        key           => $OAuthProviderMock::PrivateKey,
+        extra_headers => { kid => $OAuthProviderMock::KidID },
+    );
 
-$Result = $Authenticator->Authenticate(
-    Token => $Token,
-);
+    # now validate this token, which will talk to our fake authorization server
+    # and fetch the public key to validate the signature
 
-ok( $Result->{Success}, 'Authenticated' );
+    $Result = $Authenticator->Authenticate(
+        Token => $Token,
+    );
 
-#################################################################
-# 4) Simple JWT with Authorized Party check
-#################################################################
+    ok( $Result->{Success}, 'Authenticated' );
 
-PrepareTestSysConfig(
-    AuthorizedParty => 'otobo',
-);
+    #################################################################
+    # 4) Simple JWT with Authorized Party check
+    #################################################################
 
-$Token = encode_jwt(
-    payload       => OAuthProviderMock::Payload(),
-    alg           => 'RS256',
-    key           => $OAuthProviderMock::PrivateKey,
-    extra_headers => { kid => $OAuthProviderMock::KidID },
-);
+    PrepareTestSysConfig(
+        AuthorizedParty => 'otobo',
+    );
 
-# now validate this token, which will talk to our fake authorization server
-# and fetch the public key to validate the signature
+    $Token = encode_jwt(
+        payload       => OAuthProviderMock::Payload(),
+        alg           => 'RS256',
+        key           => $OAuthProviderMock::PrivateKey,
+        extra_headers => { kid => $OAuthProviderMock::KidID },
+    );
 
-$Result = $Authenticator->Authenticate(
-    Token => $Token,
-);
+    # now validate this token, which will talk to our fake authorization server
+    # and fetch the public key to validate the signature
 
-ok( $Result->{Success}, 'Authenticated' );
+    $Result = $Authenticator->Authenticate(
+        Token => $Token,
+    );
 
-#################################################################
-# assert on the spy log
-#################################################################
+    ok( $Result->{Success}, 'Authenticated' );
 
-OAuthProviderMock::AssertHttpCallLog(
-    Expected => [
-        {
-            "endpoint" => "openid",
-            "content"  => ""
-        },
-        {
-            "endpoint" => "jwks",
-            "content"  => ""
-        },
-    ]
-);
+    #################################################################
+    # assert on the spy log
+    #################################################################
+
+    OAuthProviderMock::AssertHttpCallLog(
+        Expected => [
+            {
+                "endpoint" => "openid",
+                "content"  => ""
+            },
+            {
+                "endpoint" => "jwks",
+                "content"  => ""
+            },
+        ]
+    );
+};
+if ($@) {
+    print STDERR "$@\n";
+    ok( 0, "should not throw." );
+}
 
 # over and out
 done_testing;
@@ -184,29 +191,99 @@ sub PrepareTestSysConfig {
 
     my %Param = @_;
 
+    #     # create profile
+
+    #     my $YAMLObject = $Kernel::OM->Get('Kernel::System::YAML');
+
+    #     my $Valid = 1;
+
+    #     $DBObject->Do( SQL => "DELETE FROM oidc_functional_accounts WHERE name = '_UnitTest1' ");
+    #     $DBObject->Do( SQL => "DELETE FROM oidc_profiles WHERE name = '" .$OpenIDConfig->{ProviderSettings}->{Name}. "'");
+
+    #     $DBObject->Do(
+    #         SQL => "INSERT INTO oidc_profiles
+    #                 ( name,client_id,client_Secret,redirect_uri,openid_config,
+    #                 ssl_options,misc,ttl,valid_id,
+    #                 create_time,create_by,change_time,change_by )
+    #                 VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
+    #         Bind => [
+    #             \$OpenIDConfig->{ProviderSettings}->{Name},
+    #             \$OpenIDConfig->{ClientSettings}->{ClientID},
+    #             \$OpenIDConfig->{ClientSettings}->{ClientSecret},
+    #             \$OpenIDConfig->{ClientSettings}->{RedirectURI} // '',
+    #             \$OpenIDConfig->{ProviderSettings}->{OpenIDConfiguration},
+    #             \$YAMLObject->Dump(Data => $OpenIDConfig->{ProviderSettings}->{SSLOptions} ),
+    #             \$YAMLObject->Dump(Data => $OpenIDConfig->{Misc} // {} ),
+    #             \$OpenIDConfig->{ProviderSettings}->{TTL},
+    #             \$Valid,
+    #         ],
+    #     );
+
+    #     $DBObject->Prepare(
+    #             SQL => "SELECT id FROM oidc_profiles WHERE name = ? ",
+    #             Bind  => [ \$OpenIDConfig->{ProviderSettings}->{Name} ],
+    # #            Limit => 1
+    #     );
+
+    #     my ($ID) = $DBObject->FetchrowArray();
+
+    #     # create functional account
+
+    #     my $GrantType         = $Param{GrantType} || 'authorization_code';
+    #     my $Scope             = $Param{Scope} || 'openid';
+    #     my $Resources         = $Param{Resources} || '';
+    #     my $ResourceParamName = $Param{ResourceParamName} || 'resource';
+    #     my $TokenType         = $Param{Token} || 'access_token';
+
+    # print STDERR "TOKENTYPE: $TokenType\n";
+
+    #     $DBObject->Do(
+    #         SQL => "INSERT INTO oidc_functional_accounts
+    #                 (name, oidc_profile_id,grant_type,scopes,resources,
+    #                 resource_param_name,username,passwd, token_type, valid_id,
+    #                 create_time,create_by,change_time,change_by )
+    #                 VALUES ( '_UnitTest1', ?, ?, ?, ?, ?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
+    #         Bind => [
+    #             \$ID,
+    #             \$GrantType,
+    #             \$Scope,
+    #             \$Resources,
+    #             \$ResourceParamName,
+    #             \$Param{Username},
+    #             \$Param{Password},
+    #             \$TokenType,
+    #             \$Valid,
+    #         ],
+    #     );
+
     # configure an OIDC Profile for the unit test
     $ConfigObject->Set(
-        Key   => 'OpenIDConnect::OICDProvider::_UnitTest1',
+        Key   => 'AuthModule::_UnitTest1::Config',
         Value => $OpenIDConfig,
     );
 
-    # configure a functional account that uses above config
     $ConfigObject->Set(
-        Key   => 'OpenIDConnect::UserMapping',
-        Value => {
-
-            'UnitTest1' => {
-
-                OpenIDConfig    => 'OpenIDConnect::OICDProvider::_UnitTest1',
-                Audience        => $Param{Audience}        || '',
-                Scope           => $Param{Scope}           || '',
-                UID             => $Param{UID}             || 'sub',
-                UserLogin       => $Param{UserLogin}       || '',
-                AuthorizedParty => $Param{AuthorizedParty} || '',
-
-            }
-        },
+        Key   => 'AuthModule2',
+        Value => 'Kernel::System::Auth::_UnitTest1',
     );
+
+    # # configure a functional account that uses above config
+    # $ConfigObject->Set(
+    #     Key   => 'OpenIDConnect::UserMapping',
+    #     Value => {
+
+    #         'UnitTest1' => {
+
+    #             OpenIDConfig    => 'OpenIDConnect::OICDProvider::_UnitTest1',
+    #             Audience        => $Param{Audience}        || '',
+    #             Scope           => $Param{Scope}           || '',
+    #             UID             => $Param{UID}             || 'sub',
+    #             UserLogin       => $Param{UserLogin}       || '',
+    #             AuthorizedParty => $Param{AuthorizedParty} || '',
+
+    #         }
+    #     },
+    # );
 
     return;
 }

@@ -40,6 +40,7 @@ our @ObjectDependencies = (
     'Kernel::System::Cache',
     'Kernel::System::JSON',
     'Kernel::System::Log',
+    'Kernel::System::OpenIDConnect::ProfileRepository',
 );
 
 =head1 NAME
@@ -84,7 +85,11 @@ sub new {
 =head2 GetOAuthProfiles()
 
 Returns a list of the Name of the OpenID Connect Profiles
-with the OAuth2 Provider and Client Settings.
+used for outgoing calls (Invoker) from database
+with their OAuth2 Provider and Client Settings.
+
+These 'Profiles' mirror the data structure used for the
+OpenIDConnect Auth Module.
 
     my $Profiles = $OIDCConfigurationObject->GetOAuthProfiles();
 
@@ -94,29 +99,33 @@ sub GetOAuthProfiles {
 
     my ( $Self, %Param ) = @_;
 
-    my $ConfigObject    = $Kernel::OM->Get('Kernel::Config');
-    my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
+    my $ProfileRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::ProfileRepository');
 
-    my %Profiles;
-    my $Default = $ConfigObject->Get('AuthModule::OpenIDConnect::Config');
-    if ($Default) {
+    return $ProfileRepository->GetList();
 
-        $Profiles{'AuthModule::OpenIDConnect::Config'} = $Default;
-    }
+    # my $ConfigObject    = $Kernel::OM->Get('Kernel::Config');
+    # my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
 
-    my $SearchResult = $ConfigObject->Get('OpenIDConnect::OICDProvider');
+    # my %Profiles;
+    # my $Default = $ConfigObject->Get('AuthModule::OpenIDConnect::Config');
+    # if ($Default) {
 
-    for my $SettingName ( keys %$SearchResult ) {
+    #     $Profiles{'AuthModule::OpenIDConnect::Config'} = $Default;
+    # }
 
-        my $Name    = "OpenIDConnect::OICDProvider###$SettingName";
-        my %Setting = $SysConfigObject->SettingGet( Name => $Name );
-        if ( $Setting{IsValid} ) {
+    # my $SearchResult = $ConfigObject->Get('OpenIDConnect::OICDProvider');
 
-            $Profiles{$Name} = $Setting{EffectiveValue};
-        }
-    }
+    # for my $SettingName ( keys %$SearchResult ) {
 
-    return \%Profiles;
+    #     my $Name    = "OpenIDConnect::OICDProvider###$SettingName";
+    #     my %Setting = $SysConfigObject->SettingGet( Name => $Name );
+    #     if ( $Setting{IsValid} ) {
+
+    #         $Profiles{$Name} = $Setting{EffectiveValue};
+    #     }
+    # }
+
+    # return \%Profiles;
 }
 
 =head2 GetProviderData()
@@ -125,7 +134,8 @@ Returns the OpenId dynamic Provider Data for a named OAuth Functional accounts c
 
     my $OpenIDProviderData = $OIDCConfigurationObject->GetProviderData(
         OpenIDConfig => {
-            ... from SysConfig
+            ... from Config.pm authmodule, eg 'AuthModule::OpenIDConnect::Config'
+            ... or for Invokers from the DB ProfileRepository->Get(...)
         },
     );
 
@@ -180,7 +190,8 @@ This can be used to validate an 'iss' request parameter for incoming OAuth autho
 
     my $Issuer = $OIDCConfigurationObject->GetIssuer(
         OpenIDConfig => {
-            ... from SysConfig
+            ... from Config.pm authmodule, eg 'AuthModule::OpenIDConnect::Config'
+            ... or for Invokers from the DB ProfileRepository->Get(...)
         },
     );
 
@@ -192,7 +203,7 @@ sub GetIssuer {
 
     my ( $Self, %Param ) = @_;
 
-    for my $Needed (qw/AccountCtx AccountID/) {
+    for my $Needed (qw/OpenIDConfig/) {
         if ( !$Param{$Needed} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
@@ -216,7 +227,8 @@ Returns the token endpoint for this OpenIDConfig.
 
     my $Issuer = $OIDCConfigurationObject->GetTokenEndpoint(
         OpenIDConfig => {
-            ... from SysConfig
+            ... from Config.pm authmodule, eg 'AuthModule::OpenIDConnect::Config'
+            ... or for Invokers from the DB ProfileRepository->Get(...)
         },
     );
 
@@ -248,7 +260,8 @@ Returns the authorization (aka login) endpoint for this OpenIDConfig.
 
     my $Issuer = $OIDCConfigurationObject->GetAuthorizationEndpoint(
         OpenIDConfig => {
-            ... from SysConfig
+            ... from Config.pm authmodule, eg 'AuthModule::OpenIDConnect::Config'
+            ... or for Invokers from the DB ProfileRepository->Get(...)
         },
     );
 

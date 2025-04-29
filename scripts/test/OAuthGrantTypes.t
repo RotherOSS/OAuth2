@@ -40,6 +40,10 @@ my $CurrentTime = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
 my $MainObject = $Kernel::OM->Get('Kernel::System::Main');
 $MainObject->Require("$Bin/OAuthProviderMock");
 
+my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
+$DBObject->Connect();
+$DBObject->BeginWork();
+
 #################################################################
 # main test
 #################################################################
@@ -54,12 +58,6 @@ my $OIDCConfiguration = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configu
 
 # the OpenIDConfig we will use. This would normally come from SysConfig
 my $OpenIDConfig = OAuthProviderMock::GetTestOpenIDConfig();
-
-# make sure cache is clean for testing
-$OIDCConfiguration->GetProviderData(
-    OpenIDConfig => $OpenIDConfig,
-    NoCache      => 1,
-);
 
 # Test Permutations
 my @TestScopes = (
@@ -129,6 +127,7 @@ my $TestCases = [
     {
         GrantType => 'authorization_code',
         Expected  => [
+
             {
                 "endpoint" => "openid",
                 "content"  => ""
@@ -145,99 +144,126 @@ my $TestCases = [
     },
 ];
 
-# iterate!
-foreach my $TestCase (@$TestCases) {
-    for my $Resources (@TestResources) {
-        for my $ResourceParamName (@TestResourceParamNames) {
-            for my $Scope (@TestScopes) {
-                for my $TokenType (@TokenType) {
+eval {
 
-                    Cleanup();
+    # make sure cache is clean for testing
+    $OIDCConfiguration->GetProviderData(
+        OpenIDConfig => $OpenIDConfig,
+        NoCache      => 1,
+    );
 
-                    # patch sysconfig just for this process / request
-                    PrepareTestSysConfig(
-                        %$TestCase,
-                        Scope             => $Scope,
-                        Resources         => $Resources,
-                        ResourceParamName => $ResourceParamName,
-                        Token             => $TokenType,
-                    );
+    # OAuthProviderMock::AssertHttpCallLog( Expected => [
 
-                    # use TokenProvider to fetch a Token for the configured unit test account
+    #         {
+    #             "endpoint" => "openid",
+    #             "content"  => ""
+    #         },
+    #         {
+    #             "endpoint" => "jwks",
+    #             "content"  => ""
+    #         },
+    # ]);
 
-                    if ( $TestCase->{GrantType} ne 'authorization_code' ) {
-                        my $Result = $TokenProvider->Fetch(
-                            AccountID => '_UnitTest1',
+    # iterate!
+    for my $TestCase (@$TestCases) {
+        for my $Resources (@TestResources) {
+            for my $ResourceParamName (@TestResourceParamNames) {
+                for my $Scope (@TestScopes) {
+                    for my $TokenType (@TokenType) {
+
+                        Cleanup();
+
+                        # patch sysconfig just for this process / request
+                        PrepareTestSysConfig(
+                            %$TestCase,
+                            Scope             => $Scope,
+                            Resources         => $Resources,
+                            ResourceParamName => $ResourceParamName,
+                            Token             => $TokenType,
                         );
-                        ok( $Result->{Success},                 "Result is Success." );
-                        ok( $Result->{Origin} eq 'fresh_token', "Origin is fresh_token." );
+
+                        # use TokenProvider to fetch a Token for the configured unit test account
+
+                        if ( $TestCase->{GrantType} ne 'authorization_code' ) {
+                            my $Result = $TokenProvider->Fetch(
+                                AccountName => '_UnitTest1',
+                            );
+                            ok( $Result->{Success},                 "Result is Success." );
+                            ok( $Result->{Origin} eq 'fresh_token', "Origin is fresh_token." );
+                        }
+                        else {
+
+                            # this is authorization_flow, initial token can only be fetched
+                            # with the 'code' received through the brwoser flow
+                            my $Result = $TokenProvider->FetchToken(
+                                AccountName => '_UnitTest1',
+                                Code        => 'COFFFEEBABECOFFEE',
+                                RedirectURL => 'http://somewhere.com/'
+                            );
+
+                            ok( $Result->{Success} );
+                            ok( $Result->{Origin} eq 'fresh_token' );
+
+                            # once we have it, it can be retreived from cache as usual
+                            $Result = $TokenProvider->Fetch(
+                                AccountName => '_UnitTest1',
+                            );
+                            ok( $Result->{Success},           "Result is Success." );
+                            ok( $Result->{Origin} eq 'cache', "Origin is cache" );
+                        }
+
+                        # patch up Expected Content dynamically with
+                        # scope, resource parameters, for various
+                        # 'resource parameter names'
+                        my $ExpectedContent = '';
+
+                        if ($Resources) {
+                            my $ResourceParam = $ResourceParamName || 'resource';
+                            $ExpectedContent .= "&$ResourceParam=" . uri_escape_utf8($Resources);
+                        }
+                        if ($Scope) {
+                            $ExpectedContent .= "&scope=" . uri_escape_utf8($Scope);
+                        }
+                        else {
+                            $ExpectedContent .= "&scope=openid";
+                        }
+
+                        # impl actually produces '+* instead of '%20', fix that
+                        $ExpectedContent =~ s/%20/+/g;
+
+                        # build an Expectation array from the TestCase template
+                        # for this permutation
+                        my @Expected;
+                        for my $Expectation ( $TestCase->{Expected}->@* ) {
+                            push @Expected, {
+                                'content' => $Expectation->{endpoint} eq 'token'
+                                ?
+                                    $Expectation->{content} . $ExpectedContent
+                                :
+                                    $Expectation->{content},
+                                'endpoint' => $Expectation->{endpoint},
+                                'operator' => $Expectation->{operator},
+                            };
+                        }
+
+                        OAuthProviderMock::AssertHttpCallLog( Expected => \@Expected );
                     }
-                    else {
-
-                        # this is authorization_flow, initial token can only be fetched
-                        # with the 'code' received through the brwoser flow
-                        my $Result = $TokenProvider->FetchToken(
-                            AccountID   => '_UnitTest1',
-                            Code        => 'COFFFEEBABECOFFEE',
-                            RedirectURL => 'http://somewhere.com/'
-                        );
-
-                        ok( $Result->{Success} );
-                        ok( $Result->{Origin} eq 'fresh_token' );
-
-                        # once we have it, it can be retreived from cache as usual
-                        $Result = $TokenProvider->Fetch(
-                            AccountID => '_UnitTest1',
-                        );
-                        ok( $Result->{Success},           "Result is Success." );
-                        ok( $Result->{Origin} eq 'cache', "Origin is cache" );
-                    }
-
-                    # patch up Expected Content dynamically with
-                    # scope, resource parameters, for various
-                    # 'resource parameter names'
-                    my $ExpectedContent = '';
-
-                    if ($Resources) {
-                        my $ResourceParam = $ResourceParamName || 'resource';
-                        $ExpectedContent .= "&$ResourceParam=" . uri_escape_utf8($Resources);
-                    }
-                    if ($Scope) {
-                        $ExpectedContent .= "&scope=" . uri_escape_utf8($Scope);
-                    }
-                    else {
-                        $ExpectedContent .= "&scope=openid";
-                    }
-
-                    # impl actually produces '+* instead of '%20', fix that
-                    $ExpectedContent =~ s/%20/+/g;
-
-                    # build an Expectation array from the TestCase template
-                    # for this permutation
-                    my @Expected;
-                    for my $Expectation ( $TestCase->{Expected}->@* ) {
-                        push @Expected, {
-                            'content' => $Expectation->{endpoint} eq 'token'
-                            ?
-                                $Expectation->{content} . $ExpectedContent
-                            :
-                                $Expectation->{content},
-                            'endpoint' => $Expectation->{endpoint},
-                            'operator' => $Expectation->{operator},
-                        };
-                    }
-
-                    OAuthProviderMock::AssertHttpCallLog( Expected => \@Expected );
                 }
             }
         }
     }
+};
+if ($@) {
+    print STDERR $@ . "\n";
+    ok( 0, "should not throw." );
 }
 
 # over and out
 done_testing;
 
 Cleanup();
+
+$DBObject->Rollback();
 
 # tear down fake server
 kill( 'TERM', $OAuthProviderMock::ChildPID );
@@ -249,29 +275,107 @@ sub PrepareTestSysConfig {
 
     my %Param = @_;
 
-    # configure an OIDC Profile for the unit test
-    $ConfigObject->Set(
-        Key   => 'OpenIDConnect::OICDProvider::_UnitTest1',
-        Value => $OpenIDConfig,
+    # create profile
+
+    my $YAMLObject = $Kernel::OM->Get('Kernel::System::YAML');
+
+    my $Valid = 1;
+
+    $DBObject->Prepare(
+        SQL => "SELECT id FROM oidc_functional_accounts WHERE name = '_UnitTest1' ",
+
+        #            Bind  => [ \$OpenIDConfig->{ProviderSettings}->{Name} ],
+        #            Limit => 1
     );
 
-    # configure a functional account that uses above config
-    $ConfigObject->Set(
-        Key   => 'OpenIDConnect::FunctionalAccounts',
-        Value => {
-            '_UnitTest1' => {
+    my ($ID) = $DBObject->FetchrowArray();
 
-                OpenIDConfig      => 'OpenIDConnect::OICDProvider::_UnitTest1',
-                GrantType         => $Param{GrantType} || 'client_credentials',
-                Scope             => $Param{Scope}     || 'openid',
-                Resources         => $Param{Resources},
-                ResourceParamName => $Param{ResourceParamName} || 'resource',
-                Token             => $Param{Token}             || 'access_token',
-                Username          => $Param{Username},
-                Password          => $Param{Password},
-            }
-        },
+    if ($ID) {
+        $DBObject->Do( SQL => "DELETE FROM oauth2_token_storage WHERE oidc_functional_account_id = " . $ID );
+    }
+    $DBObject->Do( SQL => "DELETE FROM oidc_functional_accounts WHERE name = '_UnitTest1' " );
+    $DBObject->Do( SQL => "DELETE FROM oidc_profiles WHERE name = '" . $OpenIDConfig->{ProviderSettings}->{Name} . "'" );
+
+    $DBObject->Do(
+        SQL => "INSERT INTO oidc_profiles
+                ( name,client_id,client_Secret,redirect_uri,openid_config,
+                ssl_options,misc,ttl,valid_id,
+                create_time,create_by,change_time,change_by )
+                VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
+        Bind => [
+            \$OpenIDConfig->{ProviderSettings}->{Name},
+            \$OpenIDConfig->{ClientSettings}->{ClientID},
+            \$OpenIDConfig->{ClientSettings}->{ClientSecret},
+            \$OpenIDConfig->{ClientSettings}->{RedirectURI} // '',
+            \$OpenIDConfig->{ProviderSettings}->{OpenIDConfiguration},
+            \$YAMLObject->Dump( Data => $OpenIDConfig->{ProviderSettings}->{SSLOptions} ),
+            \$YAMLObject->Dump( Data => $OpenIDConfig->{Misc} // {} ),
+            \$OpenIDConfig->{ProviderSettings}->{TTL},
+            \$Valid,
+        ],
     );
+
+    $DBObject->Prepare(
+        SQL  => "SELECT id FROM oidc_profiles WHERE name = ? ",
+        Bind => [ \$OpenIDConfig->{ProviderSettings}->{Name} ],
+
+        #            Limit => 1
+    );
+
+    ($ID) = $DBObject->FetchrowArray();
+
+    # create functional account
+
+    my $GrantType         = $Param{GrantType}         || 'client_credentials';
+    my $Scope             = $Param{Scope}             || 'openid';
+    my $Resources         = $Param{Resources}         || '';
+    my $ResourceParamName = $Param{ResourceParamName} || 'resource';
+    my $TokenType         = $Param{Token}             || 'access_token';
+
+    print STDERR "TOKENTYPE: $TokenType\n";
+
+    $DBObject->Do(
+        SQL => "INSERT INTO oidc_functional_accounts
+                (name, oidc_profile_id,grant_type,scopes,resources,
+                resource_param_name,username,passwd, token_type, valid_id,
+                create_time,create_by,change_time,change_by )
+                VALUES ( '_UnitTest1', ?, ?, ?, ?, ?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
+        Bind => [
+            \$ID,
+            \$GrantType,
+            \$Scope,
+            \$Resources,
+            \$ResourceParamName,
+            \$Param{Username},
+            \$Param{Password},
+            \$TokenType,
+            \$Valid,
+        ],
+    );
+
+    # # configure an OIDC Profile for the unit test
+    # $ConfigObject->Set(
+    #     Key   => 'OpenIDConnect::OICDProvider::_UnitTest1',
+    #     Value => $OpenIDConfig,
+    # );
+
+    # # configure a functional account that uses above config
+    # $ConfigObject->Set(
+    #     Key   => 'OpenIDConnect::FunctionalAccounts',
+    #     Value => {
+    #         '_UnitTest1' => {
+
+    #             OpenIDConfig      => 'OpenIDConnect::OICDProvider::_UnitTest1',
+    #             GrantType         => $Param{GrantType} || 'client_credentials',
+    #             Scope             => $Param{Scope}     || 'openid',
+    #             Resources         => $Param{Resources},
+    #             ResourceParamName => $Param{ResourceParamName} || 'resource',
+    #             Token             => $Param{Token}             || 'access_token',
+    #             Username          => $Param{Username},
+    #             Password          => $Param{Password},
+    #         }
+    #     },
+    # );
 
     return;
 }
@@ -280,7 +384,7 @@ sub Cleanup {
 
     # cleanup cache and db
     $TokenRepository->Delete(
-        AccountID => '_UnitTest1',
+        AccountName => '_UnitTest1',
     );
 
     CleanupCache();
@@ -291,7 +395,7 @@ sub Cleanup {
 sub CleanupCache {
 
     $TokenProvider->EmptyCache(
-        AccountID => '_UnitTest1',
+        AccountName => '_UnitTest1',
     );
 
     return;

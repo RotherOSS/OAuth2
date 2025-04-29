@@ -2025,7 +2025,7 @@ sub _TicketUpdate {
             # Rother OSS / OAuth2
             #           $From = $UserData{UserFullname};
 
-            if ( $Article->{SendMail} ) {
+            if ( $Article->{SendEmail} ) {
 
                 if ( $Article->{From} ) {
                     $From = $Article->{From};
@@ -2111,7 +2111,7 @@ sub _TicketUpdate {
 
         # Create article and optionally send email.
 
-        my $ShallSendEmail = $Article->{SendMail} &&
+        my $ShallSendEmail = $Article->{SendEmail} &&
             $Article->{SenderType} eq 'agent' &&
             $Article->{CommunicationChannel} eq 'Email';
 

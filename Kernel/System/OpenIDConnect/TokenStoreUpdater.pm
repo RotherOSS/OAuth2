@@ -21,10 +21,13 @@ use warnings;
 use Kernel::System::VariableCheck qw(:all);
 
 our @ObjectDependencies = (
+    'Kernel::Config',
     'Kernel::System::Main',
     'Kernel::System::DateTime',
     'Kernel::System::OpenIDConnect::TokenProvider',
     'Kernel::System::OpenIDConnect::TokenRepository',
+    'Kernel::System::OpenIDConnect::FunctionalAccountRepository',
+
 );
 
 =head1 NAME
@@ -61,7 +64,7 @@ sub Run {
 
     my $MainObject   = $Kernel::OM->Get('Kernel::System::Main');
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
-    my $LogDir       = $ConfigObject->Get('Home').'/var/log/';
+    my $LogDir       = $ConfigObject->Get('Home') . '/var/log/';
 
     my $Log = "TokenStorageUpdater has been called with:\n";
 
@@ -108,8 +111,9 @@ sub RenewTokens {
 
     my $Interval = $Param{Interval};
 
-    my $TokenProvider   = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
-    my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
+    my $TokenProvider               = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
+    my $TokenRepository             = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
+    my $FunctionalAccountRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccountRepository');
 
     my $DateTimeObject = $Kernel::OM->Create(
         'Kernel::System::DateTime',
@@ -128,9 +132,11 @@ sub RenewTokens {
     TOKEN:
     for my $Token (@$Tokens) {
 
+        my $Account = $FunctionalAccountRepository->GetByID( AccountID => $Token->{AccountID} );
+
         my $Result = $TokenProvider->FetchToken(
 
-            AccountID    => $Token->{AccountID},
+            AccountName  => $Account->{Name},
             RefreshToken => $Token->{Token},
         );
 
