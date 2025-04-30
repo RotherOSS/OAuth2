@@ -101,7 +101,7 @@ sub Authenticate {
         next COUNT if !$GenericModule;
 
         $GenericModule =~ s/^Kernel::System::Auth:://;
-        my $OpenIDConfig = $ConfigObject->Get( "AuthModule::" . $GenericModule . '::Config' );
+        my $OpenIDConfig = $ConfigObject->Get( "AuthModule::" . $GenericModule . "::Config$Count" );
 
         next COUNT if !IsHashRefWithData($OpenIDConfig);
 
@@ -120,7 +120,8 @@ sub Authenticate {
         }
 
         # lookup the UserLogin from the Token data
-        my $IDKey     = $ConfigObject->Get( "AuthModule::" . $GenericModule . "::UID" ) || 'sub';
+        my $IDKey     = $ConfigObject->Get( "AuthModule::" . $GenericModule . "::UID$Count" ) || 'sub';
+
         my $UserLogin = $TokenResult->{TokenData}->{$IDKey};
 
         if ( !IsStringWithData($UserLogin) ) {
@@ -128,7 +129,7 @@ sub Authenticate {
         }
 
         # see if the user login matches the expected login
-        my $WebserviceRestrictions = $ConfigObject->Get( $GenericModule . '::Webservice::Restrictions' ) || {};
+        my $WebserviceRestrictions = $ConfigObject->Get( $GenericModule . '::Webservice::Restrictions'.$Count ) || {};
 
         if ( IsHashRefWithData($WebserviceRestrictions) && $WebserviceRestrictions->{UserLogin} ) {
             if ( $WebserviceRestrictions->{UserLogin} ne $UserLogin ) {

@@ -258,7 +258,7 @@ sub PrepareTestSysConfig {
 
     # configure an OIDC Profile for the unit test
     $ConfigObject->Set(
-        Key   => 'AuthModule::_UnitTest1::Config',
+        Key   => 'AuthModule::_UnitTest1::Config2',
         Value => $OpenIDConfig,
     );
 
