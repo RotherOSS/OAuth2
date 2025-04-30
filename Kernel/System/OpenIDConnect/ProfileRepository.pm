@@ -479,11 +479,11 @@ sub DeleteProfile {
     my $Name = $Param{Name};
 
     $DBObject->Prepare(
-        SQL => "SELECT count(op.id)
-                 FROM oidc_profiles op
-                 LEFT JOIN oidc_functional_accounts ofa
-                 ON op.id = ofa.oidc_profile_id
-                 WHERE op.name = ? ",
+        SQL => "SELECT COUNT(op.id) 
+                FROM oidc_functional_accounts ofa 
+                LEFT JOIN oidc_profiles op 
+                ON op.id = ofa.oidc_profile_id 
+                WHERE op.name = ? ",
         Bind => [ \$Name ],
     );
 
