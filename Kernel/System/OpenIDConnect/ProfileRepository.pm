@@ -456,7 +456,7 @@ sub UpdateProfile {
     This will error out early if there are any references to this Profile
     from Functional Accounts. The Profile will *not* be deleted in that case.
 
-    my $Success = $ProfileRepositoryObject->Delete( Name => $Name );
+    my $Success = $ProfileRepositoryObject->DeleteProfile( Name => $Name );
 
 =cut
 

@@ -120,7 +120,7 @@ sub Authenticate {
         }
 
         # lookup the UserLogin from the Token data
-        my $IDKey     = $ConfigObject->Get( "AuthModule::" . $GenericModule . "::UID" ) || 'sub';
+        my $IDKey = $ConfigObject->Get( "AuthModule::" . $GenericModule . "::UID" ) || 'sub';
 
         my $UserLogin = $TokenResult->{TokenData}->{$IDKey};
 
