@@ -43,7 +43,6 @@ $DBObject->Connect();
 
 my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
 my $TokenProvider     = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
-my $TokenRepository   = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 my $OIDCConfiguration = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
 
 $DBObject->BeginWork();

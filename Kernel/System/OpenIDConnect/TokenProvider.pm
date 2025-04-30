@@ -151,7 +151,7 @@ sub Fetch {
     # 2) try fetch from DB
     my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 
-    my $TokenData = $TokenRepository->Get(
+    my $TokenData = $TokenRepository->GetToken(
         AccountName => $AccountName,
         TokenType   => $TokenType,
     );
@@ -167,7 +167,7 @@ sub Fetch {
 
     # 3) try refresh_token, if any
 
-    my $RefreshToken = $TokenRepository->Get(
+    my $RefreshToken = $TokenRepository->GetToken(
         AccountName => $AccountName,
         TokenType   => 'refresh_token',
     );
@@ -743,7 +743,7 @@ sub _ProcessNewToken {
 
     my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 
-    my $Success = $TokenRepository->Save(
+    my $Success = $TokenRepository->SaveToken(
         AccountName => $AccountName,
         AccountID   => $Account->{AccountID},
         TokenType   => $TokenType,

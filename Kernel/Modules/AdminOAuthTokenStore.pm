@@ -197,7 +197,7 @@ sub Run {
         # do save config
 
         # clean cache and database
-        $TokenRepository->Delete(
+        $TokenRepository->DeleteToken(
             AccountName => $GetParam{AccountName},
         );
 
@@ -382,7 +382,7 @@ sub Run {
                 }
                 else {
 
-                    $TokenRepository->Delete(
+                    $TokenRepository->DeleteToken(
                         AccountName => $AccountName,
                     );
 
@@ -495,7 +495,7 @@ sub Run {
     }
 
     # Get List of refreshable Tokens from DB
-    my $GenericInterfaceTokens = $TokenRepository->List();
+    my $GenericInterfaceTokens = $TokenRepository->GetList();
 
     # Build a lookup index as we map Tokens to their
     # configured Functional Accounts

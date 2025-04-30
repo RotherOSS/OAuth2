@@ -135,11 +135,11 @@ sub GetList {
     return \@Result;
 }
 
-=head2 Get()
+=head2 GetAccount()
 
 Returns a specific OIDC Functional Account by name. Usage:
 
-    my $Profile = $FunctionalAccountRepositoryObject->Get( Name => '<FunctionalAccountName>' );
+    my $Profile = $FunctionalAccountRepositoryObject->GetAccount( Name => '<FunctionalAccountName>' );
 
     where
 
@@ -157,7 +157,7 @@ Returns a specific OIDC Functional Account by name. Usage:
 
 =cut
 
-sub Get {
+sub GetAccount {
 
     my ( $Self, %Param ) = @_;
 
@@ -338,13 +338,13 @@ sub Exists {
     return;
 }
 
-=head2 Add()
+=head2 AddAccount()
 
     Insert a new Functional Account into DB.
 
     Note you need to give the OIDCProfileID as parameter.
 
-    my $Success = $FunctionalAccountRepositoryObject->Add(
+    my $Success = $FunctionalAccountRepositoryObject->AddAccount(
 
         Name => $Name,
         OIDCProfileID,
@@ -361,7 +361,7 @@ sub Exists {
 
 =cut
 
-sub Add {
+sub AddAccount {
     my ( $Self, %Param ) = @_;
 
     my $DBObject   = $Kernel::OM->Get('Kernel::System::DB');
@@ -422,13 +422,13 @@ sub Add {
     return $InsertSuccess;
 }
 
-=head2 Update()
+=head2 UpdateAccount()
 
     Update a Functional Account in the DB.
 
     Note you need to give the OIDCProfileID as parameter.
 
-    my $Success = $FunctionalAccountRepositoryObject->Update(
+    my $Success = $FunctionalAccountRepositoryObject->UpdateAccount(
 
         Name => $Name,
         OIDCProfileID,
@@ -445,7 +445,7 @@ sub Add {
 
 =cut
 
-sub Update {
+sub UpdateAccount {
     my ( $Self, %Param ) = @_;
 
     my $DBObject   = $Kernel::OM->Get('Kernel::System::DB');
@@ -503,15 +503,15 @@ sub Update {
     return $UpdateSuccess;
 }
 
-=head2 Delete()
+=head2 DeleteAccount()
 
     Delete a Functional Account from DB.
 
-    my $Success = $FunctionalAccountRepositoryObject->Delete( Name => $Name );
+    my $Success = $FunctionalAccountRepositoryObject->DeleteAccount( Name => $Name );
 
 =cut
 
-sub Delete {
+sub DeleteAccount {
     my ( $Self, %Param ) = @_;
 
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');

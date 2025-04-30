@@ -111,7 +111,7 @@ Returns the OpenId dynamic Provider Data for a named OAuth Functional accounts c
     my $OpenIDProviderData = $OIDCConfigurationObject->GetProviderData(
         OpenIDConfig => {
             ... from Config.pm authmodule, eg 'AuthModule::OpenIDConnect::Config'
-            ... or for Invokers from the DB ProfileRepository->Get(...)
+            ... or for Invokers from the DB ProfileRepository->GetProfile(...)
         },
     );
 
@@ -167,7 +167,7 @@ This can be used to validate an 'iss' request parameter for incoming OAuth autho
     my $Issuer = $OIDCConfigurationObject->GetIssuer(
         OpenIDConfig => {
             ... from Config.pm authmodule, eg 'AuthModule::OpenIDConnect::Config'
-            ... or for Invokers from the DB ProfileRepository->Get(...)
+            ... or for Invokers from the DB ProfileRepository->GetProfile(...)
         },
     );
 
@@ -204,7 +204,7 @@ Returns the token endpoint for this OpenIDConfig.
     my $Issuer = $OIDCConfigurationObject->GetTokenEndpoint(
         OpenIDConfig => {
             ... from Config.pm authmodule, eg 'AuthModule::OpenIDConnect::Config'
-            ... or for Invokers from the DB ProfileRepository->Get(...)
+            ... or for Invokers from the DB ProfileRepository->GetProfile(...)
         },
     );
 
@@ -237,7 +237,7 @@ Returns the authorization (aka login) endpoint for this OpenIDConfig.
     my $Issuer = $OIDCConfigurationObject->GetAuthorizationEndpoint(
         OpenIDConfig => {
             ... from Config.pm authmodule, eg 'AuthModule::OpenIDConnect::Config'
-            ... or for Invokers from the DB ProfileRepository->Get(...)
+            ... or for Invokers from the DB ProfileRepository->GetProfile(...)
         },
     );
 

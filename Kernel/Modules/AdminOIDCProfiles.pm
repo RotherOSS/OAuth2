@@ -80,7 +80,7 @@ sub Run {
         my %GetParam = ();
 
         $GetParam{ProfileName} = $ParamObject->GetParam( Param => 'ProfileName' );
-        my $Profile = $ProfileRepository->Get( Name => $GetParam{ProfileName} );
+        my $Profile = $ProfileRepository->GetProfile( Name => $GetParam{ProfileName} );
 
         $GetParam{ValidID}             = $Profile->{Valid};
         $GetParam{ClientID}            = $Profile->{ClientSettings}->{ClientID};
@@ -233,11 +233,11 @@ sub Run {
         my $Success;
         if ( $Self->{Subaction} eq 'AddProfileAction' ) {
 
-            $Success = $ProfileRepository->Add(%$Profile);
+            $Success = $ProfileRepository->AddProfile(%$Profile);
         }
         else {
 
-            $Success = $ProfileRepository->Update(%$Profile);
+            $Success = $ProfileRepository->UpdateProfile(%$Profile);
         }
 
         if ( !$Success ) {
@@ -258,7 +258,7 @@ sub Run {
 
         my $ProfileName = $ParamObject->GetParam( Param => 'ProfileName' ) || '';
 
-        my $Success = $ProfileRepository->Delete( Name => $ProfileName );
+        my $Success = $ProfileRepository->DeleteProfile( Name => $ProfileName );
 
         if ($Success) {
             $Output .= $LayoutObject->Notify(

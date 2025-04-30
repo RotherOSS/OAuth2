@@ -119,7 +119,7 @@ eval {
 
     # 3) clean cache and DB, now using refresh_token
     CleanupCache();
-    my $DeleteSuccess = $TokenRepository->Delete(
+    my $DeleteSuccess = $TokenRepository->DeleteToken(
         AccountName => '_UnitTest1',
         TokenType   => 'access_token',
     );
@@ -324,7 +324,7 @@ sub PrepareTestSysConfig {
 sub Cleanup {
 
     # cleanup cache and db
-    $TokenRepository->Delete(
+    $TokenRepository->DeleteToken(
         AccountName => '_UnitTest1',
     );
 

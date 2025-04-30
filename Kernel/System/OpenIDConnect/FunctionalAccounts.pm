@@ -128,7 +128,7 @@ sub GetAccounts {
     for my $Account (@$Accounts) {
         if ( ( !defined $Valid ) || ( $Account->{Valid} == $Valid ) ) {
 
-            my $OIDCProfile = $ProfileRepository->Get( ProfileID => $Account->{OIDCProfileID} );
+            my $OIDCProfile = $ProfileRepository->GetProfile( ProfileID => $Account->{OIDCProfileID} );
 
             $Account->{OIDCProfile} = $OIDCProfile;
 
@@ -197,11 +197,11 @@ sub GetAccount {
 
     my $FunctionalAccountRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccountRepository');
 
-    my $Account = $FunctionalAccountRepository->Get( Name => $Param{Name} );
+    my $Account = $FunctionalAccountRepository->GetAccount( Name => $Param{Name} );
     return if !$Account;
 
     my $ProfileRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::ProfileRepository');
-    my $OIDCProfile       = $ProfileRepository->Get( ProfileID => $Account->{OIDCProfileID} );
+    my $OIDCProfile       = $ProfileRepository->GetProfile( ProfileID => $Account->{OIDCProfileID} );
 
     $Account->{OIDCProfile} = $OIDCProfile;
     return $Account;
@@ -249,10 +249,10 @@ sub SaveAccount {
     my $Exists = $FunctionalAccountRepository->Exists( Name => $Name );
     if ($Exists) {
 
-        return $FunctionalAccountRepository->Update(%Param);
+        return $FunctionalAccountRepository->UpdateAccount(%Param);
     }
     else {
-        return $FunctionalAccountRepository->Add(%Param);
+        return $FunctionalAccountRepository->AddAccount(%Param);
     }
 }
 
@@ -287,13 +287,13 @@ sub DeleteAccount {
 
     my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 
-    $TokenRepository->Delete(
+    $TokenRepository->DeleteToken(
         AccountName => $Name,
     );
 
     my $FunctionalAccountRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccountRepository');
 
-    return $FunctionalAccountRepository->Delete( Name => $Name );
+    return $FunctionalAccountRepository->DeleteAccount( Name => $Name );
 }
 
 =head2 GetProviderData()

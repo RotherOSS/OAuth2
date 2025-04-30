@@ -62,11 +62,11 @@ sub new {
     return $Self;
 }
 
-=head2 Save()
+=head2 SaveToken()
 
     Persist a Token in DB
 
-    my $Success = $TokenRepositoryObject->Save(
+    my $Success = $TokenRepositoryObject->SaveToken(
         AccountID  => <FunctionalAccountID>,    # FunctionalAccount id
         TokenType  => 'refresh',                # access_token|id_token|refresh_token
         Token      => '<Token>',                # as received from token endpoint
@@ -75,7 +75,7 @@ sub new {
 
 =cut
 
-sub Save {
+sub SaveToken {
     my ( $Self, %Param ) = @_;
 
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
@@ -95,7 +95,7 @@ sub Save {
         return;
     }
 
-    $Self->Delete(%Param);
+    $Self->DeleteToken(%Param);
 
     my $AccountID = $Param{AccountID};
     my $TokenType = $Param{TokenType};
@@ -110,31 +110,31 @@ sub Save {
     return $InsertSuccess;
 }
 
-=head2 Delete()
+=head2 DeleteToken()
 
     Delete a Token record in DB.
 
-    my $Success = $TokenRepositoryObject->Delete(
+    my $Success = $TokenRepositoryObject->DeleteToken(
         AccountID   => <FunctionalAccountID>,
         TokenType   => 'refresh',              # optional
     );
 
     or
 
-    my $Success = $TokenRepositoryObject->Delete(
+    my $Success = $TokenRepositoryObject->DeleteToken(
         AccountName => <FunctionalAccountID>,
         TokenType   => 'refresh',              # optional
     );
 
     or
 
-    my $Success = $TokenRepositoryObject->Delete(
+    my $Success = $TokenRepositoryObject->DeleteToken(
         TokenID => <id>
     );
 
 =cut
 
-sub Delete {
+sub DeleteToken {
     my ( $Self, %Param ) = @_;
 
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
@@ -252,25 +252,25 @@ sub Cleanup {
     return $DeleteSuccess;
 }
 
-=head2 Get()
+=head2 GetToken()
 
     Retrive a Token record from DB.
 
-    my $TokenData = $TokenRepositoryObject->Get(
+    my $TokenData = $TokenRepositoryObject->GetToken(
         AccountID  => <FunctionalAccountID>,
         TokenType  => 'refresh',
     );
 
     or
 
-    my $TokenData = $TokenRepositoryObject->Get(
+    my $TokenData = $TokenRepositoryObject->GetToken(
         AccountName  => <FunctionalAccountID>,
         TokenType    => 'refresh',
     );
 
     or
 
-    my $TokenData = $TokenRepositoryObject->Get(
+    my $TokenData = $TokenRepositoryObject->GetToken(
         TokenID => <id>
     );
 
@@ -286,7 +286,7 @@ sub Cleanup {
 
 =cut
 
-sub Get {
+sub GetToken {
     my ( $Self, %Param ) = @_;
 
     $Self->Cleanup();
@@ -370,17 +370,17 @@ sub Get {
                 ExpiresAt => $ExpiresAt,
             };
         }
-        $Self->Delete(%Param);
+        $Self->DeleteToken(%Param);
     }
 
     return;
 }
 
-=head2 List()
+=head2 GetList()
 
     Get a list of Tokens for Display.
 
-    my $Tokens = $TokenRepositoryObject->List(
+    my $Tokens = $TokenRepositoryObject->GetList(
         ExpiresAfter => Unix epoch timestamp, # optional
         TokenType    => 'refresh_token',      # optional, defaults to 'refresh_token'
     );
@@ -400,7 +400,7 @@ sub Get {
 
 =cut
 
-sub List {
+sub GetList {
 
     my ( $Self, %Param ) = @_;
 

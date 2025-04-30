@@ -381,7 +381,7 @@ sub PrepareTestSysConfig {
 sub Cleanup {
 
     # cleanup cache and db
-    $TokenRepository->Delete(
+    $TokenRepository->DeleteToken(
         AccountName => '_UnitTest1',
     );
 

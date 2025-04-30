@@ -146,23 +146,21 @@ sub GetList {
     return \@Result;
 }
 
-=head2 Get()
+=head2 GetProfile()
 
     Return an OIDC Profile from DB ny Name or ProfileID
 
-    my $Profile = $ProfileRepositoryObject->Get( Name => $Name );
+    my $Profile = $ProfileRepositoryObject->GetProfile( Name => $Name );
 
     or
 
-    my $Profile = $ProfileRepositoryObject->Get( ProfileID => $ID );
+    my $Profile = $ProfileRepositoryObject->GetProfile( ProfileID => $ID );
 
     see GetList() above for response formant (single entity).
 
 =cut
 
-# by Name or ProfileID
-
-sub Get {
+sub GetProfile {
 
     my ( $Self, %Param ) = @_;
 
@@ -278,11 +276,11 @@ sub Exists {
     return;
 }
 
-=head2 Add()
+=head2 AddProfile()
 
     Insert a new OIDC Profile record into DB.
 
-    my $Success = $ProfileRepositoryObject->Add(
+    my $Success = $ProfileRepositoryObject->AddProfile(
 
         Name => '<Unique Name>',
         ClientSettings => {
@@ -314,7 +312,7 @@ sub Exists {
 
 =cut
 
-sub Add {
+sub AddProfile {
     my ( $Self, %Param ) = @_;
 
     my $DBObject   = $Kernel::OM->Get('Kernel::System::DB');
@@ -365,11 +363,11 @@ sub Add {
     return $InsertSuccess;
 }
 
-=head2 Update()
+=head2 UpdateProfile()
 
     Update an existing OIDC Profile record in DB.
 
-    my $Success = $ProfileRepositoryObject->Update(
+    my $Success = $ProfileRepositoryObject->UpdateProfile(
 
         Name => '<Unique Name>',
         ClientSettings => {
@@ -401,7 +399,7 @@ sub Add {
 
 =cut
 
-sub Update {
+sub UpdateProfile {
     my ( $Self, %Param ) = @_;
 
     my $DBObject   = $Kernel::OM->Get('Kernel::System::DB');
@@ -451,7 +449,7 @@ sub Update {
     return $UpdateSuccess;
 }
 
-=head2 Delete()
+=head2 DeleteProfile()
 
     Removes an named OIDC Profile record from DB.
 
@@ -462,7 +460,7 @@ sub Update {
 
 =cut
 
-sub Delete {
+sub DeleteProfile {
     my ( $Self, %Param ) = @_;
 
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
