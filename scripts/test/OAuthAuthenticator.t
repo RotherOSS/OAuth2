@@ -191,71 +191,6 @@ sub PrepareTestSysConfig {
 
     my %Param = @_;
 
-    #     # create profile
-
-    #     my $YAMLObject = $Kernel::OM->Get('Kernel::System::YAML');
-
-    #     my $Valid = 1;
-
-    #     $DBObject->Do( SQL => "DELETE FROM oidc_functional_accounts WHERE name = '_UnitTest1' ");
-    #     $DBObject->Do( SQL => "DELETE FROM oidc_profiles WHERE name = '" .$OpenIDConfig->{ProviderSettings}->{Name}. "'");
-
-    #     $DBObject->Do(
-    #         SQL => "INSERT INTO oidc_profiles
-    #                 ( name,client_id,client_Secret,redirect_uri,openid_config,
-    #                 ssl_options,misc,ttl,valid_id,
-    #                 create_time,create_by,change_time,change_by )
-    #                 VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
-    #         Bind => [
-    #             \$OpenIDConfig->{ProviderSettings}->{Name},
-    #             \$OpenIDConfig->{ClientSettings}->{ClientID},
-    #             \$OpenIDConfig->{ClientSettings}->{ClientSecret},
-    #             \$OpenIDConfig->{ClientSettings}->{RedirectURI} // '',
-    #             \$OpenIDConfig->{ProviderSettings}->{OpenIDConfiguration},
-    #             \$YAMLObject->Dump(Data => $OpenIDConfig->{ProviderSettings}->{SSLOptions} ),
-    #             \$YAMLObject->Dump(Data => $OpenIDConfig->{Misc} // {} ),
-    #             \$OpenIDConfig->{ProviderSettings}->{TTL},
-    #             \$Valid,
-    #         ],
-    #     );
-
-    #     $DBObject->Prepare(
-    #             SQL => "SELECT id FROM oidc_profiles WHERE name = ? ",
-    #             Bind  => [ \$OpenIDConfig->{ProviderSettings}->{Name} ],
-    # #            Limit => 1
-    #     );
-
-    #     my ($ID) = $DBObject->FetchrowArray();
-
-    #     # create functional account
-
-    #     my $GrantType         = $Param{GrantType} || 'authorization_code';
-    #     my $Scope             = $Param{Scope} || 'openid';
-    #     my $Resources         = $Param{Resources} || '';
-    #     my $ResourceParamName = $Param{ResourceParamName} || 'resource';
-    #     my $TokenType         = $Param{Token} || 'access_token';
-
-    # print STDERR "TOKENTYPE: $TokenType\n";
-
-    #     $DBObject->Do(
-    #         SQL => "INSERT INTO oidc_functional_accounts
-    #                 (name, oidc_profile_id,grant_type,scopes,resources,
-    #                 resource_param_name,username,passwd, token_type, valid_id,
-    #                 create_time,create_by,change_time,change_by )
-    #                 VALUES ( '_UnitTest1', ?, ?, ?, ?, ?, ?, ?, ?, ?, current_timestamp, 1, current_timestamp, 1)",
-    #         Bind => [
-    #             \$ID,
-    #             \$GrantType,
-    #             \$Scope,
-    #             \$Resources,
-    #             \$ResourceParamName,
-    #             \$Param{Username},
-    #             \$Param{Password},
-    #             \$TokenType,
-    #             \$Valid,
-    #         ],
-    #     );
-
     # configure an OIDC Profile for the unit test
     $ConfigObject->Set(
         Key   => 'AuthModule::_UnitTest1::Config2',
@@ -266,24 +201,6 @@ sub PrepareTestSysConfig {
         Key   => 'AuthModule2',
         Value => 'Kernel::System::Auth::_UnitTest1',
     );
-
-    # # configure a functional account that uses above config
-    # $ConfigObject->Set(
-    #     Key   => 'OpenIDConnect::UserMapping',
-    #     Value => {
-
-    #         'UnitTest1' => {
-
-    #             OpenIDConfig    => 'OpenIDConnect::OICDProvider::_UnitTest1',
-    #             Audience        => $Param{Audience}        || '',
-    #             Scope           => $Param{Scope}           || '',
-    #             UID             => $Param{UID}             || 'sub',
-    #             UserLogin       => $Param{UserLogin}       || '',
-    #             AuthorizedParty => $Param{AuthorizedParty} || '',
-
-    #         }
-    #     },
-    # );
 
     return;
 }
