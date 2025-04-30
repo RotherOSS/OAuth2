@@ -127,7 +127,7 @@ sub RenewTokens {
 
     my $Epoch = $DateTimeObject->ToEpoch() + $Interval;
 
-    my $Tokens = $TokenRepository->List(
+    my $Tokens = $TokenRepository->GetList(
         ExpiresAfter => $Epoch
     );
 

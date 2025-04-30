@@ -241,7 +241,7 @@ sub Cleanup {
 
     my $Epoch = $DateTimeObject->ToEpoch();
 
-    my $SQL  = "DELETE FROM oauth2_token_storage WHERE expires_at < ? ";
+    my $SQL  = "DELETE FROM oauth2_token_storage WHERE expires_at IS NOT NULL and expires_at != 0 AND expires_at < ? ";
     my $Bind = [ \$Epoch ];
 
     my $DeleteSuccess = $DBObject->Do(

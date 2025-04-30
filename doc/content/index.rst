@@ -81,9 +81,7 @@ This package depends on the external OpenID Connect Provider of your choice.
 Basic Configuration (Both Provider and Invoker)
 -----------------------------------------------
 
-**Step I - Prerequisites**
-
-Your system-administrator should configure an OAuth2 Application with their relevant OIDC provider and give you the following configuration details:
+Your system-administrator should configure one (or more) OAuth2 Application(s) with their relevant OIDC provider and give you the following configuration details:
 
 - the well-known provider metadata discovery url as described in the `openid spec <https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfigurationRequest>`__  Example: '\https://keycloak:8443/realms/master/.well-known/openid-configuration' 
 - ``client_id`` and ``client_secret`` parameters for your OAuth2 Application
@@ -101,55 +99,101 @@ If you are using the 'authorization_code' flow, which will redirect your browser
 For this to work the 'redirect_uri' that points back to you Otobo instance must be an allowed redirect_uri configured for your OAuth2 OIDC application. The generated URL will be
 ``http(s)://your-otobo.fqdn/otobo/index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth'``. 
 
+Note this is in addition to the Login redirect_uri which usually is
+``http(s)://your-otobo.fqdn/otobo/index.pl?Action=Login'``. 
+
+Some Provider allow simple wildcards in the redirect_uri setting, like ``http(s)://your-otobo.fqdn/otobo/index.pl*`` - Please
+consult your OIDC Provider documentation for details.
 
 
+Otobo as Provider
+=================
 
-**Step II - Basic OpenID Connect Provider Configuration in Otobo**
+Basic OpenID Connect Provider Configuration in Otobo
+----------------------------------------------------
 
-For OAuth2 API calls, these include the Client and the Provider settings,
-which are essentially the same settings that are also used for OIDC as login mechanism. 
-
+For incoming OAuth2 API calls, Otobo has to authenticate the incoming OAuth2 Tokens and map them to an Otobo user.
+For API calls this works using the same Authentication Modules ('AuthModule' in Config.pm) as used for Login via OpenID Connect.
 If you already using Otobo for OIDC based login, you should already have a valid OIDC configuration like from the example above and **you are all set**. 
 
-ClientSettings Example: https://github.com/RotherOSS/otobo/blob/rel-11_0/Kernel/Config/Defaults.pm#L530
-ProviderSettings Example: https://github.com/RotherOSS/otobo/blob/rel-11_0/Kernel/Config/Defaults.pm#L537
+Otherwise, in case you are not using OIDC for Login, but still want to use OIDC for API calls, or if you want to use a OIDC provider for API calls 
+different from your default OIDC configuration used for login, add an additional AuthModule for OIDC.
 
-Otherwise, in case you are not using OIDC for Login, but still want to use OIDC for API calls, or if you want to use a OIDC provider for API calls different from your default OIDC configuration used for login, you can now add settings for additional providers via the Otobo system configuration:
+Refer to the examples for configuring OIDC that come with your Otobo installation. The examples are in Kernel/Config/Defaults.pm line 518ff,
+and this needs to be configured in ``Config.pm``.
 
-- In the **System Configuration** Admin interface navigate to **Core > Auth > OpenIDConnect** 
-- Enable one of the ``OpenIDConnect::OICDProvider###Custom1`` settings.
-- Configure the fields ``ClientID`` and ``ClientSecret`` with the client_id and client_secret parameters you got in step 1. 
-- Put the well-known metadata discovery url obtained in step 1 into field ``OpenIDConfiguration``. 
+::
 
-Usually there is no need to differ from the defaults for the other parameters, unless your system administrator told you so.
+   # This is an example configuration for authorization via OpenIDConnect
+   # see https://openid.net/specs/openid-connect-core-1_0.html
+    $Self->{AuthModule} = 'Kernel::System::Auth::OpenIDConnect';
+    # Define the authentication flow, currently supported are the authorization code flow...
+    $Self->{'AuthModule::OpenIDConnect::AuthRequest'}->{ResponseType} = [ 'code' ];
+    # Define the additional scope (openid is added automatically and does not need to be
+    # defined here). Make sure to add everything you want to interpret later.
+    $Self->{'AuthModule::OpenIDConnect::AuthRequest'}->{AdditionalScope} = [
+        qw/profile email/
+    ];
+    # Set the ClientID and Redirect URI exactly as defined on the authorization server
+    # for the latter the Action must be "Login"
+    $Self->{'AuthModule::OpenIDConnect::Config'}{ClientSettings} = {
+        ClientID    => 'abc123',
+        RedirectURI => 'https://my.otobo.server/otobo/index.pl?Action=Login',
+    };
+    # For the authorization code flow the client secret has to be provided
+    $Self->{'AuthModule::OpenIDConnect::Config'}{ClientSettings}{ClientSecret} = 's3cr3t';
+    # Provide the URL of the well-known openid-configuration of the OpenID provider
+    $Self->{'AuthModule::OpenIDConnect::Config'}{ProviderSettings} = {
+        OpenIDConfiguration => 'https://keycloak:8080/auth/realms/MyRealm/.well-known/openid-configuration',
+        TTL                 => 60 * 30,      # optional: time period the extracted openid-configuration is cached
+        Name                => 'Intern4',    # optional: necessary only if one needs to differentiate between User and CustomerUser configuration e.g.
+        SSLOptions          => {             # if special ssl options are needed; SSLVerifyHostname => 0 and SSLVerifyMode => 0 are also possible but should only be used for testing purposes
+            SSLCertificate => 'SSL_cert_file',     # client certificate
+            SSLKey         => 'SSL_key_file',      # client cert key
+            SSLPassword    => 'SSL_passwd_cb',     # password for client cert key
+            SSLCAFile      => 'SSL_ca_file',       # CA certificate
+            SSLCADir       => 'SSL_ca_path',       # CA cert directory
+        },
+    };
+    # Set the token claim to be used as identifier
+    $Self->{'AuthModule::OpenIDConnect::UID'} = 'sub';
+    # Some optional additional settings
+    $Self->{'AuthModule::OpenIDConnect::Config'}{Misc} = {
+        UseNonce   => 1,      # add a nonce to request and token (this is primarily important for the implicit flow where it is enabled by default)
+        RandLength => 22,     # length for state and nonce random strings - default: 22
+        RandTTL    => 60 * 5, # valid time period for state and nonce (roughly the time a user can take to authenticate) - default: 300 s
+        Leeway     => 2,      # leeway for small time differences between the OTOBO server and the OpenID provier - default: 2 s
+    };
+    # Optionally enable user authorization via the id token - hashes can be used for complex claims
+    $Self->{'AuthModule::OpenIDConnect::RoleMap'} = {
+        TokenAttribute => {
+            TokenRole1 => 'OTOBORole1',
+            TokenRole2 => 'OTOBORole2',
+        },
+        TokenAttribute2 => {
+            abc123 => {
+                TokenRole1 => 'OTOBORole1',
+                TokenRole3 => 'OTOBORole3',
+            }
+        },
+    };
+    # Optionally enable user creation - this currently does not support complex claims; email is mandatory
+    $Self->{'AuthModule::OpenIDConnect::UserMap'} = {
+        email       => 'UserEmail',
+        given_name  => 'UserFirstname',
+        family_name => 'UserLastname',
+    };
+    # For debugging purposes and to help with building the RoleMap e.g. you can dump all IDTokens received to the log
+    $Self->{'AuthModule::OpenIDConnect::Debug'}->{'LogIDToken'} = 1;
 
-.. image:: ../images/sysconf-oidc-profile.png
-   :alt: OIDC Provider Profile
 
-
-
-Provider Configuration
------------------------------------------------
-
-In the **System Configuration** Admin interface,
-
-- Navigate to **Core > Auth > OpenIDConnect**
-- Enable one of the ``OpenIDConnect::UserMapping###Custom1`` settings
-
-.. image:: ../images/sysconf-oidc-usermapping.png
-   :alt: OIDC User Mapping
-
-Set the following values:
-
-- ``OpenIDConfig``: if your are using OIDC for login anyway and want to re-use that provider for API calls, just leave it to the default value of 'AuthModule::OpenIDConnect::Config'. Otherwise set it to one of the 'OpenIDConnect::OICDProvider###Custom1' you have enabled and configured.
-- ``UID``: the unique identifier of an OAuth2 JWT token claim that can be mapped to an Otobo UserLogin identifier. Usual values include 'sub', 'email', or 'uid'. Use 'sub' if in doubt. You should have received that value from your system administrator
-
-With these two configuration settings, OAuth2 token based API interaction should already be enabled. The other settings are so that one can restrict which tokens are allowed to authenticate with the otobo API endpoints. 
+Provider Restrictions (optional)
+--------------------------------
 
 Every valid Token needs to be mapped to a system user. If an API system user does not exist for an incoming webservice call, it will be created provided the Token 
 passes validation and any further restrictions.
 
-To add restrictions which valid tokens are accepted for incoming webservice calls, restrict by these fields in the UserMapping system setting:
+To add restrictions which valid tokens are accepted for incoming webservice calls, restrict by these fields in Config.pm:
 
 - ``UserLogin``: only accept tokens of this particular login. This must match the UserLogin value in the Otobo System (UserLogin attribute of the User entity).
 
@@ -161,6 +205,18 @@ To add restrictions which valid tokens are accepted for incoming webservice call
 
 Usually, you would either restrict to a specific user login, or to a combination of the other values, depending on your needs.
 
+Example for Config.pm:
+
+::
+
+   $Self->{'AuthModule::OpenIDConnect::Webservice::Restrictions'} = {
+        UserLogin => '',
+        Scope => '',
+        AuthorizedParty => '',
+        Audience => ''
+   };
+
+
 
 Provider Example
 ----------------
@@ -171,15 +227,7 @@ With above configuration for Providers in place, follow these steps to set up a 
 - Select **Add New Webservice** and give it Name and Description of 'Test'
 - Under **Otobo as Provider**, select '\HTTP::REST' as Transport
 - Click **Save**
-- Choose 'Session::Create' from the dropdown under **Operations**
-- Set Name and Description fields to 'SessionCreate'
-- Choose 'Simple' for both mapping types
-- Click **Save and Finish**
-- Click again on the previous button to configure *Network Transport: HTTP::REST*
-- Enter '/CreateSession' for the route mapping
-- Select 'POST' as the single valid request method
-- Click **Save and Finish**
-- Add another operation and choose 'Ticket::TicketGet'
+- Add an operation and choose 'Ticket::TicketGet'
 - Set Name and Description fields to 'TicketGet'
 - Choose 'Simple' for both mapping types
 - Click **Save and Finish**
@@ -188,7 +236,7 @@ With above configuration for Providers in place, follow these steps to set up a 
 - Select 'GET' as the single valid request method
 - Click **Save and Finish**
 
-At this point Otobo should be set up to accept incoming calls with OAuth2 tokens.
+At this point Otobo should be set up to accept incoming calls with OAuth2 tokens for the /GetTicket/:TikcetID endpoint.
 
 First get a token from your provider. How that works in practice depends on your OIDC provider and your remote setup, but for testing a curl call with client_credentials grant type might look similar to this example (keycloak):
 
@@ -211,22 +259,12 @@ First get a token from your provider. How that works in practice depends on your
 
 You should receive at least an ``access_token``, whether you also get ``refresh_token`` and ``id_token`` depends on your provider settings. In most cases you would use the access_token to make webservice calls, but in some environments also passing id tokens can make sense.
 
-Now that we have a token, invoke the *CreateSession* API endpoint we configured above:
+Now that we have a token, invoke the *GetTicket* API endpoint we configured above. Note we pass '1' as the TicketID, which is usually present on all Otobo system-administrator
+as it is the 'Welcome to OTOBO' test email. Xou can pass any TicketID that exists in your system, of course.
 
 ::
 
-   curl -s -X POST 'http://localhost/otobo/nph-genericinterface.pl/Webservice/Test/CreateSession' -H 'Content-Type: application/json' -d '{ "BearerToken" : "<the token received above>" }' | jq
-   {
-     "SessionID": "36kHKt7M4vjaafK9IjoMMQX9wbGymosE"
-   }
-
-
-Now that we have an Otobo ``SessionID``, we can make arbitary calls like to our *GetTicket* API endpoint configured above:
-
-::
-
-
-   curl -k -X GET 'http://localhost/otobo/nph-genericinterface.pl/Webservice/Test/GetTicket/1?SessionID=<the SessionID from above>' | jq
+   curl -k -X GET -H'Authorization: Bearer <token from above>' 'http://localhost/otobo/nph-genericinterface.pl/Webservice/Test/GetTicket/1' | jq
      
    # Outputs:
    {
@@ -275,11 +313,29 @@ Now that we have an Otobo ``SessionID``, we can make arbitary calls like to our 
 
 
 Otobo as Invoker
-----------------
+================
 
-Whereas Otobo as Provider only has to validate incoming OAuth2 tokens, in order to make outgoing calls as Invoker Otobo needs to obtain and manage OAuth2 tokens  for one or more functional accounts. Functional accounts for Invokers and their tokens can be managed via the dedicated Amin UI module **OAuth Token Management**.
+Whereas Otobo as Provider only has to validate incoming OAuth2 tokens, in order to make outgoing calls as Invoker Otobo needs to obtain and manage OAuth2 tokens  for one or more functional accounts. 
+Functional accounts for Invokers and their tokens can be managed via the dedicated Amin UI module **OAuth Functional Accounts**. Unlike Providers for incoming calls,
+which use the OIDC Profile configured for authentication, the outgoing (Invoker) Webservices require a dedicated OIDC Profile setup, which can be done in 
+antoher  dedicated Admin UI module named **OIDC Profile Management**. First, configure an OIDC Provider Profile:
 
-In the **Admin UI**, navigate to **OAuth Token Management**
+In the **Admin UI**, navigate to **OIDC Profile Management**
+
+.. image:: ../images/profiles-overview.png
+   :alt: Profiles Overview
+
+To create a new Profile, choose **Add** from the left navigation bar. 
+
+.. image:: ../images/profile-add.png
+   :alt: Add Profile
+
+If you are already using OIDC for Login, some values will be prepopulated. You have to provide a valid, unique Profile name and also provide the OAuth2 application
+client_secret value, which is not pre-populated for security reasons. Usually you can keep all the defaults, especially for the optional SSL- and Misc settings.
+
+Now that we have an OIDC Provider Profile, we can set up a Functional Account. There can be more than one Functional Account per Profile.
+
+In the **Admin UI**, navigate to **OAuth Functional Accounts**
 
 
 .. image:: ../images/functional-account-overview.png
@@ -290,7 +346,9 @@ To create a new Account, choose **Add** from the left navigation bar.
 .. image:: ../images/functional-account-detail.png
    :alt: Functional Account Details
 
-Here you give your account a Name and choose one of the OIDC Provider profiles configured via system settings earlier. Choose the ``GrantType`` as instructed by your system administrator, and provide the ``Scope`` parameter as per your OIDC configuration.
+Here you give your account a Name and choose one of the OIDC Provider profiles configured earlier. 
+Choose the ``GrantType`` as instructed by your system administrator, and provide the ``Scope`` parameter as required. ``Scope`` will
+often contain 'openid' and 'offline_access', other common values are 'email' and 'profile'.
 
 In the **Advanced** section you can configure additional details, if needed:
 
@@ -335,6 +393,10 @@ Everytime you modify the note, your API endpoint at ``http://echoservice.mycompa
 
 .. image:: ../images/webservice-invoker.png
    :alt: Invoker Webservice Config
+
+
+Appendix
+========
 
 Debugging Webservice Calls
 ------------------------------------------
