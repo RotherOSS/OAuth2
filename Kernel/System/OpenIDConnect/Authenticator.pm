@@ -156,6 +156,11 @@ sub Authenticate {
             if ( !$Result->{Success} ) {
                 next COUNT;
             }
+
+            %UserData = $Kernel::OM->Get('Kernel::System::User')->GetUserData(
+                User  => $UserLogin,
+                Valid => 1,
+            );
         }
 
         # report success!
