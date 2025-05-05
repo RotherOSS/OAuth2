@@ -139,11 +139,12 @@ sub ProviderProcessRequest {
     # Rother OSS / OAuth2
     # Authenthentication header
     my $AuthenticationHeader = $ParamObject->Header('Authorization');
+    $AuthenticationHeader =~ s/^\s+|\s+$//g; # trim whitespace
 
     if ( $AuthenticationHeader && lc($AuthenticationHeader) =~ /^bearer / ) {
 
         my $Token = substr( $AuthenticationHeader, 7 );
-        $Token =~ s/^\s+|\s+$//g;
+        $Token =~ s/^\s+|\s+$//g; # trim whitespace
 
         my $AuthenticatorObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Authenticator');
         my $Result              = $AuthenticatorObject->Authenticate( Token => $Token );
