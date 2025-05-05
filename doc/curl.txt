@@ -1,4 +1,11 @@
 
+############################################################
+# test GetTicket with bearer token
+############################################################
+
+TOKEN=$(curl -s -k -d 'client_id=<client_id>' -d 'client_secret=<secret>' -d 'username=test1@example.com' -d 'password=test' -d 'grant_type=password' -d 'scope=openid' 'https://localhost:8443/realms/master/protocol/openid-connect/token' | jq -r '.access_token') && curl -v -X GET 'http://localhost/otobo/nph-genericinterface.pl/Webservice/Test/GetTicket/1' -H "Authorization:Bearer $TOKEN" | jq
+
+
 
 ############################################################
 # test CreateSession with curl and a bearer token

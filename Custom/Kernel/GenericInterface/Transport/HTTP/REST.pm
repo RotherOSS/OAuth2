@@ -33,7 +33,10 @@ use Plack::Response ();
 # OTOBO modules
 use Kernel::System::VariableCheck  qw(:all);
 use Kernel::System::Web::Exception ();
+
+# Rother OSS / OAuth2
 use Kernel::Language               qw(Translatable);
+# EO OAuth2
 
 our $ObjectManagerDisabled = 1;
 
