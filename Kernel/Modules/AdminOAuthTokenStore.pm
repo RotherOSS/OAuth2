@@ -109,6 +109,7 @@ sub Run {
         $GetParam{InvokerScopes} = $Account->{Scope};
         $GetParam{Resources}     = $Account->{Resources};
         $GetParam{ResourceParam} = $Account->{ResourceParamName};
+        $GetParam{TokenType}     = $Account->{TokenType};
 
         $Self->_EditInvoker(
             Action => 'EditInvoker',
@@ -207,10 +208,11 @@ sub Run {
 
         # actually persist the data in DB
         my $Success = $FunctionalAccounts->SaveAccount(
-            Name          => $GetParam{AccountName},
-            UserID        => $Self->{UserID},
-            OIDCProfileID => $GetParam{ProviderID},
-            Scope         => $GetParam{InvokerScopes},
+            Name              => $GetParam{AccountName},
+            UserID            => $Self->{UserID},
+            OIDCProfileID     => $GetParam{ProviderID},
+            Scope             => $GetParam{InvokerScopes},
+            ResourceParamName => $GetParam{ResourceParam},
             %GetParam,
         );
 
