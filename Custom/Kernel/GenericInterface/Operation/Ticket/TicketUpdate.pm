@@ -147,9 +147,14 @@ if applicable the created ArticleID.
                 ForceNotificationToUserID       => [1, 2, 3]                   # optional
                 ExcludeNotificationToUserID     => [1, 2, 3]                   # optional
                 ExcludeMuteNotificationToUserID => [1, 2, 3]                   # optional
-# Rother OSS / OAuth2
-                SendEmail                       => 1                           # optional, defaults to 0
-# EO OAuth2
+# Rother OSS / oauth2
+                SendEmail                       => 1                           # optional, defaults to 0.
+                EmailSecurity 0> {                                               # optional to enable signing/encryption
+                    Backend => 'SMIME',                                           # Backend, only SMIME supported for now
+                    Sign => 1,                                                   # optional, whether to the sign the email. needs valid SMIME cert for the queue
+                    Encrypt => 1,                                               # optional,whether to encrypt the email. needs valid customer SMIME cert (for the TO addr)
+                }
+# EO cert-apitools
             },
 
             DynamicField => [                                                  # optional
@@ -2022,8 +2027,8 @@ sub _TicketUpdate {
                 UserID => $Param{UserID},
             );
 
-            # Rother OSS / OAuth2
-            #           $From = $UserData{UserFullname};
+# Rother OSS / oauth2
+#           $From = $UserData{UserFullname};
 
             if ( $Article->{SendEmail} ) {
 
@@ -2038,17 +2043,18 @@ sub _TicketUpdate {
                         Silent        => 1,
                     );
 
-                    $From = $Kernel::OM->Get('Kernel::System::TemplateGenerator')->Sender(
+                    my %Address = $Kernel::OM->Get('Kernel::System::Queue')->GetSystemAddress(
                         QueueID => $TicketData{QueueID},
-                        UserID  => $Param{UserID},
                     );
+
+                    $From = $Address{Email};
                 }
             }
             else {
                 $From = $UserData{UserFullname};
             }
 
-            # EO / PAuth2
+# EO / cert-apitools
         }
 
         # Set Article To, Cc, Bcc.
@@ -2105,9 +2111,9 @@ sub _TicketUpdate {
             );
         }
 
-        # Rother OSS / OAuth2
-        #        # Create article.
-        #        $ArticleID = $ArticleBackendObject->ArticleCreate(
+# Rother OSS / oauth2
+#        # Create article.
+#        $ArticleID = $ArticleBackendObject->ArticleCreate(
 
         # Create article and optionally send email.
 
@@ -2127,10 +2133,77 @@ sub _TicketUpdate {
             Subject      => $Article->{Subject} || '',
         );
 
+        # support for SMIME encryption and signing
+        my %EmailSecurityOptions;
+
+        if (
+            $ShallSendEmail
+            && $Article->{EmailSecurity}
+            &&
+            $Article->{EmailSecurity}->{Backend} eq 'SMIME'
+            )
+        {
+
+            my $EmailSecurity = {
+                Backend     => 'SMIME',
+                SignKey     => undef,
+                EncryptKeys => undef,
+            };
+
+            my $SMIMEObject = $Kernel::OM->Get('Kernel::System::Crypt::SMIME');
+
+            if ( $Article->{EmailSecurity}->{Sign} ) {
+
+                my @Result = $SMIMEObject->CertificateSearch(
+                    Search => $From,
+                );
+
+                if ( scalar @Result == 1 ) {
+
+                    $EmailSecurity->{SignKey} = $Result[0]->{Filename};
+                }
+                else {
+
+                    return {
+                        Success      => 0,
+                        ErrorMessage => 'Article could not be send, SMIME Signing was requested but no SMIME signing certificate is avail.'
+                    };
+                }
+            }
+            if ( $Article->{EmailSecurity}->{Encrypt} ) {
+
+                my @Result = $SMIMEObject->CertificateSearch(
+                    Search => $To,
+                );
+
+                if ( scalar @Result == 1 ) {
+
+                    $EmailSecurity->{EncryptKeys} = [ $Result[0]->{Filename} ];
+                }
+                else {
+
+                    return {
+                        Success      => 0,
+                        ErrorMessage => 'Article could not be send, SMIME Encryption was requested but no unique SMIME certificate for encryption could be identified.'
+                    };
+                }
+            }
+
+            $EmailSecurityOptions{EmailSecurity} = $EmailSecurity;
+        }
+
+        # prettify FROM
+        if ($ShallSendEmail) {
+            $From = $Kernel::OM->Get('Kernel::System::TemplateGenerator')->Sender(
+                QueueID => $TicketData{QueueID},
+                UserID  => $Param{UserID},
+            );
+        }
+
         $ArticleID = $ArticleMethodRef->(
             $ArticleBackendObject,
 
-            # EO OAuth2
+# EO cert-apitools
             NoAgentNotify        => $Article->{NoAgentNotify} || 0,
             TicketID             => $TicketID,
             SenderTypeID         => $Article->{SenderTypeID} || '',
@@ -2141,11 +2214,11 @@ sub _TicketUpdate {
             Cc                   => $Cc,
             Bcc                  => $Bcc,
 
-            # Rother OSS / OAuth2
-            #           Subject              => $Article->{Subject},
+# Rother OSS / oauth2
+#           Subject              => $Article->{Subject},
             Subject => $Subject,
 
-            # EO OAuth2
+# EO cert-apitools
             Body             => $Article->{Body},
             MimeType         => $Article->{MimeType}    || '',
             Charset          => $Article->{Charset}     || '',
@@ -2161,6 +2234,11 @@ sub _TicketUpdate {
                 Subject => $Article->{Subject},
                 Body    => $PlainBody,
             },
+
+# Rother OSS / oauth2
+            %EmailSecurityOptions
+
+# EO cert-apitools
         );
 
         if ( !$ArticleID ) {
