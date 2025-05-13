@@ -95,7 +95,14 @@ sub Payload {
         "preferred_username" => 'test1@example.com',
         "given_name"         => "testy 1",
         "family_name"        => "tester 1",
-        "email"              => 'test1@example.com'
+        "email"              => 'test1@example.com',
+        "resource_access"    => {
+            "otobo" => {
+                "roles" => [
+                    "agents"
+                ]
+            },
+        },        
     };
 }
 
