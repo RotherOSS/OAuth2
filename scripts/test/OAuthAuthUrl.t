@@ -72,7 +72,7 @@ my $TestCases = [
         Config => {
             Token => 'id_token',
         },
-        Expectation => '?response_type=code%20id_token&scope=openid&client_id=otobo&response_mode=form_post&state=',
+        Expectation => '?response_type=code&scope=openid&client_id=otobo&state=',
     },
     {
         Config => {
