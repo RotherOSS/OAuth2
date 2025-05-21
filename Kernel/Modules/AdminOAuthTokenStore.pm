@@ -497,7 +497,7 @@ sub Run {
     }
 
     # Get List of refreshable Tokens from DB
-    my $GenericInterfaceTokens = $TokenRepository->GetList();
+    my $GenericInterfaceTokens = $TokenRepository->GetList( TokenType => 'all' );
 
     # Build a lookup index as we map Tokens to their
     # configured Functional Accounts
@@ -505,7 +505,12 @@ sub Run {
 
     for my $GenericInterfaceToken (@$GenericInterfaceTokens) {
 
-        $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID} } = $GenericInterfaceToken;
+        if( !exists $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID}  } )
+        {
+            $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID} } = {};
+        }
+        
+        $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID} }->{ $GenericInterfaceToken->{TokenType} } = $GenericInterfaceToken;
     }
 
     # Prepare view data
@@ -523,21 +528,11 @@ sub Run {
         my $GrantType = $Account->{GrantType};
         my $HasToken  = exists $GenericInterfaceTokenLookup{$AccountID};
         my $CopyToken = $HasToken ? 'CopyToken' : '';
-        if ( !$HasToken ) {
 
-            # client_credentials flow usually does not have refresh_tokens,
-            # but we always can generate a new one
-            # password grant_type can have refresh_tokens,
-            # but we always can generate a new one
-            if ( $GrantType ne 'authorization_code' ) {
-                $HasToken = 1;
-            }
-        }
-
-        my $Token = $GenericInterfaceTokenLookup{$AccountID};
+        my $Token = $GenericInterfaceTokenLookup{$AccountID}->{refresh_token};
         my $Time  = "";
 
-        if ( $Token->{ExpiresAt} ) {
+        if ( $Token && $Token->{ExpiresAt} ) {
 
             my $DateTimeObject = $Kernel::OM->Create(
                 'Kernel::System::DateTime',
