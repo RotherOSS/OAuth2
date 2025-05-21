@@ -93,7 +93,7 @@ sub Run {
 
         my $Account = $FunctionalAccounts->GetAccount( Name => $GetParam{AccountName} );
 
-        $GetParam{ProviderName} = $Account->{OpenIDConfig};
+        $GetParam{ProviderID} = $Account->{OIDCProfileID};
 
         my $Output = $LayoutObject->Header();
         $Output .= $LayoutObject->NavigationBar();
@@ -636,7 +636,7 @@ sub _EditInvoker {
         Data          => \%Profiles,
         Name          => 'ProviderID',
         Class         => 'Modernize',
-        SelectedValue => $Param{ProviderID},
+        SelectedID    => $Param{ProviderID},
     );
 
     $Param{GrantTypes} = $LayoutObject->BuildSelection(
