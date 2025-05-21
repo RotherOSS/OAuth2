@@ -523,7 +523,9 @@ sub GetAuthURL {
         return;
     }
 
-    my $TokenType         = $Account->{TokenType}         || 'access_token';
+# TODO: for Invoker tokens, always use 'access_token'
+#   my $TokenType         = $Account->{TokenType}         || 'access_token';
+    my $TokenType         = 'access_token';
     my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
     my $OpenIDConfig      = $Account->{OIDCProfile};
     my $UseNonce          = $Param{Nonce} // $OpenIDConfig->{Misc}->{UseNonce};
@@ -535,6 +537,7 @@ sub GetAuthURL {
     my $OAuth2Object = $Kernel::OM->Get('Kernel::System::OpenIDConnect::OAuth2');
 
     return $OAuth2Object->GetAuthURL(
+        %Param,
         AuthorizationEndpoint => $AuthEndpoint,
         ClientID              => $OpenIDConfig->{ClientSettings}{ClientID},
         TokenType             => $TokenType,
@@ -548,7 +551,6 @@ sub GetAuthURL {
         RandTTL               => $OpenIDConfig->{Misc}->{RandTTL},
         RedirectURL           => $Param{RedirectURI},
         State                 => $Param{State},
-        %Param,
     );
 }
 

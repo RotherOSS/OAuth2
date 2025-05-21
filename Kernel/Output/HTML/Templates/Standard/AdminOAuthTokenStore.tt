@@ -124,7 +124,7 @@
                             </td>
                             <td class='[% Data.NeedToken | uri %]'>[% Data.Flow | html %]</td>
                             <td class='[% Data.NeedToken | uri %]'>[% Translate( Data.HasToken ) | html %]</td>
-                            <td token="[% Data.Token | uri %]" class='[% Data.CopyToken | uri %]'>[% Data.ExpiresAt | html %]</td>
+                            <td>[% Data.ExpiresAt | html %]</td>
                             <td>
                                 <form action="[% Env("CGIHandle") %]?Action=AdminOAuthTokenStore" method="post" class="Validate PreventMultipleSubmits">
                                     <fieldset class="TableLike">

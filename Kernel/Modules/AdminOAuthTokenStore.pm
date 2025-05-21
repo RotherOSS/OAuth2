@@ -527,7 +527,9 @@ sub Run {
 
             # client_credentials flow usually does not have refresh_tokens,
             # but we always can generate a new one
-            if ( $GrantType eq 'client_credentials' ) {
+            # password grant_type can have refresh_tokens,
+            # but we always can generate a new one
+            if ( $GrantType ne 'authorization_code' ) {
                 $HasToken = 1;
             }
         }
