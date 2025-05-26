@@ -523,9 +523,7 @@ sub GetAuthURL {
         return;
     }
 
-# TODO: for Invoker tokens, always use 'access_token'
-#   my $TokenType         = $Account->{TokenType}         || 'access_token';
-    my $TokenType         = 'access_token';
+    my $TokenType         = $Account->{TokenType}         || 'access_token';
     my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
     my $OpenIDConfig      = $Account->{OIDCProfile};
     my $UseNonce          = $Param{Nonce} // $OpenIDConfig->{Misc}->{UseNonce};

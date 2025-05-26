@@ -223,6 +223,9 @@ sub Run {
             );
         }
 
+        my $SessionID    = $LayoutObject->{SessionID};
+        my $SessionName  = $LayoutObject->{SessionName};
+
         # post save actions - attempt to refresh token
         if ( $GetParam{GrantType} eq 'authorization_code' ) {
 
@@ -237,7 +240,8 @@ sub Run {
                     . $ConfigObject->Get('FQDN')
                     . '/'
                     . $ConfigObject->Get('ScriptAlias')
-                    . 'index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth'
+                    . 'index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth&'
+                    ."$SessionName=$SessionID"
             );
 
             if ($AuthURL) {
@@ -351,6 +355,9 @@ sub Run {
             # login page
             if ( $GrantType eq 'authorization_code' ) {
 
+                my $SessionID    = $LayoutObject->{SessionID};
+                my $SessionName  = $LayoutObject->{SessionName};
+
                 my $AuthURL = $TokenProvider->GetAuthURL(
                     AccountName => $AccountName,
                     Prompt      => 1,
@@ -360,7 +367,8 @@ sub Run {
                         . $ConfigObject->Get('FQDN')
                         . '/'
                         . $ConfigObject->Get('ScriptAlias')
-                        . 'index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth'
+                        . 'index.pl?Action=AdminOAuthTokenStore&Subaction=OAuth&'
+                        ."$SessionName=$SessionID"
 
                 );
 
