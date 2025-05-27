@@ -225,7 +225,7 @@ Example:
 
         AuthorizationEndpoint => $Endpoint,                       # usually from OpenIDConfig
         ClientID          => '<oauth client id>',
-        TokenType         => 'access_token|id_token',             # defaults to access_token
+        ResponseType      => 'code',                              # optional, defaults to code
         Scope             => <space separate list>,
         Resources         => '<space separated list>',            # optional
         ResourceParamName => 'resource',                          # optional
@@ -264,11 +264,13 @@ sub GetAuthURL {
         Length => $Param{RandLength} || 22
     );
 
-    my $TokenType         = $Param{TokenType}         || 'access_token';
     my $ResourceParamName = $Param{ResourceParamName} || 'resource';
     my $State             = $Param{State}             || $RandomString;
 
-    my $ResponseType = $TokenType eq 'access_token' ? ['code'] : [ 'code', 'id_token' ];
+    my $ResponseType      = $Param{ResponseType} || ['code'];
+    if( ref $ResponseType ne 'ARRAY' ) {
+        $ResponseType = [ $ResponseType ];
+    }
 
     my $RedirectURL = $Param{AuthorizationEndpoint};
     $RedirectURL .= '?response_type=' . join( '%20', @{$ResponseType} );
@@ -288,9 +290,10 @@ sub GetAuthURL {
         $RedirectURL .= '&nonce=' . uri_escape_utf8( $Param{Nonce} );
     }
 
-    if ( grep { $_ eq 'id_token' } @{$ResponseType} ) {
-        $RedirectURL .= '&response_mode=form_post';
-    }
+    # hybrid mode
+    # if ( grep { $_ eq 'id_token' } @{$ResponseType} ) {
+    #    $RedirectURL .= '&response_mode=form_post';
+    # }
 
     if ( $Param{Login} ) {
         $RedirectURL .= '&login_hint=' . uri_escape_utf8( $Param{Login} );

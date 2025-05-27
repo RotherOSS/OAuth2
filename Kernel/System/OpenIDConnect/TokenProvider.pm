@@ -523,7 +523,6 @@ sub GetAuthURL {
         return;
     }
 
-    my $TokenType         = $Account->{TokenType}         || 'access_token';
     my $ResourceParamName = $Account->{ResourceParamName} || 'resource';
     my $OpenIDConfig      = $Account->{OIDCProfile};
     my $UseNonce          = $Param{Nonce} // $OpenIDConfig->{Misc}->{UseNonce};
@@ -538,7 +537,7 @@ sub GetAuthURL {
         %Param,
         AuthorizationEndpoint => $AuthEndpoint,
         ClientID              => $OpenIDConfig->{ClientSettings}{ClientID},
-        TokenType             => $TokenType,
+        ResponseType          => 'code',
         Scope                 => $Account->{Scope},
         Resources             => $Account->{Resources},
         ResourceParamName     => $ResourceParamName,
