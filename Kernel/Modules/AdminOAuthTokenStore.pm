@@ -249,13 +249,14 @@ sub Run {
             else {
                 # oh boy, we cannot event generate a valid redirect url. invalid usser config!
                 $Output .= $LayoutObject->Notify(
-                    Error    => $LanguageObject->Translate('Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD Configuration!'),
+                    Info     => $LanguageObject->Translate('Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD Configuration!'),
                     Priority => 'Error'
                 );
 
                 $Self->_EditInvoker(
                     Action => 'EditInvoker',
                     %GetParam,
+                    TokenError => $LanguageObject->Translate('Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD COnfiguration!'),
                 );
 
                 $LayoutObject->Block(
@@ -264,9 +265,8 @@ sub Run {
                 );
 
                 $Output .= $LayoutObject->Output(
-                    TemplateFile => 'AdminOAuthTokenStore',
-                    TokenError   => $LanguageObject->Translate('Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD COnfiguration!'),
-                    Data         => \%Param,
+                    TemplateFile => 'AdminOAuthTokenStore',                    
+                    Data => \%Param,
                 );
                 $Output .= $LayoutObject->Footer();
                 return $Output;
@@ -281,27 +281,31 @@ sub Run {
 
             # oh girl, fetch token failed, invalid user config!
             if ( !$TokenResult->{Success} ) {
-                $Output .= $LayoutObject->Notify(
-                    Error    => $TokenResult->{Error},
+
+                my $Notification = $LayoutObject->Notify(
+                    Info     => $TokenResult->{Error},
                     Priority => 'Error'
                 );
 
-                $Self->_EditInvoker(
-                    Action => 'EditInvoker',
-                    %GetParam,
-                );
+                $Output .= $Notification;
 
                 $LayoutObject->Block(
                     Name => 'ActionDelete',
                     Data => \%GetParam
                 );
 
+                $Self->_EditInvoker(
+                    Action => 'EditInvoker',
+                    %GetParam,
+                    TokenError => $TokenResult->{Error},
+                );
+
                 $Output .= $LayoutObject->Output(
                     TemplateFile => 'AdminOAuthTokenStore',
-                    TokenError   => $TokenResult->{Error},
                     Data         => \%Param,
-                );
+                ); 
                 $Output .= $LayoutObject->Footer();
+
                 return $Output;
             }
         }
@@ -388,7 +392,7 @@ sub Run {
                     );
 
                     $Output .= $LayoutObject->Notify(
-                        Error    => $TokenResult->{Error},
+                        Info     => $TokenResult->{Error},
                         Priority => 'Error'
                     );
                 }
@@ -465,16 +469,30 @@ sub Run {
 
         }
         else {
+
+            $Output .= $LayoutObject->Notify(
+                Info     => $LanguageObject->Translate("Error fetching initial Token for $AccountName!"),
+                Priority => 'Error'
+            );
+
+            $LayoutObject->Block(
+                Name => 'ActionDelete',
+                Data => \%$CachedState,
+            );
+
             $Self->_EditInvoker(
                 %$CachedState,
                 TokenError => $TokenResult->{Error},
                 Action     => 'EditInvoker',
             );
 
-            $Output .= $LayoutObject->Notify(
-                Info     => $LanguageObject->Translate("Error fetching initial Token for $AccountName!"),
-                Priority => 'Error'
-            );
+            $Output .= $LayoutObject->Output(
+                TemplateFile => 'AdminOAuthTokenStore',
+                Data         => \%$CachedState,
+            ); 
+            $Output .= $LayoutObject->Footer();
+
+            return $Output;
         }
     }
 

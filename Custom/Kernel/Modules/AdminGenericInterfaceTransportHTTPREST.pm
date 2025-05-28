@@ -88,12 +88,12 @@ sub Run {
             CommunicationType => $CommunicationType,
             Action            => 'Change',
 
-            # Rother OSS / OAuth2
+# Rother OSS / OAuth2
             Output       => $Output,
             LayoutObject => $LayoutObject,
             ConfigObject => $ConfigObject,
 
-            # EO / OAuth2
+# EO / OAuth2
         );
     }
 
@@ -190,7 +190,7 @@ sub Run {
             }
         }
 
-        # Rother OSS / OAuth2
+# Rother OSS / OAuth2
         elsif ( $GetParam->{AuthType} && $GetParam->{AuthType} eq 'OAuth' ) {
 
             # Get OAuth settings.
@@ -202,7 +202,7 @@ sub Run {
 
             if ( !$Token->{Success} ) {
                 $Output .= $LayoutObject->Notify(
-                    Error    => $Token->{Error},
+                    Info    => $Token->{Error},
                     Priority => 'Error',
                     Link     => $ConfigObject->Get('HttpType')
                         . '://'
@@ -216,7 +216,7 @@ sub Run {
             }
         }
 
-        # EO OAuth2
+# EO OAuth2
 
         # Check proxy options.
         if ( $GetParam->{UseProxy} && $GetParam->{UseProxy} eq 'Yes' ) {
@@ -459,12 +459,12 @@ sub Run {
             CommunicationType => $CommunicationType,
             Action            => 'Change',
 
-            # Rother OSS / OAuth2
+# Rother OSS / OAuth2
             Output       => $Output,
             LayoutObject => $LayoutObject,
             ConfigObject => $ConfigObject,
 
-            # EO / OAuth2
+# EO / OAuth2
         );
     }
 
@@ -500,17 +500,17 @@ sub Run {
 sub _ShowEdit {
     my ( $Self, %Param ) = @_;
 
-    # Rother OSS / OAuth2
-    #    my $LayoutObject = $Param{LayoutObject};
-    #
-    #    my $Output = $LayoutObject->Header();
-    #    $Output .= $LayoutObject->NavigationBar();
+# Rother OSS / OAuth2
+#    my $LayoutObject = $Param{LayoutObject};
+#
+#    my $Output = $LayoutObject->Header();
+#    $Output .= $LayoutObject->NavigationBar();
 
     my $Output       = $Param{Output};
     my $ConfigObject = $Param{ConfigObject};
     my $LayoutObject = $Param{LayoutObject};
 
-    # EO / OAuth2
+# EO / OAuth2
 
     $Param{Type}           = 'HTTP::REST';
     $Param{WebserviceName} = $Param{WebserviceData}->{Name};
@@ -527,12 +527,12 @@ sub _ShowEdit {
         $Param{$ParamName} = $TransportConfig->{$ParamName};
     }
 
-    # Rother OSS / OAuth2
-    #    for my $ParamName (qw( AuthType BasicAuthUser BasicAuthPassword KerberosUser KerberosKeytab)) {
+# Rother OSS / OAuth2
+#    for my $ParamName (qw( AuthType BasicAuthUser BasicAuthPassword KerberosUser KerberosKeytab)) {
 
     for my $ParamName (qw( AuthType BasicAuthUser BasicAuthPassword KerberosUser KerberosKeytab OAuthAccountName)) {
 
-        # EO / OAuth2
+# EO / OAuth2
         $Param{$ParamName} = $TransportConfig->{Authentication}->{$ParamName};
     }
     for my $ParamName (qw( UseSSL SSLCertificate SSLKey SSLPassword SSLCAFile SSLCADir SSLVerifyHostname SSLVerifyMode )) {
@@ -565,7 +565,7 @@ sub _ShowEdit {
             Class         => 'Modernize',
         );
 
-        # Rother OSS / OAuth2
+# Rother OSS / OAuth2
         my $FunctionalAccounts = $Kernel::OM->Get('Kernel::System::OpenIDConnect::FunctionalAccounts');
 
         my @OAuthAccountNames;
@@ -575,16 +575,16 @@ sub _ShowEdit {
             push @OAuthAccountNames, $Account->{Name};
         }
 
-        # EO / OAuth2
+# EO / OAuth2
 
         # Create Authentication types select.
         $Param{AuthenticationStrg} = $LayoutObject->BuildSelection(
 
-            # Rother OSS / OAuth2
-            #            Data          => [ 'BasicAuth', 'Kerberos' ],
+# Rother OSS / OAuth2
+#            Data          => [ 'BasicAuth', 'Kerberos' ],
             Data => [ 'BasicAuth', 'Kerberos', 'OAuth' ],
 
-            # EO / OAuth2
+# EO / OAuth2
             Name          => 'AuthType',
             SelectedValue => $Param{AuthType} || '-',
             PossibleNone  => 1,
@@ -592,7 +592,7 @@ sub _ShowEdit {
             Class         => 'Modernize',
         );
 
-        # Rother OSS / OAuth2
+# Rother OSS / OAuth2
         $Param{OAuthAccountNamesStrg} = $LayoutObject->BuildSelection(
             Data          => \@OAuthAccountNames,
             Name          => 'OAuthAccountName',
@@ -602,16 +602,16 @@ sub _ShowEdit {
             Class         => 'Modernize',
         );
 
-        # EO / OAuth2
+# EO / OAuth2
 
         # Hide and disable authentication methods if they are not selected.
         $Param{BasicAuthHidden} = 'Hidden';
         $Param{KerberosHidden}  = 'Hidden';
 
-        # Rother OSS / OAuth2
+# Rother OSS / OAuth2
         $Param{OAuthHidden} = 'Hidden';
 
-        # EO / OAuth2
+# EO / OAuth2
 
         if ( $Param{AuthType} && $Param{AuthType} eq 'BasicAuth' ) {
 
@@ -626,13 +626,13 @@ sub _ShowEdit {
             $Param{KerberosKeytabValidateRequired} = 'Validate_Required';
         }
 
-        # Rother OSS / OAuth2
+# Rother OSS / OAuth2
         elsif ( $Param{AuthType} && $Param{AuthType} eq 'OAuth' ) {
 
             $Param{OAuthHidden} = '';
         }
 
-        # EO / OAuth2
+# EO / OAuth2
 
         # Create use Proxy select.
         $Param{UseProxyStrg} = $LayoutObject->BuildSelection(
@@ -994,15 +994,15 @@ sub _GetParams {
 
     for my $ParamName (
 
-        # Rother OSS / OAuth2
-        #        qw(
-        #            Host DefaultCommand MaxLength KeepAlive Timeout
-        #            AuthType CredentialID BasicAuthUser BasicAuthPassword
-        #            KerberosUser KerberosKeytab BearerAuthToken UseProxy
-        #            ProxyHost ProxyUser ProxyPassword ProxyExclude UseSSL
-        #            SSLCertificate SSLKey SSLPassword SSLCAFile SSLCADir
-        #            SSLVerifyHostname SSLVerifyMode
-        #        )
+# Rother OSS / OAuth2
+#        qw(
+#            Host DefaultCommand MaxLength KeepAlive Timeout
+#            AuthType CredentialID BasicAuthUser BasicAuthPassword
+#            KerberosUser KerberosKeytab BearerAuthToken UseProxy
+#            ProxyHost ProxyUser ProxyPassword ProxyExclude UseSSL
+#            SSLCertificate SSLKey SSLPassword SSLCAFile SSLCADir
+#            SSLVerifyHostname SSLVerifyMode
+#        )
         qw(
             Host DefaultCommand MaxLength KeepAlive Timeout
             AuthType CredentialID BasicAuthUser BasicAuthPassword
@@ -1012,7 +1012,7 @@ sub _GetParams {
             SSLVerifyHostname SSLVerifyMode OAuthAccountName
         )
 
-        # EO / OAuth2
+# EO / OAuth2
         )
     {
         $GetParam->{$ParamName} = $ParamObject->GetParam( Param => $ParamName ) || '';

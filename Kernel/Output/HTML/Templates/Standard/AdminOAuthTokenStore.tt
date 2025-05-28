@@ -167,7 +167,7 @@
                     <fieldset class="TableLike">
 
                         <div class="Field">
-                            <p class="Error">[% Data.TokenError %]</p>
+                            <p class="Error">[% Data.TokenError | html %]</p>
                         </div>
 
                         <label class="Mandatory" for="AccountName"><span class="Marker">*</span> [% Translate("Account Name") | html %]:</label>
