@@ -350,6 +350,15 @@ sub Run {
         {
             my $GrantType = $Account->{GrantType};
 
+            # clean cache and database
+            $TokenRepository->DeleteToken(
+                AccountName => $AccountName,
+            );
+
+            $TokenProvider->EmptyCache(
+                AccountName => $AccountName,
+            );
+
             # authorization_code uses browser based flow
             # redirect the browser to the identity provider
             # login page
