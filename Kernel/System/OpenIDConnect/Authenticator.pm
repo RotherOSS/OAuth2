@@ -100,6 +100,11 @@ sub Authenticate {
 
         next COUNT if !$GenericModule;
 
+        $Kernel::OM->Get('Kernel::System::Log')->Log(
+            Priority => 'debug',
+            Message  => "Authenticate OAuth2 Token with AuthModule $GenericModule",
+        );
+
         $GenericModule =~ s/^Kernel::System::Auth:://;
         my $OpenIDConfig = $ConfigObject->Get( "AuthModule::" . $GenericModule . "::Config" );
 
@@ -116,6 +121,12 @@ sub Authenticate {
 
         # if token not validated, try next token
         if ( !$TokenResult->{Success} ) {
+
+            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                Priority => 'debug',
+                Message  => "Failed to authenticate OAuth2 Token with AuthModule $GenericModule",
+            );
+
             next COUNT;
         }
 
@@ -125,6 +136,12 @@ sub Authenticate {
         my $UserLogin = $TokenResult->{TokenData}->{$IDKey};
 
         if ( !IsStringWithData($UserLogin) ) {
+
+            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                Priority => 'debug',
+                Message  => "Failed to authenticate OAuth2 Token with AuthModule $GenericModule - no UserLogin found.",
+            );
+
             next COUNT;
         }
 
@@ -133,6 +150,12 @@ sub Authenticate {
 
         if ( IsHashRefWithData($WebserviceRestrictions) && $WebserviceRestrictions->{UserLogin} ) {
             if ( $WebserviceRestrictions->{UserLogin} ne $UserLogin ) {
+
+                $Kernel::OM->Get('Kernel::System::Log')->Log(
+                    Priority => 'debug',
+                    Message  => "Failed to authenticate OAuth2 Token with AuthModule $GenericModule due to WebserviceRestriction.",
+                );
+
                 next COUNT;
             }
         }
@@ -154,6 +177,12 @@ sub Authenticate {
             );
 
             if ( !$Result->{Success} ) {
+
+                $Kernel::OM->Get('Kernel::System::Log')->Log(
+                    Priority => 'debug',
+                    Message  => "Failed to import User based on fresh OAuth2 Token with AuthModule $GenericModule",
+                );
+
                 next COUNT;
             }
 
