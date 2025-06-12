@@ -217,12 +217,6 @@ sub Run {
         );
 
         if ( !$Success ) {
-
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'debug',
-                Message  => "Error creating/updating OAuth2 Account ".$GetParam{AccountName},
-            );
-
             $Output .= $LayoutObject->Notify(
                 Info     => $LanguageObject->Translate( "Error creating/updating %s!", $GetParam{AccountName} ),
                 Priority => 'Error'
@@ -254,12 +248,6 @@ sub Run {
             }
             else {
                 # oh boy, we cannot event generate a valid redirect url. invalid usser config!
-
-                $Kernel::OM->Get('Kernel::System::Log')->Log(
-                    Priority => 'debug',
-                    Message  => "Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD Configuration!",
-                );
-
                 $Output .= $LayoutObject->Notify(
                     Info     => $LanguageObject->Translate('Unable to generate OIDC Provider Authentication URL for Login. Invalid OICD Configuration!'),
                     Priority => 'Error'
@@ -293,11 +281,6 @@ sub Run {
 
             # oh girl, fetch token failed, invalid user config!
             if ( !$TokenResult->{Success} ) {
-
-                $Kernel::OM->Get('Kernel::System::Log')->Log(
-                    Priority => 'debug',
-                    Message  => $TokenResult->{Error},
-                );
 
                 my $Notification = $LayoutObject->Notify(
                     Info     => $TokenResult->{Error},
@@ -349,13 +332,6 @@ sub Run {
                 Priority => 'Success'
             );
         }
-        else {
-
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'debug',
-                Message  => "Failed to delete OAuth2 Account ".$AccountName,
-            );   
-        }
     }
 
     # ------------------------------------------------------------ #
@@ -373,15 +349,6 @@ sub Run {
         if ( IsHashRefWithData($Account) )
         {
             my $GrantType = $Account->{GrantType};
-
-            # clean cache and database
-            $TokenRepository->DeleteToken(
-                AccountName => $AccountName,
-            );
-
-            $TokenProvider->EmptyCache(
-                AccountName => $AccountName,
-            );
 
             # authorization_code uses browser based flow
             # redirect the browser to the identity provider
@@ -424,11 +391,6 @@ sub Run {
                         AccountName => $AccountName,
                     );
 
-                    $Kernel::OM->Get('Kernel::System::Log')->Log(
-                        Priority => 'debug',
-                        Message  => "Failed to refresh OAuth2 Token for Account ".$AccountName,
-                    );
-
                     $Output .= $LayoutObject->Notify(
                         Info     => $TokenResult->{Error},
                         Priority => 'Error'
@@ -454,11 +416,6 @@ sub Run {
 
         if ( !$CachedState ) {
 
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'debug',
-                Message  => "Invalid OAuth State $State from $Issuer",
-            );
-
             return join '',
                 $LayoutObject->Header( Title => 'Error' ),
                 $LayoutObject->Warning(
@@ -475,11 +432,6 @@ sub Run {
 
         if ( !IsHashRefWithData($Account) )
         {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'debug',
-                Message  => "Invalid Account for Token: ". $AccountName,
-            );
-
             return join '',
                 $LayoutObject->Header( Title => 'Error' ),
                 $LayoutObject->Warning(
@@ -494,12 +446,6 @@ sub Run {
         );
 
         if ( $Issuer ne $ProviderIssuer ) {
-
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'debug',
-                Message  => "Invalid Issuer $Issuer for Account $AccountName",
-            );
-            
             return join '',
                 $LayoutObject->Header( Title => 'Error' ),
                 $LayoutObject->Warning(
@@ -523,11 +469,6 @@ sub Run {
 
         }
         else {
-
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'debug',
-                Message  => "Error fetching initial Token for $AccountName!"
-            );
 
             $Output .= $LayoutObject->Notify(
                 Info     => $LanguageObject->Translate("Error fetching initial Token for $AccountName!"),

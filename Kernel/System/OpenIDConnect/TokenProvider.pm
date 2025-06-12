@@ -134,22 +134,12 @@ sub Fetch {
 
     # 1) try fetch from Cache
 
-    $Kernel::OM->Get('Kernel::System::Log')->Log(
-        Priority => 'debug',
-        Message  => "Try fetch OAuth2 Token from Cache for Account $AccountName",
-    );
-
     my $Token = $Self->_FetchTokenFromCache(
         AccountName => $AccountName,
         TokenType   => $TokenType,
     );
 
     if ($Token) {
-
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'debug',
-            Message  => "Found OAuth2 Token in Cache for Account $AccountName",
-        );
 
         return {
             Success => 1,
@@ -159,12 +149,6 @@ sub Fetch {
     }
 
     # 2) try fetch from DB
-
-    $Kernel::OM->Get('Kernel::System::Log')->Log(
-        Priority => 'debug',
-        Message  => "Try fetch OAuth2 Token from DB for Account $AccountName",
-    );
-    
     my $TokenRepository = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenRepository');
 
     my $TokenData = $TokenRepository->GetToken(
@@ -174,11 +158,6 @@ sub Fetch {
 
     if ( $TokenData && $TokenData->{Token} ) {
 
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'debug',
-            Message  => "Found OAuth2 Token in DB for Account $AccountName",
-        );
-
         return {
             Success => 1,
             Token   => $TokenData->{Token},
@@ -187,11 +166,6 @@ sub Fetch {
     }
 
     # 3) try refresh_token, if any
-
-    $Kernel::OM->Get('Kernel::System::Log')->Log(
-        Priority => 'debug',
-        Message  => "Try fetch OAuth2 Token via refresh_token for Account $AccountName",
-    );
 
     my $RefreshToken = $TokenRepository->GetToken(
         AccountName => $AccountName,
@@ -207,11 +181,6 @@ sub Fetch {
         );
 
         if ( $Result->{Success} && $Result->{Token} ) {
-
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'debug',
-                Message  => "Got OAuth2 Token via refresh_token for Account $AccountName",
-            );
 
             return {
                 Success => 1,
@@ -308,7 +277,6 @@ sub FetchToken {
     my $Account     = $FunctionalAccountsObject->GetAccount( Name => $AccountName );
 
     if ( !IsHashRefWithData($Account) ) {
-        
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'error',
             Message  => "Need functional account Invoker settings in SysConfig for $AccountName.",
@@ -321,12 +289,6 @@ sub FetchToken {
     }
 
     my $TokenType = $Account->{TokenType} || 'access_token';
-
-    $Kernel::OM->Get('Kernel::System::Log')->Log(
-        Priority => 'debug',
-        Message  => "Retrieve OAuth2 Token $TokenType for Account $AccountName",
-    );
-
 
     my $OpenIDConfig = $Account->{OIDCProfile};
 
@@ -346,12 +308,6 @@ sub FetchToken {
     );
 
     if ( !$Result->{Success} ) {
-
-        $Kernel::OM->Get('Kernel::System::Log')->Log(
-            Priority => 'debug',
-            Message  => "Failed to tetrieve OAuth2 Token from Provider for Account $AccountName",
-        );
-
         return $Result;
     }
 
@@ -755,11 +711,6 @@ sub _ProcessNewToken {
     my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
 
     my $TokenData;
-
-    $Kernel::OM->Get('Kernel::System::Log')->Log(
-        Priority => 'debug',
-        Message  => "Process new OAuth2 Token $TokenType for Account $AccountName",
-    );
 
     if ( $TokenType eq 'refresh_token' ) {
 
