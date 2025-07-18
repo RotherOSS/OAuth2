@@ -777,7 +777,7 @@ sub _ProcessNewToken {
     }
     elsif ( $TokenType eq 'access_token' ) {
 
-        $TokenData = $TokenObject->Inspect( Token => $Token );        
+        $TokenData = $TokenObject->Inspect( Token => $Token );
     }
     else {
 

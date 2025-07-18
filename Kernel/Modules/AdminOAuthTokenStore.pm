@@ -220,7 +220,7 @@ sub Run {
 
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'debug',
-                Message  => "Error creating/updating OAuth2 Account ".$GetParam{AccountName},
+                Message  => "Error creating/updating OAuth2 Account " . $GetParam{AccountName},
             );
 
             $Output .= $LayoutObject->Notify(
@@ -277,8 +277,8 @@ sub Run {
                 );
 
                 $Output .= $LayoutObject->Output(
-                    TemplateFile => 'AdminOAuthTokenStore',                    
-                    Data => \%Param,
+                    TemplateFile => 'AdminOAuthTokenStore',
+                    Data         => \%Param,
                 );
                 $Output .= $LayoutObject->Footer();
                 return $Output;
@@ -320,7 +320,7 @@ sub Run {
                 $Output .= $LayoutObject->Output(
                     TemplateFile => 'AdminOAuthTokenStore',
                     Data         => \%Param,
-                ); 
+                );
                 $Output .= $LayoutObject->Footer();
 
                 return $Output;
@@ -353,8 +353,8 @@ sub Run {
 
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'debug',
-                Message  => "Failed to delete OAuth2 Account ".$AccountName,
-            );   
+                Message  => "Failed to delete OAuth2 Account " . $AccountName,
+            );
         }
     }
 
@@ -426,7 +426,7 @@ sub Run {
 
                     $Kernel::OM->Get('Kernel::System::Log')->Log(
                         Priority => 'debug',
-                        Message  => "Failed to refresh OAuth2 Token for Account ".$AccountName,
+                        Message  => "Failed to refresh OAuth2 Token for Account " . $AccountName,
                     );
 
                     $Output .= $LayoutObject->Notify(
@@ -477,7 +477,7 @@ sub Run {
         {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'debug',
-                Message  => "Invalid Account for Token: ". $AccountName,
+                Message  => "Invalid Account for Token: " . $AccountName,
             );
 
             return join '',
@@ -489,7 +489,7 @@ sub Run {
         }
 
         # validate the issuer
-        if( $Issuer ) {
+        if ($Issuer) {
             my $ProviderIssuer = $FunctionalAccounts->GetIssuer(
                 Name => $AccountName,
             );
@@ -509,7 +509,7 @@ sub Run {
                     $LayoutObject->Footer();
             }
         }
-        
+
         my $TokenResult = $TokenProvider->FetchToken(
             AccountName => $AccountName,
             Code        => $Code,
@@ -550,7 +550,7 @@ sub Run {
             $Output .= $LayoutObject->Output(
                 TemplateFile => 'AdminOAuthTokenStore',
                 Data         => \%$CachedState,
-            ); 
+            );
             $Output .= $LayoutObject->Footer();
 
             return $Output;
@@ -583,11 +583,11 @@ sub Run {
 
     for my $GenericInterfaceToken (@$GenericInterfaceTokens) {
 
-        if( !exists $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID}  } )
+        if ( !exists $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID} } )
         {
             $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID} } = {};
         }
-        
+
         $GenericInterfaceTokenLookup{ $GenericInterfaceToken->{AccountID} }->{ $GenericInterfaceToken->{TokenType} } = $GenericInterfaceToken;
     }
 
@@ -708,10 +708,10 @@ sub _EditInvoker {
     );
 
     $Param{ProviderNames} = $LayoutObject->BuildSelection(
-        Data          => \%Profiles,
-        Name          => 'ProviderID',
-        Class         => 'Modernize',
-        SelectedID    => $Param{ProviderID},
+        Data       => \%Profiles,
+        Name       => 'ProviderID',
+        Class      => 'Modernize',
+        SelectedID => $Param{ProviderID},
     );
 
     $Param{GrantTypes} = $LayoutObject->BuildSelection(

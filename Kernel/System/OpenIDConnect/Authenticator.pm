@@ -107,14 +107,11 @@ sub Authenticate {
 
         $GenericModule =~ s/^Kernel::System::Auth:://;
 
-        my $OpenIDConfig = $ConfigObject->Get( "AuthModule$Count"."::" . $GenericModule . "::Config" );
-
-use Data::Dumper;
-print STDERR Dumper($OpenIDConfig);
+        my $OpenIDConfig = $ConfigObject->Get( "AuthModule$Count" . "::" . $GenericModule . "::Config" );
 
         next COUNT if !IsHashRefWithData($OpenIDConfig);
 
-        # validate the token        
+        # validate the token
         my $TokenResult = $Self->_ValidateToken(
             AccountName  => $GenericModule,
             OpenIDConfig => $OpenIDConfig,
@@ -135,7 +132,7 @@ print STDERR Dumper($OpenIDConfig);
         }
 
         # lookup the UserLogin from the Token data
-        my $IDKey = $ConfigObject->Get( "AuthModule$Count"."::" . $GenericModule . "::UID" ) || 'sub';
+        my $IDKey = $ConfigObject->Get( "AuthModule$Count" . "::" . $GenericModule . "::UID" ) || 'sub';
 
         my $UserLogin = $TokenResult->{TokenData}->{$IDKey};
 
@@ -241,7 +238,7 @@ sub _ValidateToken {
 
     my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
 
-    if($ValidateToken) {
+    if ($ValidateToken) {
 
         return $TokenObject->Validate(
             Token            => $Param{Token},
@@ -252,7 +249,7 @@ sub _ValidateToken {
         );
     }
 
-    my $TokenData =$TokenObject->Inspect(
+    my $TokenData = $TokenObject->Inspect(
         Token => $Param{Token},
     );
 

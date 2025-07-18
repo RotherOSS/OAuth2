@@ -378,7 +378,7 @@ sub GetToken {
 
     my $Tokens = $TokenRepositoryObject->GetList(
         ExpiresAfter => Unix epoch timestamp, # optional
-        TokenType    => 'refresh_token',      # optional, defaults to 'refresh_token', 
+        TokenType    => 'refresh_token',      # optional, defaults to 'refresh_token',
                                               # can be 'refresh_token' or 'access_token'
                                               # or 'id_token' or 'all'
     );
@@ -410,9 +410,9 @@ sub GetList {
     my $TokenType    = $Param{TokenType} || 'refresh_token';
 
     my $SQL  = "SELECT id, oidc_functional_account_id, token_type, token, expires_at FROM oauth2_token_storage WHERE 1=1 ";
-    my $Bind = [  ];
+    my $Bind = [];
 
-    if($TokenType ne 'all' ) {
+    if ( $TokenType ne 'all' ) {
         $SQL .= "AND token_type = ? ";
         push @$Bind, \$TokenType;
     }
