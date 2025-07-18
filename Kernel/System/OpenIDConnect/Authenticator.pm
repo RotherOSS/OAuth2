@@ -228,8 +228,6 @@ sub _ValidateToken {
     my $ClientSettings = $OpenIDConfig->{ClientSettings};
     my $ValidateToken  = $OpenIDConfig->{Misc}->{ValidateToken} // 1;
 
-    print STDERR "ValidateToken: $ValidateToken\n";
-
     my $WebserviceRestrictions = $ConfigObject->Get( $AccountName . '::Webservice::Restrictions' ) || {};
 
     my $ExpectedAudience = $WebserviceRestrictions->{Audience} // $ClientSettings->{ClientID};
