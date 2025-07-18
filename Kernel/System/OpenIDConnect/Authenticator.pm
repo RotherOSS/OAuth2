@@ -102,15 +102,19 @@ sub Authenticate {
 
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'debug',
-            Message  => "Authenticate OAuth2 Token with AuthModule $GenericModule",
+            Message  => "Authenticate OAuth2 Token with AuthModule 'AuthModule$Count'",
         );
 
         $GenericModule =~ s/^Kernel::System::Auth:://;
-        my $OpenIDConfig = $ConfigObject->Get( "AuthModule::" . $GenericModule . "::Config" );
+
+        my $OpenIDConfig = $ConfigObject->Get( "AuthModule$Count"."::" . $GenericModule . "::Config" );
+
+use Data::Dumper;
+print STDERR Dumper($OpenIDConfig);
 
         next COUNT if !IsHashRefWithData($OpenIDConfig);
 
-        # validate the token
+        # validate the token        
         my $TokenResult = $Self->_ValidateToken(
             AccountName  => $GenericModule,
             OpenIDConfig => $OpenIDConfig,
@@ -124,14 +128,14 @@ sub Authenticate {
 
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'debug',
-                Message  => "Failed to authenticate OAuth2 Token with AuthModule $GenericModule",
+                Message  => "Failed to authenticate OAuth2 Token with AuthModule 'AuthModule$Count",
             );
 
             next COUNT;
         }
 
         # lookup the UserLogin from the Token data
-        my $IDKey = $ConfigObject->Get( "AuthModule::" . $GenericModule . "::UID" ) || 'sub';
+        my $IDKey = $ConfigObject->Get( "AuthModule$Count"."::" . $GenericModule . "::UID" ) || 'sub';
 
         my $UserLogin = $TokenResult->{TokenData}->{$IDKey};
 
@@ -139,7 +143,7 @@ sub Authenticate {
 
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'debug',
-                Message  => "Failed to authenticate OAuth2 Token with AuthModule $GenericModule - no UserLogin found.",
+                Message  => "Failed to authenticate OAuth2 Token with AuthModule 'AuthModule$Count' - no UserLogin found.",
             );
 
             next COUNT;
@@ -153,7 +157,7 @@ sub Authenticate {
 
                 $Kernel::OM->Get('Kernel::System::Log')->Log(
                     Priority => 'debug',
-                    Message  => "Failed to authenticate OAuth2 Token with AuthModule $GenericModule due to WebserviceRestriction.",
+                    Message  => "Failed to authenticate OAuth2 Token with AuthModule 'AuthModule$Count' due to WebserviceRestriction.",
                 );
 
                 next COUNT;
@@ -180,7 +184,7 @@ sub Authenticate {
 
                 $Kernel::OM->Get('Kernel::System::Log')->Log(
                     Priority => 'debug',
-                    Message  => "Failed to import User based on fresh OAuth2 Token with AuthModule $GenericModule",
+                    Message  => "Failed to import User based on fresh OAuth2 Token with AuthModule 'AuthModule$Count'",
                 );
 
                 next COUNT;
@@ -225,6 +229,9 @@ sub _ValidateToken {
     my $AccountName    = $Param{AccountName};
     my $ConfigObject   = $Param{ConfigObject};
     my $ClientSettings = $OpenIDConfig->{ClientSettings};
+    my $ValidateToken  = $OpenIDConfig->{Misc}->{ValidateToken} // 1;
+
+    print STDERR "ValidateToken: $ValidateToken\n";
 
     my $WebserviceRestrictions = $ConfigObject->Get( $AccountName . '::Webservice::Restrictions' ) || {};
 
@@ -234,13 +241,25 @@ sub _ValidateToken {
 
     my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
 
-    return $TokenObject->Validate(
-        Token            => $Param{Token},
-        OpenIDConfig     => $OpenIDConfig,
-        ExpectedAudience => $ExpectedAudience,
-        AuthorizedParty  => $AuthorizedParty,
-        ExpectedScopes   => $ExpectedScopes,
+    if($ValidateToken) {
+
+        return $TokenObject->Validate(
+            Token            => $Param{Token},
+            OpenIDConfig     => $OpenIDConfig,
+            ExpectedAudience => $ExpectedAudience,
+            AuthorizedParty  => $AuthorizedParty,
+            ExpectedScopes   => $ExpectedScopes,
+        );
+    }
+
+    my $TokenData =$TokenObject->Inspect(
+        Token => $Param{Token},
     );
+
+    return {
+        Success   => defined $TokenData ? 1 : 0,
+        TokenData => $TokenData,
+    };
 }
 
 1;

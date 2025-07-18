@@ -391,13 +391,18 @@ sub FetchToken {
     # process and persist the Tokens
     if ( $DecodedContent->{id_token} ) {
 
-        $Self->_ProcessNewToken(
+        my $Result = $Self->_ProcessNewToken(
             OpenIDConfig => $OpenIDConfig,
             AccountName  => $AccountName,
             Account      => $Account,
             TokenType    => 'id_token',
             Token        => $DecodedContent->{id_token},
         );
+
+        return {
+            Success => 0,
+            Error   => "Invalid Parameters !",
+        } if !$Result;
     }
 
     if ( $DecodedContent->{access_token} ) {
@@ -769,6 +774,10 @@ sub _ProcessNewToken {
         return unless $Result;
 
         $TokenData = $Result;
+    }
+    elsif ( $TokenType eq 'access_token' ) {
+
+        $TokenData = $TokenObject->Inspect( Token => $Token );        
     }
     else {
 

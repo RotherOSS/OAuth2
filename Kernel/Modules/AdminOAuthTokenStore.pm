@@ -489,25 +489,27 @@ sub Run {
         }
 
         # validate the issuer
-        my $ProviderIssuer = $FunctionalAccounts->GetIssuer(
-            Name => $AccountName,
-        );
-
-        if ( $Issuer ne $ProviderIssuer ) {
-
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'debug',
-                Message  => "Invalid Issuer $Issuer for Account $AccountName",
+        if( $Issuer ) {
+            my $ProviderIssuer = $FunctionalAccounts->GetIssuer(
+                Name => $AccountName,
             );
 
-            return join '',
-                $LayoutObject->Header( Title => 'Error' ),
-                $LayoutObject->Warning(
-                    Message => $LanguageObject->Translate( "Invalid Issuer %s for Token %s!", $Issuer, $AccountName )
-                ),
-                $LayoutObject->Footer();
-        }
+            if ( $Issuer ne $ProviderIssuer ) {
 
+                $Kernel::OM->Get('Kernel::System::Log')->Log(
+                    Priority => 'debug',
+                    Message  => "Invalid Issuer $Issuer for Account $AccountName",
+                );
+
+                return join '',
+                    $LayoutObject->Header( Title => 'Error' ),
+                    $LayoutObject->Warning(
+                        Message => $LanguageObject->Translate( "Invalid Issuer %s for Token %s!", $Issuer, $AccountName )
+                    ),
+                    $LayoutObject->Footer();
+            }
+        }
+        
         my $TokenResult = $TokenProvider->FetchToken(
             AccountName => $AccountName,
             Code        => $Code,

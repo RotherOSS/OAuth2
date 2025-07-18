@@ -91,10 +91,6 @@ sub SaveToken {
         }
     }
 
-    if ( !$Self->ValidateTokenType(%Param) ) {
-        return;
-    }
-
     $Self->DeleteToken(%Param);
 
     my $AccountID = $Param{AccountID};
