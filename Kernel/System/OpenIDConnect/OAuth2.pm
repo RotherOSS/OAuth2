@@ -193,6 +193,11 @@ sub RequestToken {
         push @$PostData, scope => $Scope;
     }
 
+    $Kernel::OM->Get('Kernel::System::Log')->Log(
+        Priority => 'debug',
+        Message  => "Using TokenEndpoint $Param{TokenEndpoint} !",
+    );
+
     # actually send the request
     my $Response = $Self->_SendRequest(
         ClientID     => $Param{ClientID},
@@ -314,6 +319,11 @@ sub GetAuthURL {
         Value => \%Param,
     );
 
+    $Kernel::OM->Get('Kernel::System::Log')->Log(
+        Priority => 'debug',
+        Message  => "OAuth2 authentication redirect URL: $RedirectURL !",
+    );
+
 # TODO: endsession_endpoint in provider info ?
 # my $LogoutURL = "https://keycloak:8443/realms/master/protocol/openid-connect/logout?client_id=otobo&post_logout_redirect_uri=";
 # $LogoutURL .= uri_escape_utf8($RedirectURL);
@@ -395,6 +405,11 @@ sub _SendRequest {
             Error   => $LanguageObject->Translate( "Got no content when requesting Token. Response Code: %s", $Response->code() ),
         };
     }
+
+    $Kernel::OM->Get('Kernel::System::Log')->Log(
+        Priority => 'debug',
+        Message  => "Received Content: $Content",
+    );    
 
     # decode content
     my $DecodedContent = $Kernel::OM->Get('Kernel::System::JSON')->Decode(
