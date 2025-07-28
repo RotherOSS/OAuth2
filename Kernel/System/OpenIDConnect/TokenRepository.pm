@@ -355,18 +355,13 @@ sub GetToken {
 
     if ( my ( $TokenID, $AccountID, $TokenType, $Token, $ExpiresAt ) = $DBObject->FetchrowArray ) {
 
-        my $TokenObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Token');
-        if ( $TokenObject->IsTokenStillValid( Token => $Token ) ) {
-
-            return {
-                TokenID   => $TokenID,
-                AccountID => $AccountID,
-                TokenType => $TokenType,
-                Token     => $Token,
-                ExpiresAt => $ExpiresAt,
-            };
-        }
-        $Self->DeleteToken(%Param);
+        return {
+            TokenID   => $TokenID,
+            AccountID => $AccountID,
+            TokenType => $TokenType,
+            Token     => $Token,
+            ExpiresAt => $ExpiresAt,
+        };
     }
 
     return;

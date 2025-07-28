@@ -220,7 +220,7 @@ sub Validate {
 
     my $TokenData = $Self->DecodeToken(%Param);
 
-    if ( !$TokenData ) {
+    if ( !IsHashRefWithData($TokenData) ) {
 
         return {
             Success => 0,
@@ -251,7 +251,7 @@ sub Validate {
 
         return {
             Success => 0,
-            Error   => "<iss> wrong. IDToken is issued by '$TokenData->{iss}', but '$Issuer' is required."
+            Error   => "<iss> wrong. Token is issued by '$TokenData->{iss}', but '$Issuer' is required."
         };
     }
 
@@ -259,11 +259,11 @@ sub Validate {
 
     if ($ExpectedAudience) {
 
-        if ( !grep { $_ eq $ExpectedAudience } @Audience ) {
+        if ( !grep { $_ =~ m/$ExpectedAudience/ } @Audience ) {
 
             return {
                 Success => 0,
-                Error   => "<aud> wrong. IDToken is addressed to '@Audience' which does not contain '$ExpectedAudience'."
+                Error   => "<aud> wrong. Token is addressed to '@Audience' which does not contain '$ExpectedAudience'."
             };
         }
     }
@@ -304,7 +304,7 @@ sub Validate {
 
         return {
             Success => 0,
-            Error   => "<iat> invalid. IDToken creation time is in the future. Token: $TokenData->{iat}; Current: $CurrentTime;"
+            Error   => "<iat> invalid. Token creation time is in the future. Token: $TokenData->{iat}; Current: $CurrentTime;"
         };
     }
 
@@ -312,7 +312,7 @@ sub Validate {
 
         return {
             Success => 0,
-            Error   => "<exp> invalid. IDToken expired. Expiration Time: $TokenData->{exp}; Current: $CurrentTime;"
+            Error   => "<exp> invalid. Token expired. Expiration Time: $TokenData->{exp}; Current: $CurrentTime;"
         };
     }
 

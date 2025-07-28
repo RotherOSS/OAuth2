@@ -187,11 +187,55 @@ and this needs to be configured in ``Config.pm``.
     $Self->{'AuthModule::OpenIDConnect::Debug'}->{'LogIDToken'} = 1;
 
 
+Microsoft specific
+--------------------------------
+
+Create a custom scope for your web app as described in
+
+https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-configure-app-expose-web-apis
+
+See 
+
+https://tonesandtones.github.io/azure-ad-and-the-unvalidatable-access-token/
+
+for a discussion and more information.
+
+then use your custom scope as the scope when requesting tokens. The custom scope will look like
+
+api://<OAuth2 ClientID>/otobo
+
+Both v1 and v2 of MS OIDC are supported, but v2 is recommended.
+
+For Otobo to be able to validate Tokens when using the v2 Endpoints, you have to explicitly ask for v2 Access Tokens,
+as specified here:
+
+https://docs.azure.cn/en-us/entra/identity-platform/access-tokens#token-formats 
+https://learn.microsoft.com/en-us/entra/identity-platform/reference-app-manifest#requestedaccesstokenversion-attribute  
+
+
+Provider Users
+--------------
+
+Every valid Token needs to be mapped to a system user. If an API system user does not exist for an incoming webservice call, it will be created provided the Token 
+passes validation, the Token contains roles, a corresponding Role Mapping exists, and the (optional) further restrictions you can configure in Otobo (see next section).
+
+Options to assure a System User can be mapped to from an access_token:
+
+- Setup User and Role Mapping for the OIDC Provider, and configure your OIDC provider to attach all necessary claims - most importantly probably 'roles' - to the issued access_tokens.
+
+or
+
+- Manually create an Agent in the Admin UI. For the access_token mapping to succeed, make sure you set the 'User Login' property in Otobo to the OIDC claim configured
+in the `$Self->{'AuthModule::OpenIDConnect::UID'} = 'sub';` in Config.pm. The default shown here is mapping the 'sub' claim from the access_token to the
+Otobo user login. 
+
+
+
 Provider Restrictions (optional)
 --------------------------------
 
 Every valid Token needs to be mapped to a system user. If an API system user does not exist for an incoming webservice call, it will be created provided the Token 
-passes validation and any further restrictions.
+passes validation, the Token contains roles, a corresponding Role Mapping exists, and the (optional) further restrictions you can configure in Otobo:
 
 To add restrictions which valid tokens are accepted for incoming webservice calls, restrict by these fields in Config.pm:
 

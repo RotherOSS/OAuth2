@@ -200,6 +200,11 @@ sub Fetch {
 
     if ( $RefreshToken && $RefreshToken->{Token} ) {
 
+        $Kernel::OM->Get('Kernel::System::Log')->Log(
+            Priority => 'debug',
+            Message  => "Trading in refresh_token for Account $AccountName",
+        );
+
         my $Result = $Self->FetchToken(
             AccountName  => $AccountName,
             TokenType    => $TokenType,
@@ -767,13 +772,7 @@ sub _ProcessNewToken {
 
     if ( $TokenType eq 'refresh_token' ) {
 
-        my $Result = $TokenObject->Inspect(
-            Token => $Token,
-        );
-
-        return unless $Result;
-
-        $TokenData = $Result;
+        # skip
     }
     elsif ( $TokenType eq 'access_token' ) {
 
@@ -789,6 +788,21 @@ sub _ProcessNewToken {
             ExpectedScopes   => $Account->{Scope},
             Leeway           => $Account->{Misc}->{Leeway},
         );
+
+        if ( $Result->{Success} ) {
+
+            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                Priority => 'debug',
+                Message  => "Validated IDToken for Account $AccountName.",
+            );
+        }
+        else {
+
+            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                Priority => 'debug',
+                Message  => "Invalid IDToken for Account $AccountName!",
+            );
+        }
 
         return unless $Result->{Success};
 
@@ -809,12 +823,14 @@ sub _ProcessNewToken {
 
     return unless $Success;
 
-    $Self->_PopulateCache(
-        AccountName => $AccountName,
-        TokenType   => $TokenType,
-        Token       => $Token,
-        ExpiresAt   => $ExpiresAt,
-    );
+    if ( $TokenType ne 'refresh_token' ) {
+        $Self->_PopulateCache(
+            AccountName => $AccountName,
+            TokenType   => $TokenType,
+            Token       => $Token,
+            ExpiresAt   => $ExpiresAt,
+        );
+    }
 
     return 1;
 }

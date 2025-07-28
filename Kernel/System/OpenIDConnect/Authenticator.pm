@@ -125,7 +125,7 @@ sub Authenticate {
 
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'debug',
-                Message  => "Failed to authenticate OAuth2 Token with AuthModule 'AuthModule$Count",
+                Message  => "Failed to authenticate OAuth2 Token with AuthModule 'AuthModule$Count: $TokenResult->{Error} ",
             );
 
             next COUNT;
@@ -181,7 +181,7 @@ sub Authenticate {
 
                 $Kernel::OM->Get('Kernel::System::Log')->Log(
                     Priority => 'debug',
-                    Message  => "Failed to import User based on fresh OAuth2 Token with AuthModule 'AuthModule$Count'",
+                    Message  => "Failed to import User based on fresh OAuth2 Token with AuthModule 'AuthModule$Count': " . $Result->{Error},
                 );
 
                 next COUNT;
@@ -238,13 +238,15 @@ sub _ValidateToken {
 
     if ($ValidateToken) {
 
-        return $TokenObject->Validate(
+        my $Result = $TokenObject->Validate(
             Token            => $Param{Token},
             OpenIDConfig     => $OpenIDConfig,
             ExpectedAudience => $ExpectedAudience,
             AuthorizedParty  => $AuthorizedParty,
             ExpectedScopes   => $ExpectedScopes,
         );
+
+        return $Result;
     }
 
     my $TokenData = $TokenObject->Inspect(
