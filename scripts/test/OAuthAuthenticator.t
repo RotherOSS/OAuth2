@@ -198,7 +198,7 @@ sub PrepareTestSysConfig {
     );
 
     $ConfigObject->Set(
-        Key   => 'AuthModule2',
+        Key   => 'AuthModule',
         Value => 'Kernel::System::Auth::_UnitTest1',
     );
 

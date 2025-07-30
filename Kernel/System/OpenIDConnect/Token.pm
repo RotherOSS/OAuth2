@@ -184,7 +184,7 @@ sub TimeLeft {
         OpenIDConfig      => $OpenIDConfig,
         ExpectedScopes    => <space separated list>, # optional
         ExpectedAudiences => <space separated list>, # optional
-        AuthroziedParty   => '<identifier>',         # optional
+        AuthorizedParty   => '<identifier>',         # optional
     );
 
     returns
