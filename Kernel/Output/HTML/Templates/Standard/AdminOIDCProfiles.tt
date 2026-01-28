@@ -56,26 +56,20 @@
                 </p>
                 <br>
                 <br>
-
 [% RenderBlockStart("ActionAddProfile") %]
-                    <li>
-                        <a href="[% Env("Baselink") %]Action=[% Env("Action") %];Subaction=AddProfile" class="CallForAction Fullsize Center"><span><i class="fa fa-plus-square"></i>[% Translate("Add") | html %]</span></a>
-                    </li>
+                <a href="[% Env("Baselink") %]Action=[% Env("Action") %];Subaction=AddProfile" class="CallForAction Fullsize Center"><span><i class="fa fa-plus-square"></i>[% Translate("Add") | html %]</span></a>
 [% RenderBlockEnd("ActionAddProfile") %]
 [% RenderBlockStart("ActionDelete") %]
-                    <li>
-                        <form action="[% Env("CGIHandle") %]" method="post" class="PreventMultipleSubmits">
-                            <input type="hidden" name="Action" value="[% Env("Action") %]"/>
-                            <input type="hidden" name="Subaction" value="Delete"/>
-                            <input type="hidden" name="ProfileName" value="[% Data.ProfileName | html %]"/>
-                            <div class="Field SpacingTop">
-                                <button class="CallForAction Primary" id="Submit" type="submit" value="[% Translate("Delete Profile") | html %]"><span>[% Translate("Delete Profile") | html %]</span></button>
-                            </div>
-                            <div class="Clear"></div>
-                        </form>
-                    </li>
+                <form action="[% Env("CGIHandle") %]" method="post" class="PreventMultipleSubmits">
+                    <input type="hidden" name="Action" value="[% Env("Action") %]"/>
+                    <input type="hidden" name="Subaction" value="Delete"/>
+                    <input type="hidden" name="ProfileName" value="[% Data.ProfileName | html %]"/>
+                    <div class="Field SpacingTop">
+                        <button class="CallForAction Primary" id="Submit" type="submit" value="[% Translate("Delete Profile") | html %]"><span>[% Translate("Delete Profile") | html %]</span></button>
+                    </div>
+                    <div class="Clear"></div>
+                </form>
 [% RenderBlockEnd("ActionDelete") %]
-
             </div>
         </div>
     </div>
