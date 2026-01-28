@@ -89,7 +89,7 @@ sub Data {
     $Self->{Translation}->{'The OpenID Connect'} = 'Der OpenID Connect';
     $Self->{Translation}->{'to use for this functional account.'} = 'der für dieses funktionale Konto benutzt werden soll.';
     $Self->{Translation}->{'The OAuth2 grant_type to use for acquiring tokens for this account.'} = 'Der OAuth2 grant_type für dieses Konto.';
-    $Self->{Translation}->{"Selecting 'authorization_code' will redirect you to your OpenID Connect Provider's Login Page to validate your account once you click 'Save'."} = "Die Auswahl von 'authorization_code' löst einen Brwoser Redirect zur Login Seite Ihres OIDC Providers.";
+    $Self->{Translation}->{"Selecting 'authorization_code' will redirect you to your OpenID Connect Provider's Login Page to validate your account once you click 'Save'."} = "Die Auswahl von 'authorization_code' löst einen Browser Redirect zur Login Seite Ihres OIDC Providers.";
     $Self->{Translation}->{'OIDC Profile'} = 'OIDC Profil';
     $Self->{Translation}->{'Grant Type'} = 'Grant Type';
 #    $Self->{Translation}->{'Username'} = 'Username';
@@ -105,7 +105,7 @@ sub Data {
     $Self->{Translation}->{'Resource Parameter Name'} = 'Resource Parameter Name';
     $Self->{Translation}->{'Name of the resource parameter to use. Defaults to \'resource\'. Do not change unless instructed.'} = 'Name des Resource Parameters. Voreingestellt ist \'resource\'. Ändern Sie diesen Wert nur auf Anfrage.';
     $Self->{Translation}->{'Token Type'} = 'Token Typ';
-    $Self->{Translation}->{'The token type to use for externall API calls. Usually \'access_token\'.'} = 'Der Token Typ der für ausgehende WSebService Aufrufe verwendet werden soll. Üblicherweise \'access_token\'.';
+    $Self->{Translation}->{'The token type to use for externall API calls. Usually \'access_token\'.'} = 'Der Token Typ der für ausgehende WebService Aufrufe verwendet werden soll. Üblicherweise \'access_token\'.';
 
     $Self->{Translation}->{"You can create OIDC Profiles to connect to your OIDC Functional Account"} = 'Um neue OIDC Profile zum Verknüpfen mit Functional Accounts zu erstellen, klicke';
     $Self->{Translation}->{"here"} = 'hier';
