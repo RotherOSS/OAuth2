@@ -2,7 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
+# --
+# $origin: otobo - 6efdc7bf2a3325277cd79a60f0f2407f8ad59e87 - Kernel/Modules/AdminGenericInterfaceTransportHTTPREST.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -45,19 +47,18 @@ sub Run {
     my $LayoutObject     = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
     my $WebserviceObject = $Kernel::OM->Get('Kernel::System::GenericInterface::Webservice');
 
-    # Rother OSS / OAuth2
+# Rother OSS / OAuth2
     my $ConfigObject  = $Kernel::OM->Get('Kernel::Config');
     my $TokenProvider = $Kernel::OM->Get('Kernel::System::OpenIDConnect::TokenProvider');
+# EO OAuth2
 
-    # EO OAuth2
     my $WebserviceID      = $ParamObject->GetParam( Param => 'WebserviceID' )      || '';
     my $CommunicationType = $ParamObject->GetParam( Param => 'CommunicationType' ) || '';
 
-    # Rother OSS / OAuth2
+# Rother OSS / OAuth2
     my $Output = $LayoutObject->Header();
     $Output .= $LayoutObject->NavigationBar();
-
-    # EO OAuth2
+# EO OAuth2
 
     # ------------------------------------------------------------ #
     # sub-action Change: load web service and show edit screen
@@ -92,7 +93,6 @@ sub Run {
             Output       => $Output,
             LayoutObject => $LayoutObject,
             ConfigObject => $ConfigObject,
-
 # EO / OAuth2
         );
     }
@@ -509,7 +509,6 @@ sub _ShowEdit {
     my $Output       = $Param{Output};
     my $ConfigObject = $Param{ConfigObject};
     my $LayoutObject = $Param{LayoutObject};
-
 # EO / OAuth2
 
     $Param{Type}           = 'HTTP::REST';
@@ -529,9 +528,7 @@ sub _ShowEdit {
 
 # Rother OSS / OAuth2
 #    for my $ParamName (qw( AuthType BasicAuthUser BasicAuthPassword KerberosUser KerberosKeytab)) {
-
     for my $ParamName (qw( AuthType BasicAuthUser BasicAuthPassword KerberosUser KerberosKeytab OAuthAccountName)) {
-
 # EO / OAuth2
         $Param{$ParamName} = $TransportConfig->{Authentication}->{$ParamName};
     }
@@ -574,7 +571,6 @@ sub _ShowEdit {
         for my $Account (@$OAuthAccounts) {
             push @OAuthAccountNames, $Account->{Name};
         }
-
 # EO / OAuth2
 
         # Create Authentication types select.
@@ -583,7 +579,6 @@ sub _ShowEdit {
 # Rother OSS / OAuth2
 #            Data          => [ 'BasicAuth', 'Kerberos' ],
             Data => [ 'BasicAuth', 'Kerberos', 'OAuth' ],
-
 # EO / OAuth2
             Name          => 'AuthType',
             SelectedValue => $Param{AuthType} || '-',
@@ -601,7 +596,6 @@ sub _ShowEdit {
             Sort          => 'AlphanumericValue',
             Class         => 'Modernize',
         );
-
 # EO / OAuth2
 
         # Hide and disable authentication methods if they are not selected.
@@ -610,17 +604,14 @@ sub _ShowEdit {
 
 # Rother OSS / OAuth2
         $Param{OAuthHidden} = 'Hidden';
-
 # EO / OAuth2
 
         if ( $Param{AuthType} && $Param{AuthType} eq 'BasicAuth' ) {
-
             $Param{BasicAuthHidden}                   = '';
             $Param{BasicAuthUserServerError}          = 'Validate_Required';
             $Param{BasicAuthPasswordValidateRequired} = 'Validate_Required';
         }
         elsif ( $Param{AuthType} && $Param{AuthType} eq 'Kerberos' ) {
-
             $Param{KerberosHidden}                 = '';
             $Param{KerberosUserServerError}        = 'Validate_Required';
             $Param{KerberosKeytabValidateRequired} = 'Validate_Required';
@@ -628,10 +619,8 @@ sub _ShowEdit {
 
 # Rother OSS / OAuth2
         elsif ( $Param{AuthType} && $Param{AuthType} eq 'OAuth' ) {
-
             $Param{OAuthHidden} = '';
         }
-
 # EO / OAuth2
 
         # Create use Proxy select.
@@ -991,7 +980,6 @@ sub _GetParams {
     my $GetParam;
 
     # Get parameters from web browser.
-
     for my $ParamName (
 
 # Rother OSS / OAuth2
@@ -1011,7 +999,6 @@ sub _GetParams {
             SSLCertificate SSLKey SSLPassword SSLCAFile SSLCADir
             SSLVerifyHostname SSLVerifyMode OAuthAccountName
         )
-
 # EO / OAuth2
         )
     {

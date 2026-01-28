@@ -2,7 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
+# --
+# $origin: otobo - 6efdc7bf2a3325277cd79a60f0f2407f8ad59e87 - Kernel/GenericInterface/Operation/Ticket/TicketUpdate.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -147,14 +149,14 @@ if applicable the created ArticleID.
                 ForceNotificationToUserID       => [1, 2, 3]                   # optional
                 ExcludeNotificationToUserID     => [1, 2, 3]                   # optional
                 ExcludeMuteNotificationToUserID => [1, 2, 3]                   # optional
-# Rother OSS / oauth2
+# Rother OSS / OAuth2
                 SendEmail                       => 1                           # optional, defaults to 0.
                 EmailSecurity 0> {                                               # optional to enable signing/encryption
                     Backend => 'SMIME',                                           # Backend, only SMIME supported for now
                     Sign => 1,                                                   # optional, whether to the sign the email. needs valid SMIME cert for the queue
                     Encrypt => 1,                                               # optional,whether to encrypt the email. needs valid customer SMIME cert (for the TO addr)
                 }
-# EO cert-apitools
+# EO OAuth2
             },
 
             DynamicField => [                                                  # optional
@@ -2027,7 +2029,7 @@ sub _TicketUpdate {
                 UserID => $Param{UserID},
             );
 
-# Rother OSS / oauth2
+# Rother OSS / OAuth2
 #           $From = $UserData{UserFullname};
 
             if ( $Article->{SendEmail} ) {
@@ -2053,8 +2055,7 @@ sub _TicketUpdate {
             else {
                 $From = $UserData{UserFullname};
             }
-
-# EO / cert-apitools
+# EO / OAuth2
         }
 
         # Set Article To, Cc, Bcc.
@@ -2111,12 +2112,11 @@ sub _TicketUpdate {
             );
         }
 
-# Rother OSS / oauth2
+# Rother OSS / OAuth2
 #        # Create article.
 #        $ArticleID = $ArticleBackendObject->ArticleCreate(
 
         # Create article and optionally send email.
-
         my $ShallSendEmail = $Article->{SendEmail} &&
             $Article->{SenderType} eq 'agent' &&
             $Article->{CommunicationChannel} eq 'Email';
@@ -2202,8 +2202,8 @@ sub _TicketUpdate {
 
         $ArticleID = $ArticleMethodRef->(
             $ArticleBackendObject,
+# EO OAuth2
 
-# EO cert-apitools
             NoAgentNotify        => $Article->{NoAgentNotify} || 0,
             TicketID             => $TicketID,
             SenderTypeID         => $Article->{SenderTypeID} || '',
@@ -2213,12 +2213,10 @@ sub _TicketUpdate {
             To                   => $To,
             Cc                   => $Cc,
             Bcc                  => $Bcc,
-
-# Rother OSS / oauth2
+# Rother OSS / OAuth2
 #           Subject              => $Article->{Subject},
             Subject => $Subject,
-
-# EO cert-apitools
+# EO OAuth2
             Body             => $Article->{Body},
             MimeType         => $Article->{MimeType}    || '',
             Charset          => $Article->{Charset}     || '',
@@ -2234,11 +2232,9 @@ sub _TicketUpdate {
                 Subject => $Article->{Subject},
                 Body    => $PlainBody,
             },
-
-# Rother OSS / oauth2
+# Rother OSS / OAuth2
             %EmailSecurityOptions
-
-# EO cert-apitools
+# EO OAuth2
         );
 
         if ( !$ArticleID ) {

@@ -2,7 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
+# --
+# $origin: otobo - ff9e297baf287e16071d3ac6ad7f6c13f11ac7fa - Kernel/GenericInterface/Operation/Session/SessionCreate.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -103,11 +105,11 @@ sub Run {
     for my $Needed (qw( Password )) {
         if ( !$Param{Data}->{$Needed} ) {
 
-            # Rother OSS /OAuth2
-            #           return $Self->ReturnError(
-            #               ErrorCode    => 'SessionCreate.MissingParameter',
-            #               ErrorMessage => "SessionCreate: $Needed parameter is missing!",
-            #           );
+# Rother OSS / OAuth2
+#           return $Self->ReturnError(
+#               ErrorCode    => 'SessionCreate.MissingParameter',
+#               ErrorMessage => "SessionCreate: $Needed parameter is missing!",
+#           );
 
             if ( !$Param{Data}->{BearerToken} ) {
                 return $Self->ReturnError(
@@ -116,17 +118,15 @@ sub Run {
                 );
             }
 
-            # EO / OAuth2
+# EO OAuth2
         }
     }
 
     my $SessionID = $Self->CreateSessionID(
         %Param,
-
-        # Rother OSS /OAuth2
+# Rother OSS / OAuth2
         DebuggerObject => $Self->{DebuggerObject}
-
-        # EO / OAuth2
+# EO OAuth2
     );
 
     if ( !$SessionID ) {

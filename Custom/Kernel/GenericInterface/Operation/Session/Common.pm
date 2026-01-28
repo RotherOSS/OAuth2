@@ -2,7 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
+# --
+# $origin: otobo - ff9e297baf287e16071d3ac6ad7f6c13f11ac7fa - Kernel/GenericInterface/Operation/Session/Common.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -56,13 +58,12 @@ sub CreateSessionID {
     my %UserData;
     my $UserType;
 
-    # Rother OSS / OAuth2
+# Rother OSS / OAuth2
     # special case for session creation based on OAuth Bearer token
     if ( $Param{Data}->{BearerToken} ) {
         return $Self->_CreateSessionIDFromBearerToken(%Param);
     }
-
-    # EO / OAuth2
+# EO / OAuth2
 
     # get params
     my $PostPw = $Param{Data}->{Password} || '';
@@ -117,7 +118,6 @@ sub CreateSessionID {
 }
 
 # Rother OSS / OAuth2
-
 sub _CreateSessionIDFromBearerToken {
     my ( $Self, %Param ) = @_;
 
@@ -151,7 +151,6 @@ sub _CreateSessionIDFromBearerToken {
 
     return;
 }
-
 # EO / OAuth2
 
 1;
