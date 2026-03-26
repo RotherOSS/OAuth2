@@ -1,7 +1,7 @@
 # --
 # OTOBO is a web-based ticketing system for service organisations.
 # --
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -69,7 +69,10 @@ sub new {
 
     Inspect Token payload without validating the signature.
 
-    my $TokenData = $TokenObject->Inspect( Token => $Token );
+    my $TokenData = $TokenObject->Inspect(
+        Token => $Token,
+        Leeway => $AllowedSecondsTimeDrift,       # optional
+    );
 
 =cut
 
@@ -91,7 +94,9 @@ sub Inspect {
     eval {
         $TokenData = decode_jwt(
             token            => $Param{Token},
-            ignore_signature => 1
+            ignore_signature => 1,
+            ignore_claims    => 1,
+            leeway           => $Param{Leeway} // 2,
         );
     };
     if ($@) {
@@ -216,9 +221,13 @@ sub Validate {
     my $ExpectedAudience = $Param{ExpectedAudience};
     my $AuthorizedParty  = $Param{AuthorizedParty};
     my $ExpectedScopes   = $Param{ExpectedScopes};
-    my $Leeway           = $Param{Leeway} // $OpenIDConfig->{Misc}->{Leeway} || 2;
+    my $Leeway           = $Param{Leeway} // $OpenIDConfig->{Misc}->{Leeway} // 2;
 
-    my $TokenData = $Self->DecodeToken(%Param);
+    my $TokenData = $Self->DecodeToken(
+        Token        => $Param{Token},
+        OpenIDConfig => $OpenIDConfig,
+        Leeway       => $Leeway,
+    );
 
     if ( !IsHashRefWithData($TokenData) ) {
 
@@ -374,6 +383,7 @@ sub DecodeToken {
     }
 
     my $OIDCConfigurationObject = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Configuration');
+    my $Leeway                  = $Param{OpenIDConfig}->{Misc}->{Leeway} // 2;
     my $OpenIDProviderData      = $OIDCConfigurationObject->GetProviderData(
         OpenIDConfig => $Param{OpenIDConfig},
     );
@@ -390,6 +400,7 @@ sub DecodeToken {
             $TokenData = decode_jwt(
                 token    => $Param{Token},
                 kid_keys => $OpenIDProviderData->{KeyData},
+                leeway   => $Leeway,
             ) // {};
         };
         if ($@) {

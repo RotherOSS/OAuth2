@@ -1,7 +1,7 @@
 # --
 # OTOBO is a web-based ticketing system for service organisations.
 # --
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -70,7 +70,8 @@ sub new {
     Authenticates an incoming Bearer Token
 
     my $Result = $AuthenticatorObject->Authenticate(
-        Token => $Token,
+        Token  => $Token,
+        Leeway => $AllowedSecondsTimeDrift,    # optional
     );
 
     where
@@ -244,13 +245,15 @@ sub _ValidateToken {
             ExpectedAudience => $ExpectedAudience,
             AuthorizedParty  => $AuthorizedParty,
             ExpectedScopes   => $ExpectedScopes,
+            Leeway           => $Param{Leeway} // $OpenIDConfig->{Misc}->{Leeway} // 2,
         );
 
         return $Result;
     }
 
     my $TokenData = $TokenObject->Inspect(
-        Token => $Param{Token},
+        Token  => $Param{Token},
+        Leeway => $Param{Leeway} // $OpenIDConfig->{Misc}->{Leeway} // 2,
     );
 
     return {
