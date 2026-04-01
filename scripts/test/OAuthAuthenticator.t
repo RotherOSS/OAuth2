@@ -61,6 +61,8 @@ $DBObject->BeginWork();
 
 eval {
 
+    PrepareTestSysConfig();
+
     my $UserObject = $Kernel::OM->Get('Kernel::System::User');
 
     my $UserID = $UserObject->UserLookup(
@@ -88,7 +90,6 @@ eval {
         NoCache      => 1,
     );
 
-    PrepareTestSysConfig();
 
     #################################################################
     # 1) Simple JWT
