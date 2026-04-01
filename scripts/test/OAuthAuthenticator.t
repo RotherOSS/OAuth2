@@ -38,6 +38,9 @@ my $CurrentTime = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
 my $MainObject  = $Kernel::OM->Get('Kernel::System::Main');
 $MainObject->Require("$Bin/OAuthProviderMock");
 
+my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
+$DBObject->Connect();
+
 #$OAuthProviderMock::KidID || $OAuthProviderMock::PrivateKey || 0;      # prevent warnings
 
 #################################################################
@@ -54,7 +57,30 @@ my $Authenticator     = $Kernel::OM->Get('Kernel::System::OpenIDConnect::Authent
 # the OpenIDConfig we will use. This would normally come from SysConfig
 my $OpenIDConfig = OAuthProviderMock::GetTestOpenIDConfig();
 
+$DBObject->BeginWork();
+
 eval {
+
+    my $UserObject = $Kernel::OM->Get('Kernel::System::User');
+
+    my $UserID = $UserObject->UserLookup(
+        UserLogin => '9c3e1839-b468-4cda-a39a-d969ead45a40',
+        Silent    => 1, # optional, don't generate log entry if user was not found
+    );
+
+    if(!$UserID)
+    {
+        # add user
+        $UserID = $UserObject->UserAdd(
+            UserFirstname => 'testy 1',
+            UserLastname  => 'tester 1',
+            UserLogin     => '9c3e1839-b468-4cda-a39a-d969ead45a40',
+            UserEmail     => 'test1@example.com',
+            UserComment   => 'unitest',
+            ValidID       => 1,
+            ChangeUserID  => 1,
+        );
+    }
 
     # make sure cache is clean for testing
     $OIDCConfiguration->GetProviderData(
@@ -177,6 +203,8 @@ if ($@) {
     print STDERR "$@\n";
     ok( 0, "should not throw." );
 }
+
+$DBObject->Rollback();
 
 # over and out
 done_testing;
