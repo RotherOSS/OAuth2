@@ -230,5 +230,10 @@ sub PrepareTestSysConfig {
         Value => 'Kernel::System::Auth::_UnitTest1',
     );
 
+    $ConfigObject->Set(
+        Key   => 'CheckEmailAddresses',
+        Value => 0,
+    );
+
     return;
 }
