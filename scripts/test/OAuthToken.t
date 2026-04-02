@@ -2,7 +2,7 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -41,9 +41,9 @@ $MainObject->Require("$Bin/OAuthProviderMock");
 
 $OAuthProviderMock::KidID || $OAuthProviderMock::PrivateKey || 0;    # prevent warnings
 
-#################################################################
+# ---------------------------------------------------------------
 # main test
-#################################################################
+# ---------------------------------------------------------------
 
 # wait for the fake authorization server to come up
 sleep 1;
@@ -65,9 +65,9 @@ my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
 $DBObject->Connect();
 $DBObject->BeginWork();
 
-#################################################################
+# ---------------------------------------------------------------
 # create a JWT to test, sign using our private RSA key from above
-#################################################################
+# ---------------------------------------------------------------
 
 my $Token = encode_jwt(
     payload       => OAuthProviderMock::Payload(),
@@ -139,9 +139,9 @@ $Result = $TokenObject->Validate(
 );
 ok( !$Result->{Success}, 'AAudience does not include otobo2' );
 
-#################################################################
+# ---------------------------------------------------------------
 # assert on the spy log
-#################################################################
+# ---------------------------------------------------------------
 
 OAuthProviderMock::AssertHttpCallLog(
     Expected => [

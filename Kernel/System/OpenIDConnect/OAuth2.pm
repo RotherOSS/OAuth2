@@ -1,7 +1,7 @@
 # --
 # OTOBO is a web-based ticketing system for service organisations.
 # --
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -272,9 +272,9 @@ sub GetAuthURL {
     my $ResourceParamName = $Param{ResourceParamName} || 'resource';
     my $State             = $Param{State}             || $RandomString;
 
-    my $ResponseType      = $Param{ResponseType} || ['code'];
-    if( ref $ResponseType ne 'ARRAY' ) {
-        $ResponseType = [ $ResponseType ];
+    my $ResponseType = $Param{ResponseType} || ['code'];
+    if ( ref $ResponseType ne 'ARRAY' ) {
+        $ResponseType = [$ResponseType];
     }
 
     my $RedirectURL = $Param{AuthorizationEndpoint};
@@ -409,7 +409,7 @@ sub _SendRequest {
     $Kernel::OM->Get('Kernel::System::Log')->Log(
         Priority => 'debug',
         Message  => "Received Content: $Content",
-    );    
+    );
 
     # decode content
     my $DecodedContent = $Kernel::OM->Get('Kernel::System::JSON')->Decode(

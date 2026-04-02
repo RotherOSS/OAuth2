@@ -1,7 +1,7 @@
 # --
 # OTOBO is a web-based ticketing system for service organisations.
 # --
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -479,10 +479,10 @@ sub DeleteProfile {
     my $Name = $Param{Name};
 
     $DBObject->Prepare(
-        SQL => "SELECT COUNT(op.id) 
-                FROM oidc_functional_accounts ofa 
-                LEFT JOIN oidc_profiles op 
-                ON op.id = ofa.oidc_profile_id 
+        SQL => "SELECT COUNT(op.id)
+                FROM oidc_functional_accounts ofa
+                LEFT JOIN oidc_profiles op
+                ON op.id = ofa.oidc_profile_id
                 WHERE op.name = ? ",
         Bind => [ \$Name ],
     );

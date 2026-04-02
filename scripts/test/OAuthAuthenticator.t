@@ -2,7 +2,7 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2025 Rother OSS GmbH, https://otobo.io/
+# Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -43,9 +43,9 @@ $DBObject->Connect();
 
 #$OAuthProviderMock::KidID || $OAuthProviderMock::PrivateKey || 0;      # prevent warnings
 
-#################################################################
+# ---------------------------------------------------------------
 # main test
-#################################################################
+# ---------------------------------------------------------------
 
 # wait for the fake authorization server to come up
 sleep 1;
@@ -67,10 +67,10 @@ eval {
 
     my $UserID = $UserObject->UserLookup(
         UserLogin => '9c3e1839-b468-4cda-a39a-d969ead45a40',
-        Silent    => 1, # optional, don't generate log entry if user was not found
+        Silent    => 1,                                        # optional, don't generate log entry if user was not found
     );
 
-    if(!$UserID)
+    if ( !$UserID )
     {
         # add user
         $UserID = $UserObject->UserAdd(
@@ -90,10 +90,9 @@ eval {
         NoCache      => 1,
     );
 
-
-    #################################################################
+    # ---------------------------------------------------------------
     # 1) Simple JWT
-    #################################################################
+    # ---------------------------------------------------------------
 
     my $Token = encode_jwt(
         payload       => OAuthProviderMock::Payload(),
@@ -111,9 +110,9 @@ eval {
 
     ok( $Result->{Success}, 'Authenticated' );
 
-    #################################################################
+    # ---------------------------------------------------------------
     # 2) Simple JWT with dedicated scopes
-    #################################################################
+    # ---------------------------------------------------------------
 
     PrepareTestSysConfig(
         Scope => 'openid superduper',
@@ -135,9 +134,9 @@ eval {
 
     ok( $Result->{Success}, 'Authenticated' );
 
-    #################################################################
+    # ---------------------------------------------------------------
     # 3) Simple JWT with dedicated audience check
-    #################################################################
+    # ---------------------------------------------------------------
 
     PrepareTestSysConfig(
         Audience => 'otobo',
@@ -159,9 +158,9 @@ eval {
 
     ok( $Result->{Success}, 'Authenticated' );
 
-    #################################################################
+    # ---------------------------------------------------------------
     # 4) Simple JWT with Authorized Party check
-    #################################################################
+    # ---------------------------------------------------------------
 
     PrepareTestSysConfig(
         AuthorizedParty => 'otobo',
@@ -183,9 +182,9 @@ eval {
 
     ok( $Result->{Success}, 'Authenticated' );
 
-    #################################################################
+    # ---------------------------------------------------------------
     # assert on the spy log
-    #################################################################
+    # ---------------------------------------------------------------
 
     OAuthProviderMock::AssertHttpCallLog(
         Expected => [
