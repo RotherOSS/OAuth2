@@ -143,7 +143,7 @@ sub ProviderProcessRequest {
 
 # Rother OSS / OAuth2
     # Authenthentication header
-    my $AuthenticationHeader = $ParamObject->Header('Authorization');
+    my $AuthenticationHeader = $ParamObject->Header('Authorization') // '';
     $AuthenticationHeader =~ s/^\s+|\s+$//g; # trim whitespace
 
     if ( $AuthenticationHeader && lc($AuthenticationHeader) =~ /^bearer / ) {
