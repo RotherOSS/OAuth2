@@ -4,7 +4,7 @@
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
 # Copyright (C) 2019-2026 Rother OSS GmbH, https://otobo.io/
 # --
-# $origin: otobo - 6efdc7bf2a3325277cd79a60f0f2407f8ad59e87 - Kernel/GenericInterface/Operation/Ticket/TicketUpdate.pm
+# $origin: otobo - 1ecfa301668ab82ab0e9b588c92317db10b54123 - Kernel/GenericInterface/Operation/Ticket/TicketUpdate.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -548,7 +548,6 @@ sub Run {
             $Article->{AutoResponseType} = $Self->{Config}->{AutoResponseType} || '';
         }
 
-        # TODO: GenericInterface::Operation::TicketUpdate###CommunicationChannel
         if ( !$Article->{CommunicationChannelID} && !$Article->{CommunicationChannel} ) {
             $Article->{CommunicationChannel} = 'Internal';
         }
@@ -1311,7 +1310,6 @@ sub _CheckUpdatePermissions {
     my $Ticket           = $Param{Ticket};
     my $Article          = $Param{Article};
     my $DynamicFieldList = $Param{DynamicFieldList};
-    my $AttachmentList   = $Param{AttachmentList};
 
     # get ticket object
     my $TicketObject = $Kernel::OM->Get('Kernel::System::Ticket');
