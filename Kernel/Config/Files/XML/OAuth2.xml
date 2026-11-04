@@ -36,7 +36,7 @@
             </Hash>
         </Value>
     </Setting>
-    <Setting Name="Frontend::Navigation###AdminOAuthTokenStore###001-Framework" Required="0" Valid="0">
+    <Setting Name="Frontend::Navigation###AdminOAuthTokenStore###001-Framework" Required="0" Valid="1">
         <Description Translatable="1">Main menu item registration.</Description>
         <Navigation>Frontend::Admin::ModuleRegistration::MainMenu</Navigation>
         <Value>
@@ -98,7 +98,7 @@
         </Value>
     </Setting>
 
-    <Setting Name="Frontend::Navigation###AdminOIDCProfiles###001-Framework" Required="0" Valid="0">
+    <Setting Name="Frontend::Navigation###AdminOIDCProfiles###001-Framework" Required="0" Valid="1">
         <Description Translatable="1">Main menu item registration.</Description>
         <Navigation>Frontend::Admin::ModuleRegistration::MainMenu</Navigation>
         <Value>
