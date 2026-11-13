@@ -6,7 +6,8 @@
     <Vendor>Rother OSS GmbH</Vendor>
     <URL>https://otobo.io/</URL>
     <License>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007</License>
-    <Description Lang="en">OAuth2/OpenIDConnect Token Management.</Description>
+    <Description Lang="en">OAuth2/OpenID Connect token management.</Description>
+    <Description Lang="hu">OAuth2/OpenID Connect tokenkezelés.</Description>
     <Filelist>
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.Admin.GenericInterfaceTransportHTTPRESTWebserviceTicketInvoker.js" />
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.Admin.OAuth2Module.js" />
